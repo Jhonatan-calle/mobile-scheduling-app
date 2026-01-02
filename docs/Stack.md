@@ -1,64 +1,65 @@
-# Stack propuesto – Aplicación móvil de agenda (negocio de limpieza de tapizados)
+# Proposed Stack – Scheduling Mobile Application (Upholstery Cleaning Business)
 
-## Objetivo
-Aplicación móvil multiplataforma para gestionar agendas diarias y asignar turnos a personal, con funcionamiento offline y sincronización automática al recuperar conexión, evitando conflictos de horarios.
+## Objective
+
+Cross-platform mobile application designed to manage daily schedules and assign service appointments to employees.  
+The system supports offline operation with automatic synchronization when network connectivity is restored, preventing scheduling conflicts.
 
 ---
 
-## Frontend (App móvil)
+## Frontend (Mobile App)
 **React Native + Expo**
 
-- Un solo código para Android y iOS
-- Buen soporte offline
-- Ecosistema maduro
-- Integración simple con almacenamiento local y red
+- Single codebase for Android and iOS
+- Strong support for offline usage
+- Mature and stable ecosystem
+- Simple integration with local storage and network services
 
 ---
 
-## Persistencia local (offline)
-**SQLite (en el dispositivo)**
+## Local Persistence (Offline)
+**SQLite (On-device database)**
 
-- Almacenamiento local de:
-  - empleados
-  - turnos
-  - cola de cambios pendientes
-- La app funciona sin conexión
-- Los datos se sincronizan cuando hay red
+- Local storage for:
+  - employees
+  - service appointments
+  - pending synchronization events
+- The application remains fully functional without internet access
+- Data is synchronized automatically when connectivity is available
 
 ---
 
-## Modelo de sincronización
-**Offline-first con cola de eventos**
+## Synchronization Model
+**Offline-first architecture with event queue**
 
-- Cada cambio se guarda localmente
-- Se registra en una tabla de sincronización
-- Al detectar conexión:
-  - se envían los cambios al backend
-  - el backend valida reglas de negocio
-  - se actualiza el estado local
+- All changes are stored locally first
+- Each operation is recorded in a synchronization queue
+- When a connection is detected:
+  - local changes are sent to the backend
+  - business rules are validated server-side
+  - local state is updated accordingly
+
+This approach minimizes data loss and avoids scheduling conflicts.
 
 ---
 
 ## Backend
 **Node.js + TypeScript**
 
-- API REST
-- Validación centralizada de horarios
-- Resolución de conflictos
-- Fuente de verdad de los datos
-- Fácil mantenimiento y escalabilidad
+- REST API
+- Centralized validation of scheduling rules
+- Conflict detection and resolution
+- Acts as the single source of truth
+- Designed for maintainability and scalability
 
 ---
 
-## Base de datos remota
+## Remote Database
 **PostgreSQL**
 
-- Base de datos relacional
-- Manejo confiable de fechas y rangos horarios
-- Transacciones y restricciones
-- Prevención de turnos superpuestos por empleado
+- Relational database
+- Reliable handling of dates and time ranges
+- Transaction support and data constraints
+- Prevention of overlapping appointments per employee
 
 ---
-
-
-
