@@ -43,17 +43,6 @@ This approach minimizes data loss and avoids scheduling conflicts.
 
 ---
 
-## Backend
-**Node.js + TypeScript**
-
-- REST API
-- Centralized validation of scheduling rules
-- Conflict detection and resolution
-- Acts as the single source of truth
-- Designed for maintainability and scalability
-
----
-
 ## Remote Database
 **PostgreSQL**
 
