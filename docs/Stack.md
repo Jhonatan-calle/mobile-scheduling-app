@@ -43,10 +43,28 @@ This approach minimizes data loss and avoids scheduling conflicts.
 
 ---
 
-## Remote Database
-**PostgreSQL**
+## Backend as a Service
+**Supabase**
 
-- Relational database
+Supabase is used as a backend platform, eliminating the need for a custom server.
+
+Provides:
+
+- PostgreSQL database (managed)
+- Authentication (optional: email/password, magic links)
+- REST and Realtime APIs
+- Row Level Security (RLS) for data access control
+- Free tier suitable for MVP and early production
+
+Supabase acts as the central synchronization point for all devices.
+
+---
+
+
+## Remote Database
+**PostgreSQL (via Supabase)**
+
+- Relational database hosted by Supabase
 - Reliable handling of dates and time ranges
 - Transaction support and data constraints
 - Prevention of overlapping appointments per employee
