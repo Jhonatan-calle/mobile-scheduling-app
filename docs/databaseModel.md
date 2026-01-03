@@ -62,6 +62,7 @@ erDiagram
         decimal total_salaries
         decimal total_profit
         int total_appointments
+        int total_retouches
     }
 
     EXPENSES {
