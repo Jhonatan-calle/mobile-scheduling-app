@@ -45,11 +45,15 @@ erDiagram
         datetime updated_at
     }
 
-    RETROUCHES {
+    RETOUCHES {
+        datetime time
+        string address
         int id PK
         int appointment_id FK
         int worker_id FK
         string reason
+        int estimate_time
+        string status
         datetime created_at
     }
 
