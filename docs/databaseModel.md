@@ -8,7 +8,6 @@ erDiagram
     WORKERS {
         int id PK
         decimal commission_rate
-        decimal balance_due
     }
 
     WORKER_AVAILABILITY {
