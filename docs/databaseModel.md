@@ -39,7 +39,7 @@ erDiagram
         int client_id FK
         int estimate_time
         decimal cost
-        string status (pending | in_progress | completed | cancelled)
+        string status
         boolean has_retouches
         datetime created_at
         datetime updated_at
