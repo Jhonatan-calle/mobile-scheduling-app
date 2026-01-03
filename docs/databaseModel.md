@@ -75,7 +75,8 @@ erDiagram
         int id PK
         int profile_id FK
         decimal amount
-        date date
+        int month
+        int year
     }
 
     PROFILES ||--o| WORKERS : is
