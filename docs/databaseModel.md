@@ -37,6 +37,7 @@ erDiagram
         int worker_id FK
         int client_id FK
         int estimate_time
+        decimal commission_rate
         decimal cost
         string status
         boolean has_retouches
