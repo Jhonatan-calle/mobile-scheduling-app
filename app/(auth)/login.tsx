@@ -12,6 +12,8 @@ import {
 } from "react-native";
 import { router } from "expo-router";
 import Input from "../../components/input.tsx";
+import Button from "../../components/button.tsx";
+import FormContainer from "../../components/formContainer.tsx";
 // import { supabase } from "../../utils/supabase.ts";
 
 export default function LoginScreen() {
@@ -78,7 +80,7 @@ export default function LoginScreen() {
           <Text style={styles.subtitle}>Ingresa a tu cuenta</Text>
         </View>
 
-        <View style={styles.formContainer}>
+        <FormContainer>
           <Input
             label="Email"
             placeholder="correo@ejemplo. com"
@@ -104,18 +106,7 @@ export default function LoginScreen() {
             </View>
           )}
 
-          <TouchableOpacity
-            style={[styles.button, loading && styles.buttonDisabled]}
-            onPress={signIn}
-            disabled={loading}
-            activeOpacity={0.8}
-          >
-            {loading ? (
-              <ActivityIndicator color="#FFFFFF" />
-            ) : (
-              <Text style={styles.buttonText}>Ingresar</Text>
-            )}
-          </TouchableOpacity>
+          <Button title="Ingresar" onPress={signIn} loading={loading} />
 
           <TouchableOpacity
             style={styles.forgotPassword}
@@ -127,7 +118,7 @@ export default function LoginScreen() {
               ¿Olvidaste tu contraseña?
             </Text>
           </TouchableOpacity>
-        </View>
+        </FormContainer>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -157,34 +148,6 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 16,
     color: "#6B7280",
-  },
-  formContainer: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    padding: 24,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  button: {
-    backgroundColor: "#3B82F6",
-    borderRadius: 12,
-    padding: 16,
-    alignItems: "center",
-    marginTop: 8,
-  },
-  buttonDisabled: {
-    backgroundColor: "#93C5FD",
-  },
-  buttonText: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "bold",
   },
   errorContainer: {
     backgroundColor: "#FEE2E2",
