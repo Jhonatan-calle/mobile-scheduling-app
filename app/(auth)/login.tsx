@@ -2,103 +2,93 @@ import { useState } from "react";
 import {
   View,
   Text,
-  TextInput,
-  TouchableOpacity,
   StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  ActivityIndicator,
+  Alert,
 } from "react-native";
 import { router } from "expo-router";
-import Input from "../../components/input.tsx";
-import Button from "../../components/button.tsx";
-import FormContainer from "../../components/formContainer.tsx";
-// import { supabase } from "../../utils/supabase.ts";
+import FormContainer from "../../components/FormContainer";
+import SocialButton from "../../components/SocialButton";
+// import { supabase } from "../../utils/supabase";
+// import * as WebBrowser from "expo-web-browser";
+// import * as Linking from "expo-linking";
+
+// Necesario para que funcione el OAuth
+// WebBrowser.maybeCompleteAuthSession();
 
 export default function LoginScreen() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
 
-  const signIn = async () => {
+  const signInWithGoogle = async () => {
+    setGoogleLoading(true);
     // setError(null);
-    setLoading(true);
     //
-    // const { data, error } = await supabase.auth.signInWithPassword({
-    //   email,
-    //   password,
-    // });
+    // try {
+    //   const redirectUrl = Linking.createURL("/(auth)/login");
     //
-    // if (error) {
-    //   setError(error.message);
-    //   setLoading(false);
-    //   return;
+    //   const { data, error } = await supabase. auth.signInWithOAuth({
+    //     provider: "google",
+    //     options: {
+    //       redirectTo: redirectUrl,
+    //       skipBrowserRedirect: false,
+    //     },
+    //   });
+    //
+    //   if (error) {
+    //     setError(error.message);
+    //     Alert.alert("Error", error.message);
+    //     setGoogleLoading(false);
+    //     return;
+    //   }
+    //
+    //   // Abrir navegador para autenticación
+    //   if (data?. url) {
+    //     const result = await WebBrowser.openAuthSessionAsync(
+    //       data.url,
+    //       redirectUrl
+    //     );
+    //
+    //     if (result.type === "success") {
+    //       // La autenticación fue exitosa
+    //       // El listener en _layout.tsx manejará la redirección
+    //       console.log("Autenticación exitosa");
+    //     } else if (result.type === "cancel") {
+    //       Alert.alert("Cancelado", "Inicio de sesión cancelado");
+    //     }
+    //   }
+    // } catch (err) {
+    //   console.error("Error con Google:", err);
+    //   setError("Error al iniciar sesión con Google");
+    //   Alert.alert("Error", "No se pudo iniciar sesión con Google");
+    // } finally {
+    await new Promise(resolve => setTimeout(resolve, 3000));
+    router.replace("/(admin)");
+    setGoogleLoading(false);
     // }
-    //
-    // const userId = data.user?.id;
-    // if (!userId) {
-    //   setError("Usuario inválido");
-    //   setLoading(false);
-    //   return;
-    // }
-    //
-    // const { data: profile, error: profileError } = await supabase
-    //   .from("profiles")
-    //   .select("role")
-    //   .eq("id", userId)
-    //   .single();
-    //
-    // if (profileError) {
-    //   setError("No se pudo obtener el perfil");
-    //   setLoading(false);
-    //   return;
-    // }
-    //
-    // if (profile.role === "ADMIN") {
-    //   router.replace("/admin");
-    // } else {
-    //   router.replace("/worker");
-    // }
-    //
-    await new Promise((resolve) => setTimeout(resolve, 3000));
-    setLoading(false);
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={styles.container}
-    >
-      <ScrollView
-        contentContainerStyle={styles.scrollContainer}
-        keyboardShouldPersistTaps="handled"
-      >
+    <View style={styles. container}>
+      <View style={styles.content}>
+        {/* Header */}
         <View style={styles.headerContainer}>
-          <Text style={styles.title}>Limpieza de Tapizados Río Cuarto</Text>
-          <Text style={styles.subtitle}>Ingresa a tu cuenta</Text>
+          <Text style={styles.icon}>🧼</Text>
+          <Text style={styles.title}>
+            Limpieza de Tapizados{"\n"}Río Cuarto
+          </Text>
+          <Text style={styles.subtitle}>
+            Gestiona tus citas y horarios
+          </Text>
         </View>
 
+        {/* Formulario */}
         <FormContainer>
-          <Input
-            label="Email"
-            placeholder="correo@ejemplo. com"
-            autoCapitalize="none"
-            keyboardType="email-address"
-            value={email}
-            onChangeText={setEmail}
-            editable={!loading}
-          />
-
-          <Input
-            label="Contraseña"
-            placeholder="••••••••"
-            secureTextEntry
-            value={password}
-            onChangeText={setPassword}
-            editable={!loading}
-          />
+          <Text style={styles.welcomeText}>
+            Bienvenido
+          </Text>
+          <Text style={styles.instructionText}>
+            Inicia sesión con tu cuenta de Google para continuar
+          </Text>
 
           {error && (
             <View style={styles.errorContainer}>
@@ -106,21 +96,27 @@ export default function LoginScreen() {
             </View>
           )}
 
-          <Button title="Ingresar" onPress={signIn} loading={loading} />
+          <SocialButton
+            provider="google"
+            onPress={signInWithGoogle}
+            loading={googleLoading}
+          />
 
-          <TouchableOpacity
-            style={styles.forgotPassword}
-            onPress={() => {
-              /* Navegar a recuperar contraseña */
-            }}
-          >
-            <Text style={styles.forgotPasswordText}>
-              ¿Olvidaste tu contraseña?
+          <View style={styles.infoContainer}>
+            <Text style={styles.infoText}>
+              💡 Solo empleados autorizados pueden acceder
             </Text>
-          </TouchableOpacity>
+          </View>
         </FormContainer>
-      </ScrollView>
-    </KeyboardAvoidingView>
+
+        {/* Footer */}
+        <View style={styles.footer}>
+          <Text style={styles.footerText}>
+            Al continuar, aceptas nuestros términos y condiciones
+          </Text>
+        </View>
+      </View>
+    </View>
   );
 }
 
@@ -129,25 +125,45 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#F9FAFB",
   },
-  scrollContainer: {
-    flexGrow: 1,
+  content: {
+    flex:  1,
     justifyContent: "center",
     padding: 24,
   },
   headerContainer: {
-    marginBottom: 40,
+    marginBottom: 48,
     alignItems: "center",
   },
-  title: {
-    fontSize: 32,
+  icon:  {
+    fontSize: 64,
+    marginBottom: 16,
+  },
+  title:  {
+    fontSize: 28,
+    fontWeight: "bold",
+    color: "#111827",
+    marginBottom: 8,
+    textAlign: "center",
+    lineHeight: 36,
+  },
+  subtitle:  {
+    fontSize: 16,
+    color: "#6B7280",
+    textAlign: "center",
+  },
+  welcomeText: {
+    fontSize: 24,
     fontWeight: "bold",
     color: "#111827",
     marginBottom: 8,
     textAlign: "center",
   },
-  subtitle: {
-    fontSize: 16,
+  instructionText: {
+    fontSize: 15,
     color: "#6B7280",
+    textAlign:  "center",
+    marginBottom: 24,
+    lineHeight: 22,
   },
   errorContainer: {
     backgroundColor: "#FEE2E2",
@@ -158,14 +174,29 @@ const styles = StyleSheet.create({
   errorText: {
     color: "#DC2626",
     fontSize: 14,
+    textAlign: "center",
   },
-  forgotPassword: {
-    marginTop: 16,
-    alignItems: "center",
+  infoContainer: {
+    marginTop: 20,
+    padding: 16,
+    backgroundColor:  "#EFF6FF",
+    borderRadius:  12,
+    borderLeftWidth: 4,
+    borderLeftColor: "#3B82F6",
   },
-  forgotPasswordText: {
-    color: "#3B82F6",
+  infoText: {
     fontSize: 14,
-    fontWeight: "600",
+    color:  "#1E40AF",
+    textAlign:  "center",
+  },
+  footer: {
+    marginTop: 32,
+    paddingHorizontal: 16,
+  },
+  footerText: {
+    fontSize: 12,
+    color: "#9CA3AF",
+    textAlign: "center",
+    lineHeight: 18,
   },
 });
