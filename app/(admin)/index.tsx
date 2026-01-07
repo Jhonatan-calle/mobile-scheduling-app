@@ -97,7 +97,7 @@ function QuickActionsSection() {
         icon="➕"
         title="Nueva Cita"
         subtitle="Agendar nuevo servicio"
-        onPress={() => router.push("/(admin)/appointments/new")}
+        onPress={() => router.push("/(admin)/(appointments)/new")}
         color="#3B82F6"
       />
 
@@ -105,7 +105,7 @@ function QuickActionsSection() {
         icon="📋"
         title="Ver Todas las Citas"
         subtitle="Gestionar appointments"
-        onPress={() => router.push("/(admin)/appointments")}
+        onPress={() => router.push("/(admin)/(appointments)")}
         color="#10B981"
       />
 
@@ -156,7 +156,7 @@ function TodayAppointmentsSection() {
     <View style={styles. section}>
       <View style={styles.sectionHeader}>
         <Text style={styles. sectionTitle}>Citas de Hoy</Text>
-        <TouchableOpacity onPress={() => router.push("/(admin)/appointments")}>
+        <TouchableOpacity onPress={() => router.push("/(admin)/(appointments)")}>
           <Text style={styles.seeAll}>Ver todas →</Text>
         </TouchableOpacity>
       </View>
