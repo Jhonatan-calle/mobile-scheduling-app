@@ -13,7 +13,6 @@ import { TextInput } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import Input from "../../../components/Input";
 import Button from "../../../components/Button";
-import { supabase } from "../../../utils/supabase";
 
 export default function NewAppointmentScreen() {
   const [formData, setFormData] = useState({
@@ -22,10 +21,10 @@ export default function NewAppointmentScreen() {
     customerAddress: "",
     service: "",
     serviceDetails: "",
-    amount: "",
+    cost: "", // Cambiado de 'amount' a 'cost'
     date: new Date(),
     time: new Date(),
-    duration: "60", // en minutos
+    estimateTime: "60", // Cambiado de 'duration' a 'estimateTime' (en minutos)
     notes: "",
     workerId: "",
     commissionRate: "",
@@ -36,41 +35,44 @@ export default function NewAppointmentScreen() {
   const [loading, setLoading] = useState(false);
   const [workers, setWorkers] = useState([]);
 
-  // Cargar trabajadores con sus comisiones
+  // Cargar trabajadores mock
   useEffect(() => {
     loadWorkers();
   }, []);
 
   const loadWorkers = async () => {
     try {
+      // Datos mock con estructura real de la BD
       const mockWorkers = [
         {
-          id: "1",
+          id: 1,
           name: "Carlos González",
-          avatar: "👨",
+          phone: "351 234 5678",
+          commission_rate: 60,
           available: true,
-          defaultCommissionRate: 60,
+          avatar:  "👨",
         },
         {
-          id: "2",
+          id:  2,
           name: "Ana Martínez",
-          avatar: "👩",
+          phone: "351 345 6789",
+          commission_rate: 55,
           available: true,
-          defaultCommissionRate: 55,
+          avatar: "👩",
         },
         {
-          id: "3",
-          name: "Luis Rodríguez",
-          avatar: "👨",
+          id: 3,
+          name:  "Luis Rodríguez",
+          phone:  "351 456 7890",
+          commission_rate: 50,
           available: true,
-          defaultCommissionRate: 50,
+          avatar: "👨",
         },
       ];
 
       setWorkers(mockWorkers);
     } catch (error) {
       console.error("Error loading workers:", error);
-      Alert.alert("Error", "No se pudieron cargar los trabajadores");
     }
   };
 
@@ -150,15 +152,15 @@ function CustomerInfoSection({ formData, setFormData }: any) {
         placeholder="Ej: 351 234 5678"
         value={formData.customerPhone}
         onChangeText={(text) =>
-          setFormData({ ...formData, customerPhone: text })
+          setFormData({ ... formData, customerPhone: text })
         }
         keyboardType="phone-pad"
       />
 
       <Input
         label="Dirección"
-        placeholder="Ej:  Av. Colón 123"
-        value={formData.customerAddress}
+        placeholder="Ej: Av. Colón 123"
+        value={formData. customerAddress}
         onChangeText={(text) =>
           setFormData({ ...formData, customerAddress: text })
         }
@@ -206,11 +208,10 @@ function ServiceInfoSection({ formData, setFormData }: any) {
         ))}
       </View>
 
-      {/* Campo de cantidad y características */}
       <Input
         label="Cantidad y/o características"
-        placeholder="Ej: 3 sillones de 2 cuerpos, tela clara"
-        value={formData.serviceDetails}
+        placeholder="Ej:  3 sillones de 2 cuerpos, tela clara"
+        value={formData. serviceDetails}
         onChangeText={(text) =>
           setFormData({ ...formData, serviceDetails: text })
         }
@@ -221,8 +222,8 @@ function ServiceInfoSection({ formData, setFormData }: any) {
       <Input
         label="Monto a cobrar *"
         placeholder="$0"
-        value={formData.amount}
-        onChangeText={(text) => setFormData({ ...formData, amount: text })}
+        value={formData.cost}
+        onChangeText={(text) => setFormData({ ...formData, cost: text })}
         keyboardType="numeric"
       />
     </View>
@@ -232,25 +233,25 @@ function ServiceInfoSection({ formData, setFormData }: any) {
 function ServiceTypeCard({ service, selected, onSelect }: any) {
   return (
     <TouchableOpacity
-      style={[styles.serviceCard, selected && styles.serviceCardSelected]}
+      style={[styles.serviceCard, selected && styles. serviceCardSelected]}
       onPress={onSelect}
       activeOpacity={0.7}
     >
       <Text style={styles.serviceCardIcon}>{service.icon}</Text>
       <Text
         style={[
-          styles.serviceCardName,
+          styles. serviceCardName,
           selected && styles.serviceCardNameSelected,
         ]}
       >
-        {service.name}
+        {service. name}
       </Text>
     </TouchableOpacity>
   );
 }
 
 // ============================================================================
-// SECCIÓN: FECHA Y HORA
+// SECCIÓN:  FECHA Y HORA
 // ============================================================================
 function DateTimeSection({
   formData,
@@ -277,11 +278,11 @@ function DateTimeSection({
   };
 
   const durations = [
-    { value: "30", label: "30 min" },
+    { value:  "30", label: "30 min" },
     { value: "60", label: "1 hora" },
-    { value: "90", label: "1.5 horas" },
-    { value: "120", label: "2 horas" },
-    { value: "180", label: "3 horas" },
+    { value: "90", label: "1. 5 horas" },
+    { value: "120", label:  "2 horas" },
+    { value: "180", label:  "3 horas" },
   ];
 
   return (
@@ -324,18 +325,18 @@ function DateTimeSection({
         onPress={() => setShowTimePicker(true)}
       >
         <Text style={styles.dateTimeIcon}>🕐</Text>
-        <Text style={styles.dateTimeText}>{formatTime(formData.time)}</Text>
+        <Text style={styles.dateTimeText}>{formatTime(formData. time)}</Text>
       </TouchableOpacity>
 
       {showTimePicker && (
         <DateTimePicker
           value={formData.time}
           mode="time"
-          display={Platform.OS === "ios" ? "spinner" : "default"}
+          display={Platform.OS === "ios" ?  "spinner" : "default"}
           onChange={(event, selectedTime) => {
             setShowTimePicker(Platform.OS === "ios");
             if (selectedTime) {
-              setFormData({ ...formData, time: selectedTime });
+              setFormData({ ... formData, time: selectedTime });
             }
           }}
         />
@@ -349,19 +350,19 @@ function DateTimeSection({
             key={duration.value}
             style={[
               styles.durationChip,
-              formData.duration === duration.value &&
+              formData.estimateTime === duration.value &&
                 styles.durationChipSelected,
             ]}
             onPress={() =>
-              setFormData({ ...formData, duration: duration.value })
+              setFormData({ ...formData, estimateTime: duration.value })
             }
             activeOpacity={0.7}
           >
             <Text
               style={[
-                styles.durationChipText,
-                formData.duration === duration.value &&
-                  styles.durationChipTextSelected,
+                styles. durationChipText,
+                formData.estimateTime === duration.value &&
+                  styles. durationChipTextSelected,
               ]}
             >
               {duration.label}
@@ -374,14 +375,14 @@ function DateTimeSection({
 }
 
 // ============================================================================
-// SECCIÓN: ASIGNACIÓN DE TRABAJADOR
+// SECCIÓN:  ASIGNACIÓN DE TRABAJADOR
 // ============================================================================
 function WorkerAssignmentSection({ formData, setFormData, workers }: any) {
   const handleSelectWorker = (worker: any) => {
     setFormData({
       ...formData,
       workerId: worker.id,
-      commissionRate: worker.defaultCommissionRate.toString(), // ← Auto-llenar
+      commissionRate: worker.commission_rate. toString(),
     });
   };
 
@@ -390,14 +391,14 @@ function WorkerAssignmentSection({ formData, setFormData, workers }: any) {
       <SectionHeader
         icon="👥"
         title="Asignar Trabajador"
-        subtitle="Opcional - puedes asignarlo después"
+        subtitle="Selecciona quién realizará el servicio"
       />
 
-      <View style={styles.workersGrid}>
+      <View style={styles. workersGrid}>
         {workers && workers.length > 0 ? (
           workers.map((worker: any) => (
             <WorkerCard
-              key={worker.id}
+              key={worker. id}
               worker={worker}
               selected={formData.workerId === worker.id}
               onSelect={() => handleSelectWorker(worker)}
@@ -408,7 +409,7 @@ function WorkerAssignmentSection({ formData, setFormData, workers }: any) {
         )}
       </View>
 
-      {!formData.workerId && (
+      {! formData.workerId && (
         <Text style={styles.helperText}>
           💡 Tip: Al seleccionar un trabajador, se aplicará su comisión por
           defecto
@@ -418,14 +419,13 @@ function WorkerAssignmentSection({ formData, setFormData, workers }: any) {
   );
 }
 
-
 function WorkerCard({ worker, selected, onSelect }: any) {
   return (
     <TouchableOpacity
       style={[
         styles.workerCard,
         selected && styles.workerCardSelected,
-        !worker.available && styles.workerCardDisabled,
+        ! worker.available && styles.workerCardDisabled,
       ]}
       onPress={worker.available ? onSelect : undefined}
       activeOpacity={0.7}
@@ -435,14 +435,14 @@ function WorkerCard({ worker, selected, onSelect }: any) {
       <View style={styles.workerCardInfo}>
         <Text
           style={[
-            styles.workerCardName,
+            styles. workerCardName,
             selected && styles.workerCardNameSelected,
             !worker.available && styles.workerCardNameDisabled,
           ]}
         >
           {worker.name}
         </Text>
-        {!worker.available && (
+        {! worker.available && (
           <Text style={styles.workerCardStatus}>No disponible</Text>
         )}
       </View>
@@ -456,9 +456,9 @@ function WorkerCard({ worker, selected, onSelect }: any) {
 }
 
 // ============================================================================
-//  INFORMACIÓN FINANCIERA
+// INFORMACIÓN FINANCIERA
 // ============================================================================
-function FinancialInfoSection({ formData, setFormData }: any) {
+function FinancialInfoSection({ formData, setFormData }:  any) {
   return (
     <View style={styles.section}>
       <SectionHeader
@@ -470,8 +470,8 @@ function FinancialInfoSection({ formData, setFormData }: any) {
       <Input
         label="Monto a cobrar al cliente *"
         placeholder="$0"
-        value={formData.amount}
-        onChangeText={(text) => setFormData({ ...formData, amount: text })}
+        value={formData.cost}
+        onChangeText={(text) => setFormData({ ...formData, cost: text })}
         keyboardType="numeric"
       />
 
@@ -491,26 +491,26 @@ function FinancialInfoSection({ formData, setFormData }: any) {
         <Text style={styles.commissionPercent}>%</Text>
       </View>
 
-      {formData.amount && formData.commissionRate && (
+      {formData.cost && formData.commissionRate && (
         <View style={styles.calculationBox}>
           <View style={styles.calculationRow}>
-            <Text style={styles.calculationLabel}>Monto total: </Text>
+            <Text style={styles. calculationLabel}>Monto total: </Text>
             <Text style={styles.calculationValue}>
-              ${parseFloat(formData.amount || "0").toLocaleString("es-AR")}
+              ${parseFloat(formData.cost || "0").toLocaleString("es-AR")}
             </Text>
           </View>
           <View style={styles.calculationRow}>
-            <Text style={styles. calculationLabel}>
+            <Text style={styles.calculationLabel}>
               Trabajador recibe ({formData.commissionRate}%):
             </Text>
             <Text style={styles.calculationValueHighlight}>
-              ${calculateWorkerAmount(formData.amount, formData.commissionRate)}
+              ${calculateWorkerAmount(formData.cost, formData.commissionRate)}
             </Text>
           </View>
           <View style={styles.calculationRow}>
             <Text style={styles.calculationLabel}>Negocio recibe:</Text>
             <Text style={styles.calculationValue}>
-              ${calculateBusinessAmount(formData.amount, formData.commissionRate)}
+              ${calculateBusinessAmount(formData.cost, formData.commissionRate)}
             </Text>
           </View>
         </View>
@@ -549,10 +549,9 @@ function calculateBusinessAmount(totalAmount: string, commissionRate: string) {
 // ============================================================================
 // SECCIÓN: BOTONES DE ACCIÓN
 // ============================================================================
-
 function ActionButtons({ formData, loading, setLoading }: any) {
   const validateForm = () => {
-    if (!formData.customerName.trim()) {
+    if (!formData.customerName. trim()) {
       Alert.alert("Error", "El nombre del cliente es requerido");
       return false;
     }
@@ -564,8 +563,12 @@ function ActionButtons({ formData, loading, setLoading }: any) {
       Alert.alert("Error", "Debes seleccionar un tipo de servicio");
       return false;
     }
-    if (!formData.amount || parseFloat(formData.amount) <= 0) {
+    if (! formData.cost || parseFloat(formData.cost) <= 0) {
       Alert.alert("Error", "El monto debe ser mayor a 0");
+      return false;
+    }
+    if (!formData.workerId) {
+      Alert.alert("Error", "Debes asignar un trabajador");
       return false;
     }
     return true;
@@ -577,45 +580,66 @@ function ActionButtons({ formData, loading, setLoading }: any) {
     setLoading(true);
 
     try {
-      // Aquí guardarías en Supabase
-      // const { data, error } = await supabase. from('appointments').insert([{
-      //   customer_name: formData.customerName,
-      //   customer_phone: formData.customerPhone,
-      //   customer_address: formData.customerAddress,
-      //   service_type: formData.service,
-      //   amount: parseFloat(formData.amount),
-      //   date: formData.date,
-      //   time: formData.time,
-      //   duration: parseInt(formData.duration),
-      //   notes: formData.notes,
-      //   worker_id: formData.workerId || null,
-      //   status: 'pending'
-      // }]);
+      // Combinar fecha y hora en un solo timestamp
+      const combinedDate = new Date(formData.date);
+      combinedDate.setHours(formData.time.getHours());
+      combinedDate.setMinutes(formData.time.getMinutes());
+      combinedDate.setSeconds(0);
 
-      // Simulación
+      // Estructura de datos que se enviará a la BD (actualmente mock)
+      const appointmentData = {
+        //FK a tablas relacionadas
+        admin_id: 1, // ID del admin autenticado (mock)
+        worker_id: formData.workerId,
+        client_id: null, // Se asignará después de crear/buscar cliente
+        
+        // Información del cliente (se buscará/creará en tabla clients)
+        client:  {
+          name: formData. customerName,
+          phone: formData.customerPhone,
+          address: formData.customerAddress || null,
+        },
+
+        // Información de la cita
+        service: formData.service,
+        service_details: formData.serviceDetails || null,
+        address: formData.customerAddress || null,
+        date:  combinedDate.toISOString(), // timestamp
+        estimate_time: parseInt(formData.estimateTime), // minutos
+        cost: parseFloat(formData.cost), // numeric(10, 2)
+        commission_rate: parseFloat(formData.commissionRate) || 0, // numeric(5, 2)
+        
+        // Estados por defecto
+        status: "pending", // 'pending' | 'in_progress' | 'completed' | 'cancelled'
+        has_retouches: false,
+        paid_to_worker: false,
+        payment_method: null,
+        
+        // Timestamps automáticos
+        created_at:  new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
+      console.log("📋 Datos de la cita a guardar:", appointmentData);
+
+      // Simulación de guardado
       await new Promise((resolve) => setTimeout(resolve, 1500));
 
       Alert.alert("¡Éxito!", "La cita ha sido creada correctamente", [
         {
           text: "Ver citas",
-          onPress: () => router.replace("/(admin)/appointments"),
-        },
-        {
-          text: "Crear otra",
-          onPress: () => {
-            // Resetear formulario
-            setLoading(false);
-          },
+          onPress: () => router.replace("/(admin)/(appointments)"),
         },
       ]);
-    } catch (error) {
+    } catch (error:  any) {
+      console.error("Error creating appointment:", error);
       Alert.alert("Error", "No se pudo crear la cita");
       setLoading(false);
     }
   };
 
   return (
-    <View style={styles.actionsSection}>
+    <View style={styles. actionsSection}>
       <Button title="Crear Cita" onPress={handleSave} loading={loading} />
 
       <TouchableOpacity
@@ -638,9 +662,9 @@ function SectionHeader({ icon, title, subtitle }: any) {
       <View style={styles.sectionHeaderLeft}>
         <Text style={styles.sectionHeaderIcon}>{icon}</Text>
         <View>
-          <Text style={styles.sectionHeaderTitle}>{title}</Text>
+          <Text style={styles. sectionHeaderTitle}>{title}</Text>
           {subtitle && (
-            <Text style={styles.sectionHeaderSubtitle}>{subtitle}</Text>
+            <Text style={styles. sectionHeaderSubtitle}>{subtitle}</Text>
           )}
         </View>
       </View>
@@ -654,7 +678,7 @@ function SectionHeader({ icon, title, subtitle }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F9FAFB",
+    backgroundColor:  "#F9FAFB",
   },
   content: {
     flex: 1,
@@ -663,7 +687,7 @@ const styles = StyleSheet.create({
   // Header
   header: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent:  "space-between",
     alignItems: "center",
     padding: 16,
     paddingTop: 60,
@@ -675,7 +699,7 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   backButtonText: {
-    fontSize: 16,
+    fontSize:  16,
     color: "#3B82F6",
     fontWeight: "600",
   },
@@ -684,7 +708,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#111827",
   },
-  headerSpacer: {
+  headerSpacer:  {
     width: 60,
   },
 
@@ -695,7 +719,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   sectionHeader: {
-    flexDirection: "row",
+    flexDirection:  "row",
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 20,
@@ -704,19 +728,19 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
   },
-  sectionHeaderIcon: {
+  sectionHeaderIcon:  {
     fontSize: 24,
     marginRight: 12,
   },
   sectionHeaderTitle: {
-    fontSize: 18,
+    fontSize:  18,
     fontWeight: "bold",
     color: "#111827",
   },
   sectionHeaderSubtitle: {
     fontSize: 13,
     color: "#6B7280",
-    marginTop: 2,
+    marginTop:  2,
   },
 
   // Label
@@ -746,23 +770,19 @@ const styles = StyleSheet.create({
   },
   serviceCardSelected: {
     backgroundColor: "#EFF6FF",
-    borderColor: "#3B82F6",
+    borderColor:  "#3B82F6",
+  },
+  serviceCardIcon: {
+    fontSize: 24,
+    marginBottom: 4,
   },
   serviceCardName: {
     fontSize: 14,
     fontWeight: "600",
     color: "#6B7280",
     textAlign: "center",
-    marginBottom: 4,
   },
   serviceCardNameSelected: {
-    color: "#3B82F6",
-  },
-  serviceCardPrice: {
-    fontSize: 13,
-    color: "#9CA3AF",
-  },
-  serviceCardPriceSelected: {
     color: "#3B82F6",
   },
 
@@ -793,10 +813,10 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     gap: 8,
   },
-  durationChip: {
+  durationChip:  {
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
+    paddingVertical:  8,
+    borderRadius:  20,
     backgroundColor: "#F3F4F6",
     borderWidth: 1,
     borderColor: "#E5E7EB",
@@ -810,7 +830,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#6B7280",
   },
-  durationChipTextSelected: {
+  durationChipTextSelected:  {
     color: "#FFFFFF",
   },
 
@@ -840,28 +860,23 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   workerCardInfo: {
-    flex: 1,
+    flex:  1,
   },
-  workerCardName: {
+  workerCardName:  {
     fontSize: 16,
     fontWeight: "600",
     color: "#111827",
-    marginBottom: 4,
   },
   workerCardNameSelected: {
     color: "#3B82F6",
   },
   workerCardNameDisabled: {
-    color: "#9CA3AF",
-  },
-  workerCardCommission: {
-    fontSize: 13,
-    color: "#10B981",
-    fontWeight: "500",
+    color:  "#9CA3AF",
   },
   workerCardStatus: {
     fontSize: 12,
     color: "#EF4444",
+    marginTop: 4,
   },
   workerCardCheck: {
     width: 24,
@@ -876,29 +891,17 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontWeight: "bold",
   },
-  commissionInfo: {
-    backgroundColor: "#F0FDF4",
-    borderRadius: 12,
-    padding: 16,
-    marginTop: 16,
-    borderWidth: 1,
-    borderColor: "#86EFAC",
-  },
-  commissionLabel: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#166534",
-    marginBottom: 12,
-  },
+
+  // Commission
   commissionInputContainer: {
-    flexDirection: "row",
+    flexDirection:  "row",
     alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 8,
+    backgroundColor: "#F9FAFB",
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#86EFAC",
+    borderColor: "#E5E7EB",
     paddingHorizontal: 12,
-    marginBottom: 8,
+    marginBottom: 12,
   },
   commissionInput: {
     flex: 1,
@@ -912,11 +915,39 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#10B981",
   },
-  commissionHelper: {
-    fontSize: 13,
+  calculationBox: {
+    backgroundColor: "#F0FDF4",
+    borderRadius:  12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "#86EFAC",
+  },
+  calculationRow: {
+    flexDirection:  "row",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+  calculationLabel: {
+    fontSize: 14,
     color: "#166534",
+  },
+  calculationValue: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#166534",
+  },
+  calculationValueHighlight: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: "#10B981",
+  },
+  warningText: {
+    fontSize:  13,
+    color: "#F59E0B",
+    marginTop: 8,
     fontStyle: "italic",
   },
+
   // Helper Text
   helperText: {
     fontSize: 13,
@@ -931,7 +962,7 @@ const styles = StyleSheet.create({
   // Actions
   actionsSection: {
     padding: 16,
-    backgroundColor: "#FFFFFF",
+    backgroundColor:  "#FFFFFF",
     marginBottom: 32,
   },
   cancelButton: {
