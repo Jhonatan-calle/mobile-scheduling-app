@@ -61,8 +61,8 @@ export default function LoginScreen() {
     //   setError("Error al iniciar sesión con Google");
     //   Alert.alert("Error", "No se pudo iniciar sesión con Google");
     // } finally {
-    await new Promise(resolve => setTimeout(resolve, 3000));
-    router.replace("/(admin)");
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    router.replace("/admin");
     setGoogleLoading(false);
     // }
   };

@@ -404,7 +404,7 @@ function AppointmentsList({
             {groupedAppointments[date]. map((apt: any) => (
               <TouchableOpacity
                 key={apt.id}
-                onPress={() => router.push(`/(admin)/(appointments)/${apt.id}`)}
+                onPress={() => router.push(`/admin/appointments/${apt.id}`)}
                 activeOpacity={0.7}
               >
                 <AppointmentPreviewCard
@@ -448,7 +448,7 @@ function FloatingAddButton() {
   return (
     <TouchableOpacity
       style={styles.fab}
-      onPress={() => router.push("/(admin)/(appointments)/new")}
+      onPress={() => router.push("/admin/appointments/new")}
       activeOpacity={0.8}
     >
       <Text style={styles.fabIcon}>+</Text>

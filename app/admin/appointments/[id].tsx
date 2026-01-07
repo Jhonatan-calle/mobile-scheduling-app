@@ -102,6 +102,7 @@ export default function AppointmentDetailScreen() {
           appointment={appointment}
           onUpdate={loadAppointment}
         />
+        <RetouchesSection appointment={appointment} onUpdate={loadAppointment} />
         <ActionButtonsSection
           appointment={appointment}
           onUpdate={loadAppointment}
@@ -612,7 +613,7 @@ function ActionButtonsSection({ appointment, onUpdate }: any) {
             Alert.alert("Eliminada", "La cita ha sido eliminada", [
               {
                 text: "OK",
-                onPress: () => router.replace("/(admin)/(appointments)"),
+                onPress: () => router.replace("/admin/appointments"),
               },
             ]);
           },
@@ -676,6 +677,167 @@ function ActionButtonsSection({ appointment, onUpdate }: any) {
   );
 }
 
+
+// ============================================================================
+// SECCIÓN:  RETOQUES
+// ============================================================================
+function RetouchesSection({ appointment, onUpdate }: any) {
+  const [retouches, setRetouches] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadRetouches();
+  }, []);
+
+  const loadRetouches = async () => {
+    try {
+      setLoading(true);
+
+      // Mock:  Retoques asociados a esta cita
+      const mockRetouches = [
+        {
+          id: 1,
+          appointment_id: appointment.id,
+          worker_id: 1,
+          time: new Date(appointment.date).toISOString(), // 2 días después
+          address: appointment.address,
+          reason: "Cliente reportó manchas persistentes",
+          estimate_time:  60,
+          status: "pending", // 'pending' | 'in_progress' | 'completed' | 'cancelled'
+          created_at: new Date().toISOString(),
+          worker:  {
+            id: 1,
+            profile: {
+              id: 1,
+              name:  "Carlos González",
+            },
+          },
+        },
+      ];
+
+      // Filtrar solo los de esta cita
+      const filtered = mockRetouches.filter(
+        (r) => r.appointment_id === appointment.id
+      );
+
+      setRetouches(filtered);
+      setLoading(false);
+    } catch (error) {
+      console.error("Error loading retouches:", error);
+      setLoading(false);
+    }
+  };
+
+  const handleCreateRetouch = () => {
+    if (appointment.status !== "completed") {
+      Alert.alert(
+        "No disponible",
+        "Solo puedes crear retoques para citas completadas"
+      );
+      return;
+    }
+
+    router.push({
+      pathname: "/admin/appointments/retouches/new",
+      params: { appointmentId: appointment. id },
+    });
+  };
+
+  return (
+    <View style={styles.section}>
+      <View style={styles.sectionHeaderRow}>
+        <SectionTitle icon="🔄" title="Retoques" />
+        {appointment.status === "completed" && (
+          <TouchableOpacity
+            style={styles.  addRetouchButton}
+            onPress={handleCreateRetouch}
+          >
+            <Text style={styles.addRetouchButtonText}>+ Agregar</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+
+      {loading ? (
+        <Text style={styles.loadingText}>Cargando retoques...</Text>
+      ) : retouches.length > 0 ? (
+        retouches.map((retouch) => (
+          <RetouchCard
+            key={retouch.id}
+            retouch={retouch}
+            onPress={() =>
+              router.push(`/admin/appointments/retouches/${retouch.id}`)
+            }
+          />
+        ))
+      ) : (
+        <View style={styles.noRetouchesContainer}>
+          <Text style={styles.  noRetouchesIcon}>✨</Text>
+          <Text style={styles.noRetouchesText}>
+            {appointment.status === "completed"
+              ? "No hay retoques registrados"
+              : "Los retoques estarán disponibles al completar la cita"}
+          </Text>
+        </View>
+      )}
+    </View>
+  );
+}
+
+function RetouchCard({ retouch, onPress }: any) {
+  const statusConfig = {
+    pending: { label: "Pendiente", color:  "#F59E0B", icon: "⏳" },
+    in_progress: { label: "En curso", color: "#3B82F6", icon: "🔄" },
+    completed: { label: "Completado", color: "#10B981", icon: "✅" },
+    cancelled: { label: "Cancelado", color:  "#EF4444", icon: "❌" },
+  };
+
+  const config = statusConfig[retouch. status as keyof typeof statusConfig];
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("es-AR", {
+      day: "numeric",
+      month:  "short",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  return (
+    <TouchableOpacity
+      style={styles.retouchCard}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
+      <View style={styles.retouchCardHeader}>
+        <View
+          style={[
+            styles. retouchStatusBadge,
+            { backgroundColor: config.color + "20" },
+          ]}
+        >
+          <Text style={styles.retouchStatusIcon}>{config.icon}</Text>
+          <Text style={[styles.retouchStatusText, { color: config.color }]}>
+            {config.label}
+          </Text>
+        </View>
+        <Text style={styles.retouchDate}>{formatDate(retouch.time)}</Text>
+      </View>
+
+      <Text style={styles.retouchReason}>{retouch.reason}</Text>
+
+      <View style={styles.retouchFooter}>
+        <Text style={styles.retouchWorker}>
+          👤 {retouch.worker.profile.name}
+        </Text>
+        <Text style={styles.retouchDuration}>
+          ⏱️ {retouch.estimate_time} min
+        </Text>
+      </View>
+    </TouchableOpacity>
+  );
+}
+
 // ============================================================================
 // COMPONENTES AUXILIARES
 // ============================================================================
@@ -700,6 +862,10 @@ function InfoRow({ label, value, icon }: any) {
   );
 }
 
+// Agregar estos estilos al StyleSheet existente: 
+const newStyles = {
+};
+
 // ============================================================================
 // ESTILOS
 // ============================================================================
@@ -722,6 +888,12 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     borderBottomWidth: 1,
     borderBottomColor: "#E5E7EB",
+  },
+  sectionHeaderRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 15,
   },
   backButton: {
     padding: 8,
@@ -1008,6 +1180,87 @@ const styles = StyleSheet.create({
     color: "#D1D5DB",
   },
 
+    addRetouchButton:  {
+    backgroundColor: "#EFF6FF",
+    paddingHorizontal: 12,
+    paddingVertical:  6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#3B82F6",
+  },
+  addRetouchButtonText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#3B82F6",
+  },
+  noRetouchesContainer: {
+    alignItems: "center",
+    paddingVertical: 32,
+    backgroundColor: "#F9FAFB",
+    borderRadius: 12,
+  },
+  noRetouchesIcon: {
+    fontSize: 48,
+    marginBottom: 12,
+  },
+  noRetouchesText: {
+    fontSize: 14,
+    color: "#6B7280",
+    textAlign:  "center",
+  },
+  retouchCard: {
+    backgroundColor: "#F9FAFB",
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+  retouchCardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  retouchStatusBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  retouchStatusIcon:  {
+    fontSize: 14,
+    marginRight: 6,
+  },
+  retouchStatusText: {
+    fontSize:  13,
+    fontWeight: "600",
+  },
+  retouchDate: {
+    fontSize: 13,
+    color: "#6B7280",
+    fontWeight:  "500",
+  },
+  retouchReason: {
+    fontSize:  15,
+    color: "#111827",
+    marginBottom: 12,
+    lineHeight: 20,
+  },
+  retouchFooter: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  retouchWorker:  {
+    fontSize: 13,
+    color: "#6B7280",
+  },
+  retouchDuration:  {
+    fontSize: 13,
+    color: "#6B7280",
+  },
+
   // Retouch Button
   retouchButton: {
     backgroundColor: "#F3F4F6",
@@ -1074,8 +1327,10 @@ const styles = StyleSheet.create({
     backgroundColor: "#F9FAFB",
   },
   loadingText: {
-    fontSize: 16,
+    fontSize: 14,
     color: "#6B7280",
+    textAlign: "center",
+    paddingVertical: 24,
   },
   errorContainer: {
     flex: 1,

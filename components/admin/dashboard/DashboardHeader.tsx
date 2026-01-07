@@ -17,7 +17,7 @@ export default function DashboardHeader() {
       </View>
       <TouchableOpacity 
         style={styles.profileButton}
-        onPress={() => router.push("/(admin)/profile")}
+        onPress={() => router.push("/admin/profile")}
       >
         <Text style={styles.profileIcon}>👤</Text>
       </TouchableOpacity>

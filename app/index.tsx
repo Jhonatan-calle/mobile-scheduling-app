@@ -28,7 +28,7 @@ export default function Index() {
     // }
     
     await new Promise(resolve => setTimeout(resolve, 3000));
-    router.replace("/(auth)/login");
+    router.replace("/auth/login");
     
   };
 

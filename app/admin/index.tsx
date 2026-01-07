@@ -194,7 +194,7 @@ function QuickActionsSection() {
         icon="➕"
         title="Nueva Cita"
         subtitle="Agendar nuevo servicio"
-        onPress={() => router.push("/(admin)/(appointments)/new")}
+        onPress={() => router.push("/admin/appointments/new")}
         color="#3B82F6"
       />
 
@@ -202,7 +202,7 @@ function QuickActionsSection() {
         icon="📋"
         title="Ver Todas las Citas"
         subtitle="Gestionar appointments"
-        onPress={() => router.push("/(admin)/(appointments)")}
+        onPress={() => router.push("/admin/appointments")}
         color="#10B981"
       />
 
@@ -210,7 +210,7 @@ function QuickActionsSection() {
         icon="👥"
         title="Gestionar Trabajadores"
         subtitle="Ver disponibilidad y asignaciones"
-        onPress={() => router.push("/(admin)/workers")}
+        onPress={() => router.push("/admin/workers")}
         color="#F59E0B"
       />
 
@@ -218,7 +218,7 @@ function QuickActionsSection() {
         icon="📊"
         title="Contabilidad"
         subtitle="Resumen mensual y pagos"
-        onPress={() => router.push("/(admin)/accounting")}
+        onPress={() => router.push("/admin/accounting")}
         color="#8B5CF6"
       />
     </View>
@@ -243,7 +243,7 @@ function TodayAppointmentsSection({ appointments, loading }: any) {
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Citas de Hoy</Text>
         <TouchableOpacity
-          onPress={() => router.push("/(admin)/(appointments)")}
+          onPress={() => router.push("/admin/appointments")}
         >
           <Text style={styles.seeAll}>Ver todas →</Text>
         </TouchableOpacity>
@@ -254,7 +254,7 @@ function TodayAppointmentsSection({ appointments, loading }: any) {
           <TouchableOpacity
             key={appointment.id}
             onPress={() =>
-              router.push(`/(admin)/(appointments)/${appointment.id}`)
+              router.push(`/admin/appointments/${appointment.id}`)
             }
             activeOpacity={0.7}
           >

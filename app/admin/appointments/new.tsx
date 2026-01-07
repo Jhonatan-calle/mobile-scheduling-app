@@ -914,7 +914,7 @@ function ActionButtons({ formData, loading, setLoading, selectedClientId }: any)
       Alert.alert("¡Éxito!", "La cita ha sido creada correctamente", [
         {
           text:  "Ver citas",
-          onPress: () => router.replace("/(admin)/(appointments)"),
+          onPress: () => router.replace("/admin/appointments"),
         },
       ]);
     } catch (error:  any) {
