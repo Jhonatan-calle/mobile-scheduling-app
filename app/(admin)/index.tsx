@@ -7,7 +7,6 @@ import {
 } from "react-native";
 import { router } from "expo-router";
 import { useState, useEffect } from "react";
-import { supabase } from "../../utils/supabase";
 import {
   DashboardHeader,
   StatCard,
@@ -22,20 +21,115 @@ export default function AdminHome() {
     completedToday: 0,
     monthlyRevenue: 0,
   });
+  const [todayAppointments, setTodayAppointments] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadStats();
+    loadDashboardData();
   }, []);
 
-  const loadStats = async () => {
-    // Aquí cargarías las estadísticas reales desde Supabase
-    // Por ahora datos de ejemplo
-    setStats({
-      todayAppointments: 5,
-      pendingAppointments: 12,
-      completedToday:  3,
-      monthlyRevenue: 45000,
-    });
+  const loadDashboardData = async () => {
+    try {
+      setLoading(true);
+
+      // Mock:  Estructura real con relaciones
+      const mockAppointments = [
+        {
+          id: 1,
+          date: new Date().toISOString(), // Hoy 09: 00
+          cost: 15000,
+          status: "pending",
+          payment_method: "cash",
+          client:  {
+            id: 1,
+            name: "Juan Pérez",
+            phone_number: "351 234 5678",
+          },
+          worker: {
+            id: 1,
+            profile: {
+              id: 1,
+              name:  "Carlos González",
+            },
+          },
+          service: "sillones",
+          service_details: "Limpieza de sillón 3 cuerpos",
+        },
+        {
+          id: 2,
+          date: (() => {
+            const d = new Date();
+            d.setHours(14, 0, 0, 0);
+            return d.toISOString();
+          })(),
+          cost: 12000,
+          status: "in_progress",
+          payment_method: null,
+          client: {
+            id: 2,
+            name: "María López",
+            phone_number: "351 456 7890",
+          },
+          worker: {
+            id:  2,
+            profile: {
+              id: 2,
+              name: "Ana Martínez",
+            },
+          },
+          service: "alfombra",
+          service_details: "Limpieza de alfombra persa",
+        },
+      ];
+
+      // Calcular estadísticas
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const todayApts = mockAppointments.filter((apt) => {
+        const aptDate = new Date(apt.date);
+        aptDate.setHours(0, 0, 0, 0);
+        return aptDate. getTime() === today.getTime();
+      });
+
+      const pendingApts = mockAppointments.filter(
+        (apt) => apt.status === "pending"
+      );
+
+      const completedToday = todayApts.filter(
+        (apt) => apt.status === "completed"
+      ).length;
+
+      // Mock: Revenue del mes (vendría de month_summaries)
+      const monthlyRevenue = 450000;
+
+      setStats({
+        todayAppointments: todayApts.length,
+        pendingAppointments: pendingApts.length,
+        completedToday,
+        monthlyRevenue,
+      });
+
+      // Transformar citas de hoy
+      const transformedAppointments = todayApts. map((apt) => ({
+        id: apt.id. toString(),
+        time: new Date(apt.date).toLocaleTimeString("es-AR", {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+        customer: apt.client.name,
+        service: apt.service_details,
+        worker: apt.worker.profile.name,
+        status: apt.status === "in_progress" ? "in-progress" : apt.status,
+        paymentMethod: apt.payment_method,
+      }));
+
+      setTodayAppointments(transformedAppointments);
+      setLoading(false);
+    } catch (error) {
+      console.error("Error loading dashboard:", error);
+      setLoading(false);
+    }
   };
 
   return (
@@ -45,7 +139,10 @@ export default function AdminHome() {
       <ScrollView style={styles. content} showsVerticalScrollIndicator={false}>
         <StatsSection stats={stats} />
         <QuickActionsSection />
-        <TodayAppointmentsSection />
+        <TodayAppointmentsSection
+          appointments={todayAppointments}
+          loading={loading}
+        />
       </ScrollView>
     </View>
   );
@@ -54,7 +151,7 @@ export default function AdminHome() {
 // ============================================================================
 // SECCIÓN:  ESTADÍSTICAS
 // ============================================================================
-function StatsSection({ stats }:  any) {
+function StatsSection({ stats }: any) {
   return (
     <View style={styles.statsGrid}>
       <StatCard
@@ -86,7 +183,7 @@ function StatsSection({ stats }:  any) {
 }
 
 // ============================================================================
-// SECCIÓN:  ACCIONES RÁPIDAS
+// SECCIÓN: ACCIONES RÁPIDAS
 // ============================================================================
 function QuickActionsSection() {
   return (
@@ -131,46 +228,45 @@ function QuickActionsSection() {
 // ============================================================================
 // SECCIÓN: CITAS DE HOY
 // ============================================================================
-function TodayAppointmentsSection() {
-  // Datos de ejemplo - en el futuro vendrían de Supabase
-  const todayAppointments = [
-    {
-      id: "1",
-      time: "09:00",
-      customer: "Juan Pérez",
-      service: "Limpieza de sillón 3 cuerpos",
-      worker: "Carlos González",
-      status: "pending" as const,
-    },
-    {
-      id: "2",
-      time: "14:00",
-      customer: "María López",
-      service: "Limpieza de alfombra",
-      worker: "Ana Martínez",
-      status: "in-progress" as const,
-    },
-  ];
+function TodayAppointmentsSection({ appointments, loading }: any) {
+  if (loading) {
+    return (
+      <View style={styles. section}>
+        <Text style={styles.sectionTitle}>Citas de Hoy</Text>
+        <Text style={styles.loadingText}>Cargando... </Text>
+      </View>
+    );
+  }
 
   return (
-    <View style={styles. section}>
+    <View style={styles.section}>
       <View style={styles.sectionHeader}>
-        <Text style={styles. sectionTitle}>Citas de Hoy</Text>
-        <TouchableOpacity onPress={() => router.push("/(admin)/(appointments)")}>
+        <Text style={styles.sectionTitle}>Citas de Hoy</Text>
+        <TouchableOpacity
+          onPress={() => router.push("/(admin)/(appointments)")}
+        >
           <Text style={styles.seeAll}>Ver todas →</Text>
         </TouchableOpacity>
       </View>
 
-      {todayAppointments.length > 0 ? (
-        todayAppointments.map((appointment) => (
-          <AppointmentPreviewCard
+      {appointments.length > 0 ? (
+        appointments.map((appointment: any) => (
+          <TouchableOpacity
             key={appointment.id}
-            time={appointment.time}
-            customer={appointment.customer}
-            service={appointment.service}
-            worker={appointment.worker}
-            status={appointment.status}
-          />
+            onPress={() =>
+              router.push(`/(admin)/(appointments)/${appointment.id}`)
+            }
+            activeOpacity={0.7}
+          >
+            <AppointmentPreviewCard
+              time={appointment.time}
+              customer={appointment.customer}
+              service={appointment.service}
+              worker={appointment.worker}
+              status={appointment.status}
+              paymentMethod={appointment.paymentMethod}
+            />
+          </TouchableOpacity>
         ))
       ) : (
         <EmptyAppointments />
@@ -179,12 +275,13 @@ function TodayAppointmentsSection() {
   );
 }
 
-// Componente auxiliar para estado vacío
 function EmptyAppointments() {
   return (
     <View style={styles.emptyState}>
       <Text style={styles.emptyIcon}>📭</Text>
-      <Text style={styles.emptyText}>No hay citas programadas para hoy</Text>
+      <Text style={styles.emptyText}>
+        No hay citas programadas para hoy
+      </Text>
     </View>
   );
 }
@@ -195,12 +292,12 @@ function EmptyAppointments() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor:  "#F9FAFB",
+    backgroundColor: "#F9FAFB",
   },
   content: {
     flex: 1,
   },
-  
+
   // Stats Grid
   statsGrid: {
     flexDirection: "row",
@@ -208,10 +305,10 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     padding: 16,
   },
-  
+
   // Section
   section: {
-    padding:  16,
+    padding: 16,
   },
   sectionHeader: {
     flexDirection: "row",
@@ -225,10 +322,18 @@ const styles = StyleSheet.create({
     color: "#111827",
     marginBottom: 16,
   },
-  seeAll:  {
+  seeAll: {
     fontSize: 14,
     color: "#3B82F6",
-    fontWeight:  "600",
+    fontWeight: "600",
+  },
+
+  // Loading
+  loadingText: {
+    fontSize: 14,
+    color: "#6B7280",
+    textAlign:  "center",
+    paddingVertical: 32,
   },
 
   // Empty State
@@ -250,6 +355,6 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 14,
     color: "#6B7280",
-    textAlign: "center",
+    textAlign:  "center",
   },
 });

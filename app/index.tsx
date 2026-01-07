@@ -11,8 +11,7 @@ export default function Index() {
   const checkSession = async () => {
     // const { data: { session } } = await supabase.auth.getSession();
     //
-    // if (!session) {
-    //   router.replace("/(auth)/login");
+    // if (!session)    //   router.replace("/(auth)/login");
     //   return;
     // }
     //
