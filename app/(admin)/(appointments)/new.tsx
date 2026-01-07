@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   Alert,
   Platform,
+  FlatList,
 } from "react-native";
 import { router } from "expo-router";
 import { useState, useEffect } from "react";
@@ -21,10 +22,10 @@ export default function NewAppointmentScreen() {
     customerAddress: "",
     service: "",
     serviceDetails: "",
-    cost: "", // Cambiado de 'amount' a 'cost'
+    cost: "",
     date: new Date(),
     time: new Date(),
-    estimateTime: "60", // Cambiado de 'duration' a 'estimateTime' (en minutos)
+    estimateTime: "60",
     notes: "",
     workerId: "",
     commissionRate: "",
@@ -34,39 +35,47 @@ export default function NewAppointmentScreen() {
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [loading, setLoading] = useState(false);
   const [workers, setWorkers] = useState([]);
+  
+  // Estados para sugerencias de clientes
+  const [clientSuggestions, setClientSuggestions] = useState([]);
+  const [showNameSuggestions, setShowNameSuggestions] = useState(false);
+  const [showPhoneSuggestions, setShowPhoneSuggestions] = useState(false);
+  const [selectedClientId, setSelectedClientId] = useState<number | null>(null);
 
-  // Cargar trabajadores mock
   useEffect(() => {
     loadWorkers();
   }, []);
 
   const loadWorkers = async () => {
     try {
-      // Datos mock con estructura real de la BD
+      // Mock:  Estructura real con profiles y workers
       const mockWorkers = [
         {
           id: 1,
-          name: "Carlos González",
-          phone: "351 234 5678",
-          commission_rate: 60,
-          available: true,
-          avatar:  "👨",
+          profile_id: 1,
+          commission_rate: 60.00,
+          profile: {
+            id: 1,
+            name: "Carlos González",
+          },
         },
         {
-          id:  2,
-          name: "Ana Martínez",
-          phone: "351 345 6789",
-          commission_rate: 55,
-          available: true,
-          avatar: "👩",
+          id: 2,
+          profile_id: 2,
+          commission_rate: 55.00,
+          profile: {
+            id: 2,
+            name: "Ana Martínez",
+          },
         },
         {
           id: 3,
-          name:  "Luis Rodríguez",
-          phone:  "351 456 7890",
-          commission_rate: 50,
-          available: true,
-          avatar: "👨",
+          profile_id:  3,
+          commission_rate: 50.00,
+          profile: {
+            id: 3,
+            name: "Luis Rodríguez",
+          },
         },
       ];
 
@@ -74,6 +83,118 @@ export default function NewAppointmentScreen() {
     } catch (error) {
       console.error("Error loading workers:", error);
     }
+  };
+
+  // Buscar clientes por nombre
+  const searchClientsByName = async (searchText: string) => {
+    if (searchText.trim().length < 2) {
+      setClientSuggestions([]);
+      setShowNameSuggestions(false);
+      return;
+    }
+
+    try {
+      // Mock: Base de datos de clientes
+      const mockClients = [
+        {
+          id: 1,
+          name:  "Juan Pérez",
+          phone_number: "351 234 5678",
+          last_appointment_at: "2024-01-15T10:00:00Z",
+        },
+        {
+          id: 2,
+          name: "María López",
+          phone_number: "351 456 7890",
+          last_appointment_at: "2024-01-10T14:00:00Z",
+        },
+        {
+          id: 3,
+          name: "Juan Carlos Gómez",
+          phone_number: "351 567 8901",
+          last_appointment_at: "2024-01-05T09:00:00Z",
+        },
+        {
+          id: 4,
+          name: "Laura Fernández",
+          phone_number: "351 789 0123",
+          last_appointment_at: "2023-12-20T16:00:00Z",
+        },
+      ];
+
+      // Filtrar clientes que coincidan con el nombre
+      const filtered = mockClients.filter((client) =>
+        client.name.toLowerCase().includes(searchText. toLowerCase())
+      );
+
+      setClientSuggestions(filtered);
+      setShowNameSuggestions(filtered.length > 0);
+    } catch (error) {
+      console.error("Error searching clients:", error);
+    }
+  };
+
+  // Buscar clientes por teléfono
+  const searchClientsByPhone = async (searchText:  string) => {
+    if (searchText.trim().length < 3) {
+      setClientSuggestions([]);
+      setShowPhoneSuggestions(false);
+      return;
+    }
+
+    try {
+      // Mock: Base de datos de clientes
+      const mockClients = [
+        {
+          id: 1,
+          name: "Juan Pérez",
+          phone_number: "351 234 5678",
+          last_appointment_at: "2024-01-15T10:00:00Z",
+        },
+        {
+          id: 2,
+          name: "María López",
+          phone_number: "351 456 7890",
+          last_appointment_at: "2024-01-10T14:00:00Z",
+        },
+        {
+          id: 3,
+          name: "Juan Carlos Gómez",
+          phone_number: "351 567 8901",
+          last_appointment_at: "2024-01-05T09:00:00Z",
+        },
+        {
+          id: 4,
+          name: "Laura Fernández",
+          phone_number: "351 789 0123",
+          last_appointment_at: "2023-12-20T16:00:00Z",
+        },
+      ];
+
+      // Filtrar clientes que coincidan con el teléfono
+      const cleanSearch = searchText.replace(/\s/g, "");
+      const filtered = mockClients.filter((client) =>
+        client.phone_number.replace(/\s/g, "").includes(cleanSearch)
+      );
+
+      setClientSuggestions(filtered);
+      setShowPhoneSuggestions(filtered.length > 0);
+    } catch (error) {
+      console.error("Error searching clients:", error);
+    }
+  };
+
+  // Seleccionar un cliente de las sugerencias
+  const selectClient = (client:  any) => {
+    setFormData({
+      ...formData,
+      customerName: client.name,
+      customerPhone: client. phone_number,
+    });
+    setSelectedClientId(client. id);
+    setShowNameSuggestions(false);
+    setShowPhoneSuggestions(false);
+    setClientSuggestions([]);
   };
 
   return (
@@ -85,7 +206,19 @@ export default function NewAppointmentScreen() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        <CustomerInfoSection formData={formData} setFormData={setFormData} />
+        <CustomerInfoSection
+          formData={formData}
+          setFormData={setFormData}
+          searchClientsByName={searchClientsByName}
+          searchClientsByPhone={searchClientsByPhone}
+          clientSuggestions={clientSuggestions}
+          showNameSuggestions={showNameSuggestions}
+          showPhoneSuggestions={showPhoneSuggestions}
+          selectClient={selectClient}
+          setShowNameSuggestions={setShowNameSuggestions}
+          setShowPhoneSuggestions={setShowPhoneSuggestions}
+          selectedClientId={selectedClientId}
+        />
         <ServiceInfoSection formData={formData} setFormData={setFormData} />
         <DateTimeSection
           formData={formData}
@@ -105,6 +238,7 @@ export default function NewAppointmentScreen() {
           formData={formData}
           loading={loading}
           setLoading={setLoading}
+          selectedClientId={selectedClientId}
         />
       </ScrollView>
     </View>
@@ -127,9 +261,21 @@ function NewAppointmentHeader() {
 }
 
 // ============================================================================
-// SECCIÓN:  INFORMACIÓN DEL CLIENTE
+// SECCIÓN:  INFORMACIÓN DEL CLIENTE CON AUTOCOMPLETADO
 // ============================================================================
-function CustomerInfoSection({ formData, setFormData }: any) {
+function CustomerInfoSection({
+  formData,
+  setFormData,
+  searchClientsByName,
+  searchClientsByPhone,
+  clientSuggestions,
+  showNameSuggestions,
+  showPhoneSuggestions,
+  selectClient,
+  setShowNameSuggestions,
+  setShowPhoneSuggestions,
+  selectedClientId,
+}:  any) {
   return (
     <View style={styles.section}>
       <SectionHeader
@@ -138,28 +284,124 @@ function CustomerInfoSection({ formData, setFormData }: any) {
         subtitle="Datos de contacto"
       />
 
-      <Input
-        label="Nombre completo *"
-        placeholder="Ej: Juan Pérez"
-        value={formData.customerName}
-        onChangeText={(text) =>
-          setFormData({ ...formData, customerName: text })
-        }
-      />
+      {selectedClientId && (
+        <View style={styles.existingClientBadge}>
+          <Text style={styles.existingClientText}>✓ Cliente existente</Text>
+        </View>
+      )}
 
-      <Input
-        label="Teléfono *"
-        placeholder="Ej: 351 234 5678"
-        value={formData.customerPhone}
-        onChangeText={(text) =>
-          setFormData({ ... formData, customerPhone: text })
-        }
-        keyboardType="phone-pad"
-      />
+      {/* Campo de nombre con sugerencias */}
+      <View style={styles.inputWithSuggestions}>
+        <Input
+          label="Nombre completo *"
+          placeholder="Ej: Juan Pérez"
+          value={formData.customerName}
+          onChangeText={(text) => {
+            setFormData({ ...formData, customerName: text });
+            searchClientsByName(text);
+            if (selectedClientId) setShowNameSuggestions(false); // No mostrar si ya seleccionó uno
+          }}
+          onFocus={() => {
+            if (formData.customerName.length >= 2 && clientSuggestions.length > 0) {
+              setShowNameSuggestions(true);
+            }
+          }}
+        />
+
+        {showNameSuggestions && clientSuggestions.length > 0 && (
+          <View style={styles.suggestionsContainer}>
+            <Text style={styles.suggestionsTitle}>Clientes encontrados:</Text>
+            <FlatList
+              data={clientSuggestions}
+              keyExtractor={(item) => item.id.toString()}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={styles.suggestionItem}
+                  onPress={() => selectClient(item)}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.suggestionContent}>
+                    <Text style={styles.suggestionName}>{item.name}</Text>
+                    <Text style={styles.suggestionPhone}>{item.phone_number}</Text>
+                    {item.last_appointment_at && (
+                      <Text style={styles.suggestionDate}>
+                        Última cita: {new Date(item.last_appointment_at).toLocaleDateString('es-AR')}
+                      </Text>
+                    )}
+                  </View>
+                  <Text style={styles.suggestionArrow}>→</Text>
+                </TouchableOpacity>
+              )}
+              scrollEnabled={false}
+            />
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => setShowNameSuggestions(false)}
+            >
+              <Text style={styles.closeButtonText}>Cerrar</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+
+      {/* Campo de teléfono con sugerencias */}
+      <View style={styles.inputWithSuggestions}>
+        <Input
+          label="Teléfono *"
+          placeholder="Ej: 351 234 5678"
+          value={formData.customerPhone}
+          onChangeText={(text) => {
+            setFormData({ ...formData, customerPhone: text });
+            searchClientsByPhone(text);
+            if (selectedClientId) setShowPhoneSuggestions(false);
+          }}
+          keyboardType="phone-pad"
+          onFocus={() => {
+            if (formData. customerPhone.length >= 3 && clientSuggestions. length > 0) {
+              setShowPhoneSuggestions(true);
+            }
+          }}
+        />
+
+        {showPhoneSuggestions && clientSuggestions.length > 0 && (
+          <View style={styles.suggestionsContainer}>
+            <Text style={styles.suggestionsTitle}>Clientes encontrados:</Text>
+            <FlatList
+              data={clientSuggestions}
+              keyExtractor={(item) => item.id.toString()}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={styles.suggestionItem}
+                  onPress={() => selectClient(item)}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.suggestionContent}>
+                    <Text style={styles.suggestionName}>{item. name}</Text>
+                    <Text style={styles.suggestionPhone}>{item.phone_number}</Text>
+                    {item. last_appointment_at && (
+                      <Text style={styles. suggestionDate}>
+                        Última cita: {new Date(item.last_appointment_at).toLocaleDateString('es-AR')}
+                      </Text>
+                    )}
+                  </View>
+                  <Text style={styles.suggestionArrow}>→</Text>
+                </TouchableOpacity>
+              )}
+              scrollEnabled={false}
+            />
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => setShowPhoneSuggestions(false)}
+            >
+              <Text style={styles.closeButtonText}>Cerrar</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
 
       <Input
         label="Dirección"
-        placeholder="Ej: Av. Colón 123"
+        placeholder="Ej:  Av. Colón 123"
         value={formData. customerAddress}
         onChangeText={(text) =>
           setFormData({ ...formData, customerAddress: text })
@@ -175,7 +417,7 @@ function CustomerInfoSection({ formData, setFormData }: any) {
 // ============================================================================
 function ServiceInfoSection({ formData, setFormData }: any) {
   const serviceTypes = [
-    { id: "auto", name: "Auto", icon: "🚗" },
+    { id:  "auto", name: "Auto", icon: "🚗" },
     { id: "sillones", name: "Sillones", icon: "🛋️" },
     { id: "sillas", name: "Sillas", icon: "🪑" },
     { id: "alfombra", name: "Alfombra", icon: "🧶" },
@@ -197,7 +439,7 @@ function ServiceInfoSection({ formData, setFormData }: any) {
           <ServiceTypeCard
             key={service.id}
             service={service}
-            selected={formData.service === service.id}
+            selected={formData.service === service. id}
             onSelect={() => {
               setFormData({
                 ...formData,
@@ -210,8 +452,8 @@ function ServiceInfoSection({ formData, setFormData }: any) {
 
       <Input
         label="Cantidad y/o características"
-        placeholder="Ej:  3 sillones de 2 cuerpos, tela clara"
-        value={formData. serviceDetails}
+        placeholder="Ej: 3 sillones de 2 cuerpos, tela clara"
+        value={formData.serviceDetails}
         onChangeText={(text) =>
           setFormData({ ...formData, serviceDetails: text })
         }
@@ -260,12 +502,12 @@ function DateTimeSection({
   setShowDatePicker,
   showTimePicker,
   setShowTimePicker,
-}: any) {
+}:  any) {
   const formatDate = (date: Date) => {
-    return date.toLocaleDateString("es-AR", {
+    return date. toLocaleDateString("es-AR", {
       weekday: "long",
       year: "numeric",
-      month: "long",
+      month:  "long",
       day: "numeric",
     });
   };
@@ -278,11 +520,11 @@ function DateTimeSection({
   };
 
   const durations = [
-    { value:  "30", label: "30 min" },
+    { value: "30", label: "30 min" },
     { value: "60", label: "1 hora" },
-    { value: "90", label: "1. 5 horas" },
-    { value: "120", label:  "2 horas" },
-    { value: "180", label:  "3 horas" },
+    { value: "90", label: "1.5 horas" },
+    { value: "120", label: "2 horas" },
+    { value: "180", label: "3 horas" },
   ];
 
   return (
@@ -293,7 +535,6 @@ function DateTimeSection({
         subtitle="Cuándo se realizará el servicio"
       />
 
-      {/* Fecha */}
       <Text style={styles.label}>Fecha *</Text>
       <TouchableOpacity
         style={styles.dateTimeButton}
@@ -318,7 +559,6 @@ function DateTimeSection({
         />
       )}
 
-      {/* Hora */}
       <Text style={styles.label}>Hora *</Text>
       <TouchableOpacity
         style={styles.dateTimeButton}
@@ -342,7 +582,6 @@ function DateTimeSection({
         />
       )}
 
-      {/* Duración estimada */}
       <Text style={styles.label}>Duración estimada *</Text>
       <View style={styles.durationGrid}>
         {durations.map((duration) => (
@@ -375,7 +614,7 @@ function DateTimeSection({
 }
 
 // ============================================================================
-// SECCIÓN:  ASIGNACIÓN DE TRABAJADOR
+// SECCIÓN: ASIGNACIÓN DE TRABAJADOR
 // ============================================================================
 function WorkerAssignmentSection({ formData, setFormData, workers }: any) {
   const handleSelectWorker = (worker: any) => {
@@ -394,7 +633,7 @@ function WorkerAssignmentSection({ formData, setFormData, workers }: any) {
         subtitle="Selecciona quién realizará el servicio"
       />
 
-      <View style={styles. workersGrid}>
+      <View style={styles.workersGrid}>
         {workers && workers.length > 0 ? (
           workers.map((worker: any) => (
             <WorkerCard
@@ -420,31 +659,36 @@ function WorkerAssignmentSection({ formData, setFormData, workers }: any) {
 }
 
 function WorkerCard({ worker, selected, onSelect }: any) {
+  // Determinar avatar según el nombre
+  const getAvatar = (name: string) => {
+    if (name.toLowerCase().includes("ana") || name.toLowerCase().includes("maría")) {
+      return "👩";
+    }
+    return "👨";
+  };
+
   return (
     <TouchableOpacity
       style={[
         styles.workerCard,
-        selected && styles.workerCardSelected,
-        ! worker.available && styles.workerCardDisabled,
+        selected && styles. workerCardSelected,
       ]}
-      onPress={worker.available ? onSelect : undefined}
+      onPress={onSelect}
       activeOpacity={0.7}
-      disabled={!worker.available}
     >
-      <Text style={styles.workerCardAvatar}>{worker.avatar}</Text>
+      <Text style={styles.workerCardAvatar}>{getAvatar(worker.profile.name)}</Text>
       <View style={styles.workerCardInfo}>
         <Text
           style={[
             styles. workerCardName,
             selected && styles.workerCardNameSelected,
-            !worker.available && styles.workerCardNameDisabled,
           ]}
         >
-          {worker.name}
+          {worker.profile.name}
         </Text>
-        {! worker.available && (
-          <Text style={styles.workerCardStatus}>No disponible</Text>
-        )}
+        <Text style={styles.workerCardCommission}>
+          Comisión: {worker.commission_rate}%
+        </Text>
       </View>
       {selected && (
         <View style={styles.workerCardCheck}>
@@ -484,7 +728,7 @@ function FinancialInfoSection({ formData, setFormData }:  any) {
             setFormData({ ...formData, commissionRate: text })
           }
           keyboardType="numeric"
-          maxLength={3}
+          maxLength={5}
           placeholder="0"
           placeholderTextColor="#9CA3AF"
         />
@@ -494,7 +738,7 @@ function FinancialInfoSection({ formData, setFormData }:  any) {
       {formData.cost && formData.commissionRate && (
         <View style={styles.calculationBox}>
           <View style={styles.calculationRow}>
-            <Text style={styles. calculationLabel}>Monto total: </Text>
+            <Text style={styles.calculationLabel}>Monto total:  </Text>
             <Text style={styles.calculationValue}>
               ${parseFloat(formData.cost || "0").toLocaleString("es-AR")}
             </Text>
@@ -525,7 +769,6 @@ function FinancialInfoSection({ formData, setFormData }:  any) {
   );
 }
 
-// Funciones auxiliares para cálculos
 function calculateWorkerAmount(totalAmount: string, commissionRate: string) {
   const amount = parseFloat(totalAmount) || 0;
   const rate = parseFloat(commissionRate) || 0;
@@ -549,7 +792,7 @@ function calculateBusinessAmount(totalAmount: string, commissionRate: string) {
 // ============================================================================
 // SECCIÓN: BOTONES DE ACCIÓN
 // ============================================================================
-function ActionButtons({ formData, loading, setLoading }: any) {
+function ActionButtons({ formData, loading, setLoading, selectedClientId }: any) {
   const validateForm = () => {
     if (!formData.customerName. trim()) {
       Alert.alert("Error", "El nombre del cliente es requerido");
@@ -559,11 +802,11 @@ function ActionButtons({ formData, loading, setLoading }: any) {
       Alert.alert("Error", "El teléfono del cliente es requerido");
       return false;
     }
-    if (!formData.service) {
+    if (!formData. service) {
       Alert.alert("Error", "Debes seleccionar un tipo de servicio");
       return false;
     }
-    if (! formData.cost || parseFloat(formData.cost) <= 0) {
+    if (!formData.cost || parseFloat(formData.cost) <= 0) {
       Alert.alert("Error", "El monto debe ser mayor a 0");
       return false;
     }
@@ -574,49 +817,92 @@ function ActionButtons({ formData, loading, setLoading }: any) {
     return true;
   };
 
+  const findOrCreateClient = async () => {
+    try {
+      // Si ya seleccionó un cliente existente, retornar ese ID
+      if (selectedClientId) {
+        console.log("📋 Usando cliente existente con ID:", selectedClientId);
+        return selectedClientId;
+      }
+
+      // Mock:  Buscar cliente por teléfono exacto
+      const mockClients = [
+        {
+          id: 1,
+          name: "Juan Pérez",
+          phone_number: "351 234 5678",
+          last_appointment_at: "2024-01-15T10:00:00Z",
+        },
+        {
+          id:  2,
+          name: "María López",
+          phone_number: "351 456 7890",
+          last_appointment_at: "2024-01-10T14:00:00Z",
+        },
+      ];
+
+      const existingClient = mockClients.find(
+        (c) => c.phone_number === formData.customerPhone
+      );
+
+      if (existingClient) {
+        console.log("📋 Cliente encontrado:", existingClient);
+        return existingClient.id;
+      }
+
+      // Si no existe, crear nuevo cliente
+      const newClientId = mockClients.length + 1;
+      const newClient = {
+        id:  newClientId,
+        name:  formData.customerName,
+        phone_number: formData.customerPhone,
+        last_appointment_at: null,
+      };
+
+      console. log("📋 Creando nuevo cliente:", newClient);
+      
+      // Aquí se insertaría en la BD: 
+      // const { data, error } = await supabase. from('clients').insert([newClient]).select().single();
+      
+      return newClientId;
+    } catch (error) {
+      console.error("Error in findOrCreateClient:", error);
+      throw error;
+    }
+  };
+
   const handleSave = async () => {
     if (!validateForm()) return;
 
     setLoading(true);
 
     try {
-      // Combinar fecha y hora en un solo timestamp
+      // 1. Buscar o crear cliente
+      const clientId = await findOrCreateClient();
+
+      // 2. Combinar fecha y hora
       const combinedDate = new Date(formData.date);
       combinedDate.setHours(formData.time.getHours());
       combinedDate.setMinutes(formData.time.getMinutes());
       combinedDate.setSeconds(0);
 
-      // Estructura de datos que se enviará a la BD (actualmente mock)
+      // 3. Estructura de datos que se enviará a la BD
       const appointmentData = {
-        //FK a tablas relacionadas
         admin_id: 1, // ID del admin autenticado (mock)
         worker_id: formData.workerId,
-        client_id: null, // Se asignará después de crear/buscar cliente
-        
-        // Información del cliente (se buscará/creará en tabla clients)
-        client:  {
-          name: formData. customerName,
-          phone: formData.customerPhone,
-          address: formData.customerAddress || null,
-        },
-
-        // Información de la cita
+        client_id: clientId,
         service: formData.service,
         service_details: formData.serviceDetails || null,
         address: formData.customerAddress || null,
-        date:  combinedDate.toISOString(), // timestamp
-        estimate_time: parseInt(formData.estimateTime), // minutos
-        cost: parseFloat(formData.cost), // numeric(10, 2)
-        commission_rate: parseFloat(formData.commissionRate) || 0, // numeric(5, 2)
-        
-        // Estados por defecto
-        status: "pending", // 'pending' | 'in_progress' | 'completed' | 'cancelled'
+        date: combinedDate.toISOString(),
+        estimate_time: parseInt(formData.estimateTime),
+        cost: parseFloat(formData.cost),
+        commission_rate: parseFloat(formData.commissionRate) || 0,
+        status: "pending",
         has_retouches: false,
         paid_to_worker: false,
         payment_method: null,
-        
-        // Timestamps automáticos
-        created_at:  new Date().toISOString(),
+        created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
 
@@ -627,7 +913,7 @@ function ActionButtons({ formData, loading, setLoading }: any) {
 
       Alert.alert("¡Éxito!", "La cita ha sido creada correctamente", [
         {
-          text: "Ver citas",
+          text:  "Ver citas",
           onPress: () => router.replace("/(admin)/(appointments)"),
         },
       ]);
@@ -678,7 +964,7 @@ function SectionHeader({ icon, title, subtitle }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor:  "#F9FAFB",
+    backgroundColor: "#F9FAFB",
   },
   content: {
     flex: 1,
@@ -699,7 +985,7 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   backButtonText: {
-    fontSize:  16,
+    fontSize: 16,
     color: "#3B82F6",
     fontWeight: "600",
   },
@@ -708,7 +994,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#111827",
   },
-  headerSpacer:  {
+  headerSpacer: {
     width: 60,
   },
 
@@ -728,7 +1014,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
   },
-  sectionHeaderIcon:  {
+  sectionHeaderIcon: {
     fontSize: 24,
     marginRight: 12,
   },
@@ -741,6 +1027,96 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#6B7280",
     marginTop:  2,
+  },
+
+  // Existing Client Badge
+  existingClientBadge: {
+    backgroundColor: "#D1FAE5",
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "#10B981",
+  },
+  existingClientText: {
+    color: "#065F46",
+    fontSize: 14,
+    fontWeight: "600",
+    textAlign: "center",
+  },
+
+  // Input with Suggestions
+  inputWithSuggestions: {
+    position: "relative",
+    zIndex: 1,
+  },
+
+  // Suggestions
+  suggestionsContainer: {
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#3B82F6",
+    borderRadius: 12,
+    marginTop: -8,
+    marginBottom: 16,
+    maxHeight: 300,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity:  0.1,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  suggestionsTitle: {
+    fontSize:  13,
+    fontWeight: "600",
+    color: "#3B82F6",
+    padding: 12,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E7EB",
+  },
+  suggestionItem: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F3F4F6",
+  },
+  suggestionContent: {
+    flex: 1,
+  },
+  suggestionName: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#111827",
+    marginBottom: 4,
+  },
+  suggestionPhone: {
+    fontSize: 14,
+    color: "#6B7280",
+    marginBottom: 2,
+  },
+  suggestionDate: {
+    fontSize: 12,
+    color: "#9CA3AF",
+    fontStyle: "italic",
+  },
+  suggestionArrow: {
+    fontSize: 20,
+    color: "#3B82F6",
+    marginLeft: 8,
+  },
+  closeButton: {
+    padding: 12,
+    alignItems: "center",
+    borderTopWidth: 1,
+    borderTopColor: "#E5E7EB",
+  },
+  closeButtonText: {
+    fontSize: 14,
+    color: "#6B7280",
+    fontWeight:  "600",
   },
 
   // Label
@@ -770,7 +1146,7 @@ const styles = StyleSheet.create({
   },
   serviceCardSelected: {
     backgroundColor: "#EFF6FF",
-    borderColor:  "#3B82F6",
+    borderColor: "#3B82F6",
   },
   serviceCardIcon: {
     fontSize: 24,
@@ -813,7 +1189,7 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     gap: 8,
   },
-  durationChip:  {
+  durationChip: {
     paddingHorizontal: 16,
     paddingVertical:  8,
     borderRadius:  20,
@@ -830,7 +1206,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#6B7280",
   },
-  durationChipTextSelected:  {
+  durationChipTextSelected: {
     color: "#FFFFFF",
   },
 
@@ -852,9 +1228,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#EFF6FF",
     borderColor: "#3B82F6",
   },
-  workerCardDisabled: {
-    opacity: 0.5,
-  },
   workerCardAvatar: {
     fontSize: 32,
     marginRight: 12,
@@ -862,21 +1235,19 @@ const styles = StyleSheet.create({
   workerCardInfo: {
     flex:  1,
   },
-  workerCardName:  {
+  workerCardName: {
     fontSize: 16,
     fontWeight: "600",
     color: "#111827",
+    marginBottom: 4,
   },
   workerCardNameSelected: {
     color: "#3B82F6",
   },
-  workerCardNameDisabled: {
-    color:  "#9CA3AF",
-  },
-  workerCardStatus: {
-    fontSize: 12,
-    color: "#EF4444",
-    marginTop: 4,
+  workerCardCommission: {
+    fontSize: 13,
+    color: "#10B981",
+    fontWeight: "500",
   },
   workerCardCheck: {
     width: 24,
@@ -895,7 +1266,7 @@ const styles = StyleSheet.create({
   // Commission
   commissionInputContainer: {
     flexDirection:  "row",
-    alignItems: "center",
+    alignItems:  "center",
     backgroundColor: "#F9FAFB",
     borderRadius: 12,
     borderWidth: 1,
@@ -916,14 +1287,14 @@ const styles = StyleSheet.create({
     color: "#10B981",
   },
   calculationBox: {
-    backgroundColor: "#F0FDF4",
-    borderRadius:  12,
+    backgroundColor:  "#F0FDF4",
+    borderRadius: 12,
     padding: 16,
     borderWidth: 1,
     borderColor: "#86EFAC",
   },
   calculationRow: {
-    flexDirection:  "row",
+    flexDirection: "row",
     justifyContent: "space-between",
     marginBottom: 8,
   },

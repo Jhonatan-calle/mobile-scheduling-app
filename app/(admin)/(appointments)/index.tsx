@@ -23,20 +23,20 @@ export default function AppointmentsScreen() {
   const loadAppointments = async () => {
     try {
       setLoading(true);
-      
-      // Datos mock con la estructura real de la BD
+
+      // Mock: Estructura real con profiles, workers y clients
       const mockAppointments = [
         {
-          id: 1,
+          id:  1,
           admin_id: 1,
           worker_id: 1,
           client_id: 1,
           service: "sillones",
           service_details: "Limpieza de sillón 3 cuerpos",
           address: "Av. Colón 123",
-          date: new Date().toISOString(), // Hoy a las 09:00
-          estimate_time:  120, // minutos
-          cost:  15000,
+          date: new Date().toISOString(),
+          estimate_time: 120,
+          cost: 15000,
           commission_rate:  60,
           status: "pending",
           has_retouches:  false,
@@ -44,18 +44,21 @@ export default function AppointmentsScreen() {
           payment_method: null,
           created_at: new Date().toISOString(),
           updated_at:  new Date().toISOString(),
-          // Datos relacionados (JOIN)
-          client: {
+          // Relaciones (JOINs)
+          client:  {
             id: 1,
-            name:  "Juan Pérez",
-            phone: "351 234 5678",
-            address:  "Av. Colón 123",
+            name: "Juan Pérez",
+            phone_number:  "351 234 5678",
+            last_appointment_at:  "2024-01-15T10:00:00Z",
           },
           worker: {
             id: 1,
-            name: "Carlos González",
-            phone: "351 345 6789",
+            profile_id: 1,
             commission_rate: 60,
+            profile:  {
+              id: 1,
+              name: "Carlos González",
+            },
           },
         },
         {
@@ -73,7 +76,7 @@ export default function AppointmentsScreen() {
           })(),
           estimate_time: 90,
           cost: 12000,
-          commission_rate: 55,
+          commission_rate:  55,
           status: "in_progress",
           has_retouches: false,
           paid_to_worker: false,
@@ -83,14 +86,17 @@ export default function AppointmentsScreen() {
           client: {
             id: 2,
             name: "María López",
-            phone: "351 456 7890",
-            address:  "San Martín 456",
+            phone_number: "351 456 7890",
+            last_appointment_at: "2024-01-10T14:00:00Z",
           },
           worker: {
             id: 2,
-            name: "Ana Martínez",
-            phone: "351 567 8901",
+            profile_id: 2,
             commission_rate: 55,
+            profile: {
+              id:  2,
+              name: "Ana Martínez",
+            },
           },
         },
         {
@@ -101,7 +107,7 @@ export default function AppointmentsScreen() {
           service: "auto",
           service_details: "Limpieza completa de tapizado de auto",
           address: "Belgrano 789",
-          date: (() => {
+          date:  (() => {
             const d = new Date();
             d.setDate(d.getDate() + 1);
             d.setHours(10, 0, 0, 0);
@@ -119,21 +125,24 @@ export default function AppointmentsScreen() {
           client: {
             id: 3,
             name:  "Roberto García",
-            phone: "351 678 9012",
-            address: "Belgrano 789",
+            phone_number: "351 678 9012",
+            last_appointment_at: null,
           },
-          worker: {
+          worker:  {
             id: 1,
-            name: "Carlos González",
-            phone: "351 345 6789",
+            profile_id: 1,
             commission_rate: 60,
+            profile: {
+              id: 1,
+              name: "Carlos González",
+            },
           },
         },
         {
           id: 4,
           admin_id: 1,
           worker_id: 2,
-          client_id: 4,
+          client_id:  4,
           service: "sillas",
           service_details: "6 sillas de comedor",
           address: "Rivadavia 321",
@@ -147,7 +156,7 @@ export default function AppointmentsScreen() {
           cost: 8000,
           commission_rate: 55,
           status: "completed",
-          has_retouches: false,
+          has_retouches:  false,
           paid_to_worker: true,
           payment_method: "efectivo",
           created_at:  new Date().toISOString(),
@@ -155,14 +164,17 @@ export default function AppointmentsScreen() {
           client: {
             id: 4,
             name: "Laura Fernández",
-            phone: "351 789 0123",
-            address: "Rivadavia 321",
+            phone_number:  "351 789 0123",
+            last_appointment_at:  "2023-12-20T16:00:00Z",
           },
           worker: {
             id: 2,
-            name: "Ana Martínez",
-            phone: "351 567 8901",
+            profile_id: 2,
             commission_rate: 55,
+            profile: {
+              id:  2,
+              name: "Ana Martínez",
+            },
           },
         },
       ];
@@ -170,14 +182,14 @@ export default function AppointmentsScreen() {
       // Transformar al formato que espera el componente
       const transformedAppointments = mockAppointments.map((apt) => ({
         id: apt.id. toString(),
-        time: new Date(apt.date).toLocaleTimeString('es-AR', { 
-          hour: '2-digit', 
-          minute: '2-digit' 
+        time: new Date(apt.date).toLocaleTimeString("es-AR", {
+          hour: "2-digit",
+          minute: "2-digit",
         }),
         date: formatDateLabel(new Date(apt.date)),
-        customer: apt.client.name,
+        customer:  apt.client.name,
         service: apt.service_details,
-        worker: apt.worker.name,
+        worker: apt.worker.profile.name, // ← Ahora viene de worker.profile.name
         status: mapStatus(apt.status),
         amount: apt.cost,
         rawDate: new Date(apt.date),
@@ -194,10 +206,10 @@ export default function AppointmentsScreen() {
   const formatDateLabel = (date: Date) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
+
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
-    
+
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
 
@@ -208,37 +220,36 @@ export default function AppointmentsScreen() {
     if (compareDate.getTime() === tomorrow.getTime()) return "Mañana";
     if (compareDate.getTime() === yesterday.getTime()) return "Ayer";
 
-    return date.toLocaleDateString('es-AR', { 
-      day: 'numeric', 
-      month: 'short' 
+    return date.toLocaleDateString("es-AR", {
+      day: "numeric",
+      month:  "short",
     });
   };
 
-  const mapStatus = (status:  string) => {
-    // Mapear estados de BD a estados del componente
+  const mapStatus = (status: string) => {
     const statusMap:  any = {
-      'pending': 'pending',
-      'in_progress': 'in-progress',
-      'completed': 'completed',
-      'cancelled':  'cancelled',
+      pending: "pending",
+      in_progress: "in-progress",
+      completed: "completed",
+      cancelled: "cancelled",
     };
-    return statusMap[status] || 'pending';
+    return statusMap[status] || "pending";
   };
 
   return (
     <View style={styles.container}>
       <AppointmentsHeader />
-      
+
       <ScrollView style={styles. content} showsVerticalScrollIndicator={false}>
-        <SearchAndFilterSection 
+        <SearchAndFilterSection
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
           filter={filter}
           setFilter={setFilter}
           appointments={appointments}
         />
-        <AppointmentsList 
-          filter={filter} 
+        <AppointmentsList
+          filter={filter}
           searchQuery={searchQuery}
           appointments={appointments}
           loading={loading}
@@ -251,7 +262,7 @@ export default function AppointmentsScreen() {
 }
 
 // ============================================================================
-// SECCIÓN: HEADER
+// SECCIÓN:  HEADER
 // ============================================================================
 function AppointmentsHeader() {
   return (
@@ -267,17 +278,23 @@ function AppointmentsHeader() {
 // ============================================================================
 // SECCIÓN: BÚSQUEDA Y FILTROS
 // ============================================================================
-function SearchAndFilterSection({ searchQuery, setSearchQuery, filter, setFilter, appointments }: any) {
+function SearchAndFilterSection({
+  searchQuery,
+  setSearchQuery,
+  filter,
+  setFilter,
+  appointments,
+}: any) {
   const countByStatus = {
     all: appointments.length,
-    pending: appointments.filter((a: any) => a.status === 'pending').length,
-    completed: appointments.filter((a: any) => a.status === 'completed').length,
+    pending: appointments.filter((a: any) => a.status === "pending").length,
+    completed: appointments.filter((a: any) => a.status === "completed")
+      .length,
   };
 
   return (
     <View style={styles.searchSection}>
-      {/* Barra de búsqueda */}
-      <View style={styles. searchBar}>
+      <View style={styles.searchBar}>
         <Text style={styles.searchIcon}>🔍</Text>
         <TextInput
           style={styles. searchInput}
@@ -288,9 +305,8 @@ function SearchAndFilterSection({ searchQuery, setSearchQuery, filter, setFilter
         />
       </View>
 
-      {/* Filtros */}
-      <ScrollView 
-        horizontal 
+      <ScrollView
+        horizontal
         showsHorizontalScrollIndicator={false}
         style={styles.filtersContainer}
       >
@@ -339,7 +355,12 @@ function FilterChip({ label, active, onPress, count, color = "#3B82F6" }: any) {
 // ============================================================================
 // SECCIÓN:  LISTA DE CITAS
 // ============================================================================
-function AppointmentsList({ filter, searchQuery, appointments, loading }: any) {
+function AppointmentsList({
+  filter,
+  searchQuery,
+  appointments,
+  loading,
+}:  any) {
   if (loading) {
     return (
       <View style={styles. loadingContainer}>
@@ -348,11 +369,10 @@ function AppointmentsList({ filter, searchQuery, appointments, loading }: any) {
     );
   }
 
-  // Filtrar citas
-  const filteredAppointments = appointments.filter((apt: any) => {
+  const filteredAppointments = appointments. filter((apt: any) => {
     const matchesFilter =
       filter === "all" ||
-      (filter === "pending" && apt.status === "pending") ||
+      (filter === "pending" && apt. status === "pending") ||
       (filter === "completed" && apt.status === "completed");
 
     const matchesSearch =
@@ -363,26 +383,28 @@ function AppointmentsList({ filter, searchQuery, appointments, loading }: any) {
     return matchesFilter && matchesSearch;
   });
 
-  // Agrupar por fecha
-  const groupedAppointments = filteredAppointments.reduce((groups: any, apt: any) => {
-    const date = apt.date;
-    if (!groups[date]) {
-      groups[date] = [];
-    }
-    groups[date].push(apt);
-    return groups;
-  }, {});
+  const groupedAppointments = filteredAppointments.reduce(
+    (groups: any, apt: any) => {
+      const date = apt.date;
+      if (!groups[date]) {
+        groups[date] = [];
+      }
+      groups[date].push(apt);
+      return groups;
+    },
+    {}
+  );
 
   return (
     <View style={styles.appointmentsList}>
-      {Object. keys(groupedAppointments).length > 0 ? (
+      {Object.keys(groupedAppointments).length > 0 ?  (
         Object.keys(groupedAppointments).map((date) => (
           <View key={date}>
-            <Text style={styles.dateHeader}>{date}</Text>
+            <Text style={styles. dateHeader}>{date}</Text>
             {groupedAppointments[date]. map((apt: any) => (
               <TouchableOpacity
                 key={apt.id}
-                onPress={() => router.push(`/(admin)/appointments/${apt.id}`)}
+                onPress={() => router.push(`/(admin)/(appointments)/${apt.id}`)}
                 activeOpacity={0.7}
               >
                 <AppointmentPreviewCard
@@ -403,12 +425,10 @@ function AppointmentsList({ filter, searchQuery, appointments, loading }: any) {
   );
 }
 
-function EmptyState({ searchQuery }: any) {
+function EmptyState({ searchQuery }:  any) {
   return (
-    <View style={styles. emptyState}>
-      <Text style={styles.emptyIcon}>
-        {searchQuery ? "🔍" : "📭"}
-      </Text>
+    <View style={styles.emptyState}>
+      <Text style={styles.emptyIcon}>{searchQuery ? "🔍" : "📭"}</Text>
       <Text style={styles.emptyTitle}>
         {searchQuery ? "No se encontraron resultados" : "No hay citas"}
       </Text>
@@ -441,19 +461,18 @@ function FloatingAddButton() {
 // ============================================================================
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flex:  1,
     backgroundColor: "#F9FAFB",
   },
   content: {
     flex: 1,
   },
 
-  // Header
   header: {
     padding: 24,
     paddingTop: 60,
     backgroundColor: "#FFFFFF",
-    borderBottomWidth:  1,
+    borderBottomWidth: 1,
     borderBottomColor: "#E5E7EB",
   },
   headerTitle: {
@@ -462,12 +481,11 @@ const styles = StyleSheet.create({
     color: "#111827",
   },
   headerSubtitle: {
-    fontSize:  14,
-    color: "#6B7280",
-    marginTop:  4,
+    fontSize: 14,
+    color:  "#6B7280",
+    marginTop: 4,
   },
 
-  // Search Section
   searchSection: {
     padding: 16,
     backgroundColor:  "#FFFFFF",
@@ -492,28 +510,26 @@ const styles = StyleSheet.create({
     color: "#111827",
   },
 
-  // Filters
   filtersContainer: {
     flexDirection: "row",
   },
   filterChip: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
+    paddingHorizontal:  16,
+    paddingVertical:  8,
+    borderRadius:  20,
     backgroundColor: "#F3F4F6",
     borderWidth: 1,
     borderColor: "#E5E7EB",
     marginRight: 8,
   },
-  filterChipText:  {
+  filterChipText: {
     fontSize: 14,
     fontWeight: "600",
     color: "#6B7280",
   },
 
-  // Appointments List
   appointmentsList: {
-    padding: 16,
+    padding:  16,
   },
   dateHeader: {
     fontSize: 16,
@@ -523,7 +539,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
 
-  // Loading
   loadingContainer: {
     padding: 32,
     alignItems: "center",
@@ -533,7 +548,6 @@ const styles = StyleSheet.create({
     color: "#6B7280",
   },
 
-  // Empty State
   emptyState: {
     alignItems: "center",
     justifyContent: "center",
@@ -555,7 +569,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 
-  // FAB
   fab: {
     position: "absolute",
     right: 24,
