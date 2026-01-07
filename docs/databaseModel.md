@@ -7,6 +7,7 @@ erDiagram
 
     WORKERS {
         int id PK
+        int profile_id FK
         decimal commission_rate
     }
 
@@ -31,13 +32,17 @@ erDiagram
 
     APPOINTMENTS {
         int id PK
-        datetime time
+        datetime date
         string address
         int admin_id FK
         int worker_id FK
         int client_id FK
         int estimate_time
+        string service
+        string service_details
+        boolean paidToWorker
         decimal commission_rate
+        string payment_method
         decimal cost
         string status
         boolean has_retouches
