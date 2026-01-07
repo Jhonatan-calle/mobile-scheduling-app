@@ -6,12 +6,18 @@ interface AppointmentPreviewCardProps {
   service: string;
   worker: string;
   status: "pending" | "in-progress" | "completed";
+  paymentMethod?: string;
 }
 
 const statusConfig = {
-  pending: { label: 'Pendiente', color: '#F59E0B', icon: '⏳' },
-  'in-progress': { label: 'En curso', color: '#3B82F6', icon: '🔄' },
-  completed: { label: 'Completada', color: '#10B981', icon: '✅' },
+  pending: { label: "Pendiente", color: "#F59E0B", icon: "⏳" },
+  "in-progress": { label: "En curso", color: "#3B82F6", icon: "🔄" },
+  completed: { label: "Completada", color: "#10B981", icon: "✅" },
+};
+
+const paymentMethodIcons:  any = {
+  cash: '💵',
+  transfer: '🏦',
 };
 
 export default function AppointmentPreviewCard({ 
@@ -19,7 +25,8 @@ export default function AppointmentPreviewCard({
   customer, 
   service, 
   worker, 
-  status 
+  status,
+  paymentMethod, // ← NUEVO
 }: AppointmentPreviewCardProps) {
   const config = statusConfig[status];
 
@@ -27,6 +34,12 @@ export default function AppointmentPreviewCard({
     <View style={styles.appointmentCard}>
       <View style={styles.appointmentTime}>
         <Text style={styles.appointmentTimeText}>{time}</Text>
+        {/* NUEVO: Mostrar icono de método de pago */}
+        {paymentMethod && (
+          <Text style={styles.paymentMethodIcon}>
+            {paymentMethodIcons[paymentMethod]}
+          </Text>
+        )}
       </View>
       <View style={styles.appointmentInfo}>
         <Text style={styles.appointmentCustomer}>{customer}</Text>
@@ -41,6 +54,10 @@ export default function AppointmentPreviewCard({
 }
 
 const styles = StyleSheet.create({
+  paymentMethodIcon: {
+    fontSize: 12,
+    marginTop: 4,
+  },
   appointmentCard: {
     flexDirection: "row",
     backgroundColor: "#FFFFFF",
@@ -59,14 +76,14 @@ const styles = StyleSheet.create({
     marginRight: 16,
   },
   appointmentTimeText: {
-    fontSize:  16,
+    fontSize: 16,
     fontWeight: "bold",
     color: "#3B82F6",
   },
   appointmentInfo: {
     flex: 1,
   },
-  appointmentCustomer:  {
+  appointmentCustomer: {
     fontSize: 15,
     fontWeight: "600",
     color: "#111827",
@@ -78,7 +95,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   appointmentWorker: {
-    fontSize:  12,
+    fontSize: 12,
     color: "#9CA3AF",
   },
   appointmentStatus: {

@@ -148,6 +148,7 @@ function AppointmentsList({ filter, searchQuery }:  any) {
       worker: "Carlos González",
       status: "pending" as const,
       amount:  25000,
+      paymentMethod: "transfer",
     },
     {
       id: "4",
@@ -158,6 +159,7 @@ function AppointmentsList({ filter, searchQuery }:  any) {
       worker: "Ana Martínez",
       status: "completed" as const,
       amount: 8000,
+      paymentMethod: "cash",
     },
   ];
 
@@ -195,7 +197,7 @@ function AppointmentsList({ filter, searchQuery }:  any) {
             {groupedAppointments[date]. map((apt:  any) => (
               <TouchableOpacity
                 key={apt.id}
-                onPress={() => router.push(`/(admin)/appointments/${apt.id}`)}
+                onPress={() => router.push(`/(admin)/(appointments)/${apt.id}`)}
                 activeOpacity={0.7}
               >
                 <AppointmentPreviewCard
@@ -204,6 +206,7 @@ function AppointmentsList({ filter, searchQuery }:  any) {
                   service={apt.service}
                   worker={apt.worker}
                   status={apt.status}
+                  paymentMethod={apt.paymentMethod}
                 />
               </TouchableOpacity>
             ))}
