@@ -30,7 +30,7 @@ export default function AdminLayout() {
         }}
       />
       <Tabs.Screen
-        name="appointments"
+        name="(appointments)"
         options={{
           title: "Citas",
           tabBarIcon: ({ color }) => <TabIcon emoji="📅" color={color} />,

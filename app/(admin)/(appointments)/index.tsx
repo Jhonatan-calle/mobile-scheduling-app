@@ -8,7 +8,7 @@ import {
 } from "react-native";
 import { router } from "expo-router";
 import { useState } from "react";
-import { AppointmentPreviewCard } from "../../components/admin/dashboard";
+import { AppointmentPreviewCard } from "../../../components/admin/dashboard";
 
 export default function AppointmentsScreen() {
   const [filter, setFilter] = useState<"all" | "pending" | "completed">("all");
@@ -241,7 +241,7 @@ function FloatingAddButton() {
   return (
     <TouchableOpacity
       style={styles.fab}
-      onPress={() => router.push("/(admin)/appointments/new")}
+      onPress={() => router.push("/(admin)/(appointments)/new")}
       activeOpacity={0.8}
     >
       <Text style={styles.fabIcon}>+</Text>
