@@ -5,6 +5,7 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
+  Platform,
 } from "react-native";
 import { router } from "expo-router";
 import { useState, useEffect } from "react";
@@ -12,8 +13,10 @@ import { AppointmentPreviewCard } from "../../../components/admin/dashboard";
 
 export default function AppointmentsScreen() {
   const [filter, setFilter] = useState<"all" | "pending" | "completed">("all");
+  const [timeFilter, setTimeFilter] = useState<"upcoming" | "past" | "all">("upcoming"); // ← NUEVO
   const [searchQuery, setSearchQuery] = useState("");
-  const [items, setItems] = useState<any[]>([]); // ← Cambiado de appointments a items
+  const [searchType, setSearchType] = useState<"general" | "date">("general"); // ← NUEVO
+  const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -31,7 +34,7 @@ export default function AppointmentsScreen() {
           admin_id: 1,
           worker_id: 1,
           client_id: 1,
-          service: "sillones",
+          service:  "sillones",
           service_details: "Limpieza de sillón 3 cuerpos",
           address: "Av. Colón 123",
           date: new Date().toISOString(),
@@ -46,12 +49,12 @@ export default function AppointmentsScreen() {
           updated_at: new Date().toISOString(),
           client:  {
             id: 1,
-            name: "Juan Pérez",
+            name:  "Juan Pérez",
             phone_number: "351 234 5678",
             last_appointment_at: "2024-01-15T10:00:00Z",
           },
           worker: {
-            id: 1,
+            id:  1,
             profile_id: 1,
             commission_rate: 60,
             profile:  {
@@ -61,11 +64,11 @@ export default function AppointmentsScreen() {
           },
         },
         {
-          id:  2,
+          id: 2,
           admin_id: 1,
-          worker_id: 2,
+          worker_id:  2,
           client_id: 2,
-          service: "alfombra",
+          service:  "alfombra",
           service_details: "Limpieza de alfombra persa grande",
           address: "San Martín 456",
           date: (() => {
@@ -120,10 +123,10 @@ export default function AppointmentsScreen() {
           paid_to_worker: false,
           payment_method: null,
           created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
+          updated_at:  new Date().toISOString(),
           client: {
-            id:  3,
-            name: "Roberto García",
+            id: 3,
+            name:  "Roberto García",
             phone_number: "351 678 9012",
             last_appointment_at: null,
           },
@@ -155,7 +158,7 @@ export default function AppointmentsScreen() {
           cost: 8000,
           commission_rate: 55,
           status: "completed",
-          has_retouches:  false,
+          has_retouches: false,
           paid_to_worker: true,
           payment_method: "efectivo",
           created_at:  new Date().toISOString(),
@@ -163,7 +166,7 @@ export default function AppointmentsScreen() {
           client: {
             id: 4,
             name: "Laura Fernández",
-            phone_number:  "351 789 0123",
+            phone_number: "351 789 0123",
             last_appointment_at: "2023-12-20T16:00:00Z",
           },
           worker: {
@@ -176,6 +179,45 @@ export default function AppointmentsScreen() {
             },
           },
         },
+        {
+          id: 5,
+          admin_id: 1,
+          worker_id: 1,
+          client_id: 1,
+          service: "cortinas",
+          service_details: "Limpieza de cortinas blackout",
+          address: "Av. Colón 123",
+          date: (() => {
+            const d = new Date();
+            d.setDate(d.getDate() - 7);
+            d.setHours(10, 0, 0, 0);
+            return d.toISOString();
+          })(),
+          estimate_time: 90,
+          cost: 10000,
+          commission_rate:  60,
+          status: "completed",
+          has_retouches: false,
+          paid_to_worker: true,
+          payment_method: "transferencia",
+          created_at:  new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          client: {
+            id: 1,
+            name: "Juan Pérez",
+            phone_number: "351 234 5678",
+            last_appointment_at: "2024-01-15T10:00:00Z",
+          },
+          worker:  {
+            id: 1,
+            profile_id: 1,
+            commission_rate: 60,
+            profile: {
+              id: 1,
+              name: "Carlos González",
+            },
+          },
+        },
       ];
 
       // Mock:  Estructura de retouches (repasos)
@@ -184,7 +226,7 @@ export default function AppointmentsScreen() {
           id: 1,
           appointment_id: 1,
           worker_id: 1,
-          time:  (() => {
+          time: (() => {
             const d = new Date();
             d.setHours(11, 30, 0, 0);
             return d.toISOString();
@@ -194,7 +236,6 @@ export default function AppointmentsScreen() {
           estimate_time: 60,
           status: "pending",
           created_at: new Date().toISOString(),
-          // Relaciones
           appointment: {
             id: 1,
             client:  {
@@ -205,7 +246,7 @@ export default function AppointmentsScreen() {
           },
           worker: {
             id: 1,
-            profile:  {
+            profile: {
               id: 1,
               name: "Carlos González",
             },
@@ -227,7 +268,7 @@ export default function AppointmentsScreen() {
           status: "pending",
           created_at: new Date().toISOString(),
           appointment: {
-            id: 4,
+            id:  4,
             client: {
               id: 4,
               name: "Laura Fernández",
@@ -247,12 +288,13 @@ export default function AppointmentsScreen() {
       // Transformar appointments
       const transformedAppointments = mockAppointments.map((apt) => ({
         id: apt.id. toString(),
-        type: "appointment", // ← NUEVO:  identificador de tipo
+        type: "appointment",
         time: new Date(apt.date).toLocaleTimeString("es-AR", {
           hour: "2-digit",
           minute: "2-digit",
         }),
         date: formatDateLabel(new Date(apt.date)),
+        dateForSearch: new Date(apt.date).toLocaleDateString("es-AR"), // ← NUEVO para búsqueda
         customer: apt.client.name,
         service: apt.service_details,
         worker: apt.worker.profile.name,
@@ -264,19 +306,20 @@ export default function AppointmentsScreen() {
       // Transformar retouches
       const transformedRetouches = mockRetouches.map((retouch) => ({
         id: retouch.id.toString(),
-        type: "retouch", // ← NUEVO: identificador de tipo
+        type: "retouch",
         time: new Date(retouch.time).toLocaleTimeString("es-AR", {
           hour: "2-digit",
           minute: "2-digit",
         }),
         date: formatDateLabel(new Date(retouch.time)),
+        dateForSearch: new Date(retouch.time).toLocaleDateString("es-AR"), // ← NUEVO
         customer: retouch.appointment.client.name,
-        service: `🔄 Repaso:  ${retouch.appointment.service_details}`, // ← Indicador visual
+        service: `🔄 Repaso:  ${retouch.appointment.service_details}`,
         worker: retouch.worker.profile.name,
         status: mapStatus(retouch. status),
-        amount: 0, // Los repasos no tienen costo
+        amount: 0,
         rawDate: new Date(retouch.time),
-        reason: retouch.reason, // Info adicional
+        reason: retouch.reason,
       }));
 
       // Combinar y ordenar por fecha
@@ -292,7 +335,7 @@ export default function AppointmentsScreen() {
     }
   };
 
-  const formatDateLabel = (date:  Date) => {
+  const formatDateLabel = (date: Date) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -333,13 +376,19 @@ export default function AppointmentsScreen() {
         <SearchAndFilterSection
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
+          searchType={searchType}
+          setSearchType={setSearchType}
           filter={filter}
           setFilter={setFilter}
+          timeFilter={timeFilter}
+          setTimeFilter={setTimeFilter}
           items={items}
         />
         <ItemsList
           filter={filter}
+          timeFilter={timeFilter}
           searchQuery={searchQuery}
+          searchType={searchType}
           items={items}
           loading={loading}
         />
@@ -357,7 +406,7 @@ function AppointmentsHeader() {
   return (
     <View style={styles.header}>
       <View>
-        <Text style={styles. headerTitle}>Turnos y Repasos</Text>
+        <Text style={styles. headerTitle}>Citas y Repasos</Text>
         <Text style={styles.headerSubtitle}>Gestiona tus servicios</Text>
       </View>
     </View>
@@ -370,36 +419,137 @@ function AppointmentsHeader() {
 function SearchAndFilterSection({
   searchQuery,
   setSearchQuery,
+  searchType,
+  setSearchType,
   filter,
   setFilter,
+  timeFilter,
+  setTimeFilter,
   items,
 }: any) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const upcomingItems = items.filter((item:  any) => item.rawDate >= today);
+  const pastItems = items.filter((item: any) => item.rawDate < today);
+
   const countByStatus = {
     all: items.length,
     pending: items.filter((a: any) => a.status === "pending").length,
     completed: items.filter((a: any) => a.status === "completed").length,
   };
 
+  const countByTime = {
+    all: items. length,
+    upcoming: upcomingItems.length,
+    past: pastItems.length,
+  };
+
   return (
     <View style={styles.searchSection}>
-      <View style={styles.searchBar}>
+      {/* Barra de búsqueda */}
+      <View style={styles. searchBar}>
         <Text style={styles.searchIcon}>🔍</Text>
         <TextInput
           style={styles. searchInput}
-          placeholder="Buscar por cliente, servicio..."
+          placeholder={
+            searchType === "general"
+              ? "Buscar por cliente, servicio..."
+              : "Buscar por fecha (ej: 15/1 o Hoy)"
+          }
           value={searchQuery}
           onChangeText={setSearchQuery}
           placeholderTextColor="#9CA3AF"
         />
+        {searchQuery !== "" && (
+          <TouchableOpacity onPress={() => setSearchQuery("")}>
+            <Text style={styles. clearIcon}>✕</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
+      {/* Selector de tipo de búsqueda */}
+      <View style={styles.searchTypeSelector}>
+        <TouchableOpacity
+          style={[
+            styles.searchTypeButton,
+            searchType === "general" && styles.searchTypeButtonActive,
+          ]}
+          onPress={() => {
+            setSearchType("general");
+            setSearchQuery("");
+          }}
+          activeOpacity={0.7}
+        >
+          <Text
+            style={[
+              styles. searchTypeText,
+              searchType === "general" && styles.searchTypeTextActive,
+            ]}
+          >
+            👤 Cliente/Servicio
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles. searchTypeButton,
+            searchType === "date" && styles.searchTypeButtonActive,
+          ]}
+          onPress={() => {
+            setSearchType("date");
+            setSearchQuery("");
+          }}
+          activeOpacity={0.7}
+        >
+          <Text
+            style={[
+              styles.searchTypeText,
+              searchType === "date" && styles.searchTypeTextActive,
+            ]}
+          >
+            📅 Fecha
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Filtros de tiempo */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
         style={styles.filtersContainer}
       >
         <FilterChip
+          label="Próximas"
+          active={timeFilter === "upcoming"}
+          onPress={() => setTimeFilter("upcoming")}
+          count={countByTime.upcoming}
+          color="#3B82F6"
+        />
+        <FilterChip
+          label="Pasadas"
+          active={timeFilter === "past"}
+          onPress={() => setTimeFilter("past")}
+          count={countByTime. past}
+          color="#6B7280"
+        />
+        <FilterChip
           label="Todas"
+          active={timeFilter === "all"}
+          onPress={() => setTimeFilter("all")}
+          count={countByTime. all}
+          color="#8B5CF6"
+        />
+      </ScrollView>
+
+      {/* Filtros de estado */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.filtersContainer}
+      >
+        <FilterChip
+          label="Todos los estados"
           active={filter === "all"}
           onPress={() => setFilter("all")}
           count={countByStatus.all}
@@ -443,7 +593,14 @@ function FilterChip({ label, active, onPress, count, color = "#3B82F6" }: any) {
 // ============================================================================
 // SECCIÓN:  LISTA DE ITEMS (Appointments + Retouches)
 // ============================================================================
-function ItemsList({ filter, searchQuery, items, loading }: any) {
+function ItemsList({
+  filter,
+  timeFilter,
+  searchQuery,
+  searchType,
+  items,
+  loading,
+}: any) {
   if (loading) {
     return (
       <View style={styles. loadingContainer}>
@@ -452,18 +609,49 @@ function ItemsList({ filter, searchQuery, items, loading }: any) {
     );
   }
 
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
   const filteredItems = items.filter((item: any) => {
+    // Filtro de estado
     const matchesFilter =
       filter === "all" ||
       (filter === "pending" && item. status === "pending") ||
       (filter === "completed" && item.status === "completed");
 
-    const matchesSearch =
-      searchQuery === "" ||
-      item.customer.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.service.toLowerCase().includes(searchQuery.toLowerCase());
+    // Filtro de tiempo (próximas/pasadas)
+    const matchesTimeFilter =
+      timeFilter === "all" ||
+      (timeFilter === "upcoming" && item.rawDate >= today) ||
+      (timeFilter === "past" && item. rawDate < today);
 
-    return matchesFilter && matchesSearch;
+    // Búsqueda
+    let matchesSearch = true;
+    if (searchQuery !== "") {
+      if (searchType === "general") {
+        // Búsqueda por cliente o servicio
+        matchesSearch =
+          item.customer. toLowerCase().includes(searchQuery.toLowerCase()) ||
+          item.service.toLowerCase().includes(searchQuery.toLowerCase());
+      } else if (searchType === "date") {
+        // Búsqueda por fecha
+        const searchLower = searchQuery.toLowerCase();
+        
+        // Permitir búsqueda por "hoy", "mañana", "ayer"
+        if (searchLower.includes("hoy") || searchLower.includes("today")) {
+          matchesSearch = item.date === "Hoy";
+        } else if (searchLower.includes("mañana") || searchLower.includes("tomorrow")) {
+          matchesSearch = item.date === "Mañana";
+        } else if (searchLower. includes("ayer") || searchLower.includes("yesterday")) {
+          matchesSearch = item.date === "Ayer";
+        } else {
+          // Búsqueda por fecha numérica
+          matchesSearch = item.dateForSearch. includes(searchQuery);
+        }
+      }
+    }
+
+    return matchesFilter && matchesTimeFilter && matchesSearch;
   });
 
   const groupedItems = filteredItems.reduce((groups: any, item: any) => {
@@ -475,21 +663,33 @@ function ItemsList({ filter, searchQuery, items, loading }: any) {
     return groups;
   }, {});
 
+  // Ordenar las fechas para mostrar próximas primero si timeFilter = "upcoming"
+  const sortedDates = Object.keys(groupedItems).sort((a, b) => {
+    const dateA = groupedItems[a][0].rawDate;
+    const dateB = groupedItems[b][0].rawDate;
+    
+    if (timeFilter === "upcoming") {
+      return dateA - dateB; // Ascendente (más cercanas primero)
+    } else if (timeFilter === "past") {
+      return dateB - dateA; // Descendente (más recientes primero)
+    }
+    return dateA - dateB; // Por defecto ascendente
+  });
+
   return (
     <View style={styles.appointmentsList}>
-      {Object.keys(groupedItems).length > 0 ? (
-        Object.keys(groupedItems).map((date) => (
+      {sortedDates.length > 0 ? (
+        sortedDates.map((date) => (
           <View key={date}>
             <Text style={styles.dateHeader}>{date}</Text>
-            {groupedItems[date].map((item: any) => (
+            {groupedItems[date].map((item:  any) => (
               <TouchableOpacity
                 key={`${item.type}-${item.id}`}
                 onPress={() => {
-                  // ← AQUÍ LA LÓGICA DE NAVEGACIÓN
                   if (item.type === "appointment") {
                     router.push(`/admin/appointments/${item.id}`);
                   } else if (item.type === "retouch") {
-                    router.push(`/admin/appointments/retouches/${item.id}`);
+                    router. push(`/admin/appointments/retouches/${item.id}`);
                   }
                 }}
                 activeOpacity={0.7}
@@ -506,23 +706,25 @@ function ItemsList({ filter, searchQuery, items, loading }: any) {
           </View>
         ))
       ) : (
-        <EmptyState searchQuery={searchQuery} />
+        <EmptyState searchQuery={searchQuery} searchType={searchType} />
       )}
     </View>
   );
 }
 
-function EmptyState({ searchQuery }: any) {
+function EmptyState({ searchQuery, searchType }: any) {
   return (
     <View style={styles.emptyState}>
-      <Text style={styles.emptyIcon}>{searchQuery ? "🔍" : "📭"}</Text>
+      <Text style={styles.emptyIcon}>{searchQuery ?  "🔍" : "📭"}</Text>
       <Text style={styles.emptyTitle}>
-        {searchQuery ? "No se encontraron resultados" : "No hay turnos"}
+        {searchQuery ?  "No se encontraron resultados" : "No hay citas"}
       </Text>
       <Text style={styles.emptyText}>
         {searchQuery
-          ? "Intenta con otros términos de búsqueda"
-          : "Crea tu primera turno para comenzar"}
+          ? searchType === "date"
+            ? "Intenta con otra fecha (ej: 15/1, Hoy, Mañana)"
+            : "Intenta con otros términos de búsqueda"
+          : "Crea tu primera cita para comenzar"}
       </Text>
     </View>
   );
@@ -548,7 +750,7 @@ function FloatingAddButton() {
 // ============================================================================
 const styles = StyleSheet.create({
   container: {
-    flex:  1,
+    flex: 1,
     backgroundColor: "#F9FAFB",
   },
   content: {
@@ -558,7 +760,7 @@ const styles = StyleSheet.create({
   header: {
     padding: 24,
     paddingTop: 60,
-    backgroundColor:  "#FFFFFF",
+    backgroundColor: "#FFFFFF",
     borderBottomWidth: 1,
     borderBottomColor: "#E5E7EB",
   },
@@ -570,7 +772,7 @@ const styles = StyleSheet.create({
   headerSubtitle: {
     fontSize: 14,
     color: "#6B7280",
-    marginTop: 4,
+    marginTop:  4,
   },
 
   searchSection: {
@@ -584,41 +786,76 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#F9FAFB",
     borderRadius: 12,
-    padding:  12,
-    marginBottom:  12,
+    padding: 12,
+    marginBottom: 12,
   },
   searchIcon: {
-    fontSize:  20,
-    marginRight:  8,
+    fontSize: 20,
+    marginRight: 8,
   },
   searchInput: {
-    flex:  1,
+    flex: 1,
     fontSize: 16,
     color: "#111827",
+  },
+  clearIcon: {
+    fontSize: 18,
+    color: "#9CA3AF",
+    paddingHorizontal: 8,
+  },
+
+  // Selector de tipo de búsqueda
+  searchTypeSelector: {
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 12,
+  },
+  searchTypeButton: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    backgroundColor: "#F3F4F6",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+  searchTypeButtonActive:  {
+    backgroundColor: "#DBEAFE",
+    borderColor:  "#3B82F6",
+  },
+  searchTypeText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#6B7280",
+  },
+  searchTypeTextActive: {
+    color: "#3B82F6",
   },
 
   filtersContainer: {
     flexDirection: "row",
+    marginBottom: 8,
   },
   filterChip: {
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
+    paddingVertical:  8,
+    borderRadius:  20,
     backgroundColor: "#F3F4F6",
     borderWidth: 1,
     borderColor: "#E5E7EB",
     marginRight: 8,
   },
-  filterChipText: {
+  filterChipText:  {
     fontSize: 14,
     fontWeight: "600",
     color: "#6B7280",
   },
 
-  appointmentsList:  {
+  appointmentsList: {
     padding: 16,
   },
-  dateHeader:  {
+  dateHeader: {
     fontSize: 16,
     fontWeight: "bold",
     color: "#111827",
@@ -645,21 +882,22 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   emptyTitle: {
-    fontSize:  18,
-    fontWeight:  "bold",
+    fontSize: 18,
+    fontWeight: "bold",
     color: "#111827",
-    marginBottom:  8,
+    marginBottom: 8,
   },
   emptyText: {
     fontSize: 14,
-    color:  "#6B7280",
+    color: "#6B7280",
     textAlign: "center",
+    paddingHorizontal: 32,
   },
 
-  fab: {
+  fab:  {
     position: "absolute",
     right: 24,
-    bottom:  24,
+    bottom: 24,
     width: 60,
     height: 60,
     borderRadius: 30,
@@ -672,8 +910,8 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 8,
   },
-  fabIcon:  {
-    fontSize: 32,
+  fabIcon: {
+    fontSize:  32,
     color: "#FFFFFF",
     fontWeight: "300",
   },
