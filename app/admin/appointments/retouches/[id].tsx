@@ -111,10 +111,20 @@ function RetouchHeader({ retouchId }: { retouchId: string }) {
   return (
     <View style={styles.header}>
       <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-        <Text style={styles.backButtonText}>← Volver</Text>
+        <Text style={styles.backIcon}>←</Text>
       </TouchableOpacity>
-      <Text style={styles.headerTitle}>Retoque #{retouchId}</Text>
-      <View style={styles.headerSpacer} />
+      <View style={styles.headerContent}>
+        <Text style={styles.headerTitle}>Repaso #{retouchId}</Text>
+        <Text style={styles.headerSubtitle}>Detalles del servicio</Text>
+      </View>
+      {/* ← NUEVO:  Botón de editar */}
+      <TouchableOpacity
+        style={styles.editButton}
+        onPress={() => router.push(`/admin/appointments/retouches/edit/${retouchId}`)}
+        activeOpacity={0.7}
+      >
+        <Text style={styles.editButtonText}>✏️</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -368,6 +378,25 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     borderBottomWidth: 1,
     borderBottomColor: "#E5E7EB",
+  },
+  editButton: {
+    width: 40,
+    height:  40,
+    borderRadius:  20,
+    backgroundColor: "#3B82F6",
+    justifyContent: "center",
+    alignItems: "center",
+    marginLeft: 8,
+  },
+  editButtonText: {
+    fontSize: 20,
+  },
+  backIcon: {
+    fontSize: 24,
+    color: "#111827",
+  },
+  headerContent: {
+    flex: 1,
   },
   backButton: {
     padding: 8,
