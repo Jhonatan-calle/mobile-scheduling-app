@@ -32,14 +32,14 @@ export default function AdminLayout() {
       <Tabs.Screen
         name="appointments"
         options={{
-          title: "Citas",
+          title: "Turnos",
           tabBarIcon: ({ color }) => <TabIcon emoji="📅" color={color} />,
         }}
       />
       <Tabs.Screen
-        name="workers"
+        name="availability"
         options={{
-          title: "Trabajadores",
+          title: "Disponibilidad",
           tabBarIcon: ({ color }) => <TabIcon emoji="👥" color={color} />,
         }}
       />
