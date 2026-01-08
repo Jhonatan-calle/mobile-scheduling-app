@@ -129,9 +129,8 @@ function AppointmentDetailHeader({ appointmentId }: { appointmentId: string }) {
       <Text style={styles.headerTitle}>Cita #{appointmentId}</Text>
       <TouchableOpacity
         style={styles.editButton}
-        onPress={() =>
-          Alert.alert("Editar", "Funcionalidad disponible próximamente")
-        }
+        onPress={() => router.push(`/admin/appointments/edit/${appointmentId}`)}
+        activeOpacity={0.7}
       >
         <Text style={styles.editButtonText}>✏️</Text>
       </TouchableOpacity>
