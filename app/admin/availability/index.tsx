@@ -14,16 +14,53 @@ export default function AvailabilityScreen() {
   const [availabilityData, setAvailabilityData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedSlots, setSelectedSlots] = useState<string[]>([]);
+  const [workers, setWorkers] = useState<any[]>([]); // ← NUEVO
 
   useEffect(() => {
+    loadWorkers(); // ← NUEVO
     loadAvailability();
   }, []);
+
+  // ← NUEVO:  Cargar trabajadores
+  const loadWorkers = async () => {
+    try {
+      // Mock:  workers con disponibilidad configurada
+      const mockWorkers = [
+        {
+          id: 1,
+          profile: { name: "Carlos González" },
+          availability: [
+            { day: 1, start: "08:00", end: "20:00" }, // Lunes
+            { day: 2, start: "08:00", end:  "20:00" }, // Martes
+            { day: 3, start: "08:00", end: "20:00" }, // Miércoles
+            { day: 4, start:  "08:00", end: "20:00" }, // Jueves
+            { day: 5, start: "08:00", end: "20:00" }, // Viernes
+            { day: 6, start: "09:00", end: "14:00" }, // Sábado
+          ],
+        },
+        {
+          id:  2,
+          profile: { name: "Ana Martínez" },
+          availability: [
+            { day: 1, start: "09:00", end: "18:00" },
+            { day: 2, start: "09:00", end: "18:00" },
+            { day: 3, start: "09:00", end:  "18:00" },
+            { day: 4, start:  "09:00", end: "18:00" },
+            { day: 5, start: "09:00", end: "18:00" },
+          ],
+        },
+      ];
+
+      setWorkers(mockWorkers);
+    } catch (error) {
+      console.error("Error loading workers:", error);
+    }
+  };
 
   const loadAvailability = async () => {
     try {
       setLoading(true);
 
-      // Generar los próximos 7 días
       const days = [];
       const today = new Date();
 
@@ -31,10 +68,7 @@ export default function AvailabilityScreen() {
         const date = new Date(today);
         date.setDate(date.getDate() + i);
         
-        // Mock:  Obtener citas del día
         const appointments = await getAppointmentsForDate(date);
-        
-        // Generar slots disponibles (8: 00 - 20:00)
         const slots = generateAvailableSlots(date, appointments);
         
         days.push({
@@ -56,51 +90,93 @@ export default function AvailabilityScreen() {
   };
 
   const getAppointmentsForDate = async (date: Date) => {
-    // Mock:  Simular citas existentes
     const dayOfWeek = date.getDay();
     
-    // Más citas en días laborales
-    if (dayOfWeek === 0 || dayOfWeek === 6) {
-      return []; // Fin de semana sin citas
+    if (dayOfWeek === 0) {
+      return []; // Domingo cerrado
     }
 
+    // Mock: citas existentes
     return [
-      { time: "09:00", duration: 120 },
-      { time: "14:00", duration: 90 },
-      { time: "17:00", duration: 60 },
+      { time: "09:00", duration: 120, worker_id: 1 },
+      { time: "14:00", duration: 90, worker_id: 1 },
+      { time: "10:00", duration: 60, worker_id: 2 },
     ];
   };
 
+  // ← MODIFICADO: Generar slots considerando disponibilidad de trabajadores
   const generateAvailableSlots = (date: Date, appointments: any[]) => {
-    const slots = [];
-    const workStart = 8;
-    const workEnd = 20;
+    const slots: string[] = [];
+    const dayOfWeek = date.getDay();
     const slotDuration = 60; // minutos
 
-    for (let hour = workStart; hour < workEnd; hour++) {
-      for (let minute = 0; minute < 60; minute += slotDuration) {
-        const slotTime = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-        
-        // Verificar si el slot está ocupado
-        const isOccupied = appointments.some(apt => {
-          const [aptHour, aptMinute] = apt.time.split(':').map(Number);
-          const aptStart = aptHour * 60 + aptMinute;
-          const aptEnd = aptStart + apt.duration;
-          const slotStart = hour * 60 + minute;
-          
-          return slotStart >= aptStart && slotStart < aptEnd;
-        });
+    // Obtener disponibilidad de todos los trabajadores para este día
+    const workersAvailableToday = workers.filter(w =>
+      w.availability.some((a: any) => a.day === dayOfWeek)
+    );
 
-        if (!isOccupied) {
-          slots.push(slotTime);
-        }
+    if (workersAvailableToday.length === 0) {
+      return []; // Ningún trabajador disponible
+    }
+
+    // Encontrar el rango de trabajo más amplio
+    let earliestStart = 24 * 60; // minutos desde medianoche
+    let latestEnd = 0;
+
+    workersAvailableToday.forEach(worker => {
+      const dayAvailability = worker.availability.find((a: any) => a.day === dayOfWeek);
+      if (dayAvailability) {
+        const [startHour, startMin] = dayAvailability.start.split(':').map(Number);
+        const [endHour, endMin] = dayAvailability.end.split(':').map(Number);
+        
+        const startMinutes = startHour * 60 + startMin;
+        const endMinutes = endHour * 60 + endMin;
+
+        earliestStart = Math.min(earliestStart, startMinutes);
+        latestEnd = Math.max(latestEnd, endMinutes);
+      }
+    });
+
+    // Generar slots en el rango disponible
+    for (let minutes = earliestStart; minutes < latestEnd; minutes += slotDuration) {
+      const hour = Math.floor(minutes / 60);
+      const minute = minutes % 60;
+      const slotTime = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+      
+      // Verificar si al menos un trabajador está disponible en este slot
+      const hasAvailableWorker = workersAvailableToday.some(worker => {
+        const dayAvailability = worker.availability.find((a: any) => a.day === dayOfWeek);
+        if (! dayAvailability) return false;
+
+        const [startHour, startMin] = dayAvailability. start.split(':').map(Number);
+        const [endHour, endMin] = dayAvailability.end.split(':').map(Number);
+        
+        const startMinutes = startHour * 60 + startMin;
+        const endMinutes = endHour * 60 + endMin;
+
+        return minutes >= startMinutes && minutes + slotDuration <= endMinutes;
+      });
+
+      if (!hasAvailableWorker) continue;
+
+      // Verificar si el slot está ocupado
+      const isOccupied = appointments.some(apt => {
+        const [aptHour, aptMinute] = apt.time.split(':').map(Number);
+        const aptStart = aptHour * 60 + aptMinute;
+        const aptEnd = aptStart + apt.duration;
+        
+        return minutes >= aptStart && minutes < aptEnd;
+      });
+
+      if (! isOccupied) {
+        slots.push(slotTime);
       }
     }
 
     return slots;
   };
 
-  const formatDayName = (date:  Date) => {
+  const formatDayName = (date: Date) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const compareDate = new Date(date);
@@ -138,7 +214,6 @@ export default function AvailabilityScreen() {
       return;
     }
 
-    // Agrupar slots por día
     const slotsByDay:  { [key: number]: string[] } = {};
     
     selectedSlots.forEach(slotId => {
@@ -151,7 +226,6 @@ export default function AvailabilityScreen() {
       slotsByDay[dayIdx].push(slot);
     });
 
-    // Generar mensaje
     let message = "📅 *Horarios Disponibles*\n\n";
     
     Object.keys(slotsByDay).sort().forEach(dayIdx => {
@@ -165,13 +239,13 @@ export default function AvailabilityScreen() {
       message += '\n';
     });
 
-    message += "¿Cuál te viene mejor?  😊";
+    message += "¿Cuál te viene mejor? 😊";
 
     return message;
   };
 
   const formatShortDate = (date: Date) => {
-    return date. toLocaleDateString("es-AR", {
+    return date.toLocaleDateString("es-AR", {
       day: "numeric",
       month:  "short",
     });
@@ -186,9 +260,7 @@ export default function AvailabilityScreen() {
         Alert.alert(
           "✅ Copiado",
           "Mensaje copiado al portapapeles.\nAhora puedes pegarlo en WhatsApp.",
-          [
-            { text: "OK" }
-          ]
+          [{ text: "OK" }]
         );
       } catch (error) {
         Alert.alert("Error", "No se pudo copiar al portapapeles");
@@ -198,19 +270,16 @@ export default function AvailabilityScreen() {
 
   const selectAllDay = (dayIndex: number) => {
     const day = availabilityData[dayIndex];
-    const daySlots = day.slots. map((slot: string) => `${dayIndex}-${slot}`);
+    const daySlots = day.slots.map((slot: string) => `${dayIndex}-${slot}`);
     
-    // Verificar si ya están todos seleccionados
     const allSelected = daySlots.every((slotId: string) => selectedSlots.includes(slotId));
     
     if (allSelected) {
-      // Deseleccionar todos del día
       setSelectedSlots(selectedSlots.filter(s => ! s.startsWith(`${dayIndex}-`)));
     } else {
-      // Seleccionar todos del día
       const newSelected = [... selectedSlots];
       daySlots.forEach((slotId: string) => {
-        if (!newSelected.includes(slotId)) {
+        if (! newSelected.includes(slotId)) {
           newSelected.push(slotId);
         }
       });
@@ -236,21 +305,32 @@ export default function AvailabilityScreen() {
           </Text>
         </View>
         
-        {selectedSlots.length > 0 && (
+        <View style={styles.toolbarButtons}>
+          {selectedSlots.length > 0 && (
+            <TouchableOpacity
+              style={styles.clearButton}
+              onPress={clearSelection}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.clearButtonText}>Limpiar</Text>
+            </TouchableOpacity>
+          )}
+          
+          {/* ← NUEVO:  Botón para gestionar disponibilidad */}
           <TouchableOpacity
-            style={styles.clearButton}
-            onPress={clearSelection}
+            style={styles.manageButton}
+            onPress={() => router.push("/admin/availability/workers")}
             activeOpacity={0.7}
           >
-            <Text style={styles.clearButtonText}>Limpiar</Text>
+            <Text style={styles.manageButtonText}>⚙️ Gestionar</Text>
           </TouchableOpacity>
-        )}
+        </View>
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {loading ? (
           <View style={styles.loadingContainer}>
-            <Text style={styles.loadingText}>Cargando disponibilidad...</Text>
+            <Text style={styles.loadingText}>Cargando disponibilidad... </Text>
           </View>
         ) : (
           <View style={styles. daysContainer}>
@@ -324,7 +404,7 @@ function DayCard({ day, dayIndex, selectedSlots, onToggleSlot, onSelectAll }: an
   const allSelected = selectedCount === day.slots.length && day.slots.length > 0;
 
   return (
-    <View style={styles.dayCard}>
+    <View style={styles. dayCard}>
       <View style={styles.dayHeader}>
         <View style={styles.dayHeaderLeft}>
           <Text style={styles. dayName}>{day.dayName}</Text>
@@ -398,9 +478,9 @@ const styles = StyleSheet.create({
   },
   backButton: {
     width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor:  "#F3F4F6",
+    height:  40,
+    borderRadius:  20,
+    backgroundColor: "#F3F4F6",
     justifyContent: "center",
     alignItems: "center",
     marginRight: 12,
@@ -418,12 +498,12 @@ const styles = StyleSheet.create({
     color: "#111827",
   },
   headerSubtitle: {
-    fontSize: 13,
+    fontSize:  13,
     color: "#6B7280",
     marginTop:  2,
   },
   whatsappIcon: {
-    width: 40,
+    width:  40,
     height: 40,
     borderRadius: 20,
     backgroundColor: "#25D366",
@@ -457,6 +537,10 @@ const styles = StyleSheet.create({
     color:  "#6B7280",
     marginTop: 2,
   },
+  toolbarButtons: {
+    flexDirection: "row",
+    gap: 8,
+  },
   clearButton: {
     paddingHorizontal: 16,
     paddingVertical:  8,
@@ -467,6 +551,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
     color: "#DC2626",
+  },
+  // ← NUEVO
+  manageButton: {
+    paddingHorizontal: 16,
+    paddingVertical:  8,
+    borderRadius:  8,
+    backgroundColor: "#DBEAFE",
+  },
+  manageButtonText:  {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#1E40AF",
   },
 
   // Loading
@@ -490,7 +586,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
+    shadowOpacity:  0.05,
     shadowRadius: 4,
     elevation: 2,
   },
@@ -515,7 +611,7 @@ const styles = StyleSheet.create({
   dayDate: {
     fontSize: 13,
     color: "#6B7280",
-    marginTop: 2,
+    marginTop:  2,
     textTransform: "capitalize",
   },
   selectAllButton: {
@@ -526,7 +622,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E5E7EB",
   },
-  selectAllButtonActive: {
+  selectAllButtonActive:  {
     backgroundColor: "#DBEAFE",
     borderColor: "#3B82F6",
   },
@@ -542,7 +638,7 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     gap: 8,
   },
-  slotChip:  {
+  slotChip: {
     paddingHorizontal: 14,
     paddingVertical:  10,
     borderRadius: 8,
@@ -567,7 +663,7 @@ const styles = StyleSheet.create({
   },
   slotCheck: {
     fontSize: 12,
-    color: "#FFFFFF",
+    color:  "#FFFFFF",
     fontWeight: "bold",
   },
   noSlotsContainer: {
@@ -583,7 +679,7 @@ const styles = StyleSheet.create({
   // Bottom Bar
   bottomBar: {
     backgroundColor: "#FFFFFF",
-    borderTopWidth:  1,
+    borderTopWidth: 1,
     borderTopColor: "#E5E7EB",
     padding: 16,
     paddingBottom: 24,
@@ -592,7 +688,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   previewLabel: {
-    fontSize: 12,
+    fontSize:  12,
     fontWeight: "600",
     color: "#6B7280",
     marginBottom: 8,
@@ -615,7 +711,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#25D366",
-    borderRadius: 12,
+    borderRadius:  12,
     padding: 16,
     gap: 8,
   },

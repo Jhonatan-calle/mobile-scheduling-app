@@ -5,11 +5,12 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  Switch,
 } from "react-native";
 import { router } from "expo-router";
 import { useState, useEffect } from "react";
 
-export default function WorkersScreen() {
+export default function WorkersAvailabilityScreen() {
   const [workers, setWorkers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -21,59 +22,46 @@ export default function WorkersScreen() {
     try {
       setLoading(true);
 
-      // Mock: Estructura real con profiles
+      // Mock:  workers con disponibilidad
       const mockWorkers = [
         {
           id: 1,
-          profile_id: 1,
-          commission_rate: 60.0,
-          profile: {
-            id: 1,
-            name: "Carlos González",
-          },
-          // Stats calculadas
-          stats: {
-            todayAppointments: 3,
-            completedToday: 1,
-            monthEarnings: 120000,
-            monthPaid: 100000,
-            monthPending: 20000,
-            status: "busy", // 'available' | 'busy' | 'offline'
-          },
+          profile: { name: "Carlos González" },
+          availability: [
+            { day: 1, start: "08:00", end: "20:00", enabled: true }, // Lunes
+            { day: 2, start: "08:00", end: "20:00", enabled: true },
+            { day: 3, start: "08:00", end: "20:00", enabled:  true },
+            { day: 4, start: "08:00", end: "20:00", enabled: true },
+            { day: 5, start: "08:00", end: "20:00", enabled: true },
+            { day: 6, start:  "09:00", end: "14:00", enabled: true },
+            { day: 0, start: "00:00", end: "00:00", enabled: false }, // Domingo
+          ],
         },
         {
           id: 2,
-          profile_id: 2,
-          commission_rate:  55.0,
-          profile: {
-            id: 2,
-            name: "Ana Martínez",
-          },
-          stats: {
-            todayAppointments: 2,
-            completedToday: 1,
-            monthEarnings: 90000,
-            monthPaid:  90000,
-            monthPending:  0,
-            status: "available",
-          },
+          profile: { name: "Ana Martínez" },
+          availability: [
+            { day: 1, start: "09:00", end: "18:00", enabled: true },
+            { day: 2, start: "09:00", end:  "18:00", enabled: true },
+            { day: 3, start: "09:00", end: "18:00", enabled: true },
+            { day:  4, start: "09:00", end: "18:00", enabled: true },
+            { day: 5, start: "09:00", end: "18:00", enabled: true },
+            { day: 6, start: "00:00", end: "00:00", enabled: false },
+            { day: 0, start: "00:00", end: "00:00", enabled: false },
+          ],
         },
         {
           id: 3,
-          profile_id: 3,
-          commission_rate:  50.0,
-          profile: {
-            id: 3,
-            name: "Luis Rodríguez",
-          },
-          stats: {
-            todayAppointments: 1,
-            completedToday:  0,
-            monthEarnings: 70000,
-            monthPaid:  50000,
-            monthPending:  20000,
-            status: "available",
-          },
+          profile: { name: "Luis Rodríguez" },
+          availability: [
+            { day:  1, start: "10:00", end: "19:00", enabled: true },
+            { day: 2, start: "10:00", end:  "19:00", enabled: true },
+            { day: 3, start: "10:00", end: "19:00", enabled: false }, // Miércoles no trabaja
+            { day: 4, start: "10:00", end: "19:00", enabled: true },
+            { day:  5, start: "10:00", end: "19:00", enabled: true },
+            { day: 6, start: "10:00", end: "15:00", enabled: true },
+            { day: 0, start: "00:00", end:  "00:00", enabled: false },
+          ],
         },
       ];
 
@@ -81,168 +69,180 @@ export default function WorkersScreen() {
       setLoading(false);
     } catch (error) {
       console.error("Error loading workers:", error);
+      Alert.alert("Error", "No se pudo cargar la disponibilidad");
       setLoading(false);
     }
   };
 
-  const totalWorkers = workers.length;
-  const availableWorkers = workers.filter(
-    (w) => w.stats.status === "available"
-  ).length;
-  const busyWorkers = workers.filter((w) => w.stats.status === "busy").length;
+  const toggleDayAvailability = async (workerId: number, dayIndex: number) => {
+    const updatedWorkers = workers.map(worker => {
+      if (worker.id === workerId) {
+        const updatedAvailability = worker.availability.map((avail: any) => {
+          if (avail.day === dayIndex) {
+            return { ... avail, enabled: !avail.enabled };
+          }
+          return avail;
+        });
+        return { ...worker, availability: updatedAvailability };
+      }
+      return worker;
+    });
+
+    setWorkers(updatedWorkers);
+
+    // TODO: Guardar en Supabase
+    // await supabase. from('worker_availability').update({ enabled }).match({ worker_id, day })
+  };
+
+  const editTimeSlot = (worker: any, dayIndex: number) => {
+    const dayAvail = worker.availability.find((a: any) => a.day === dayIndex);
+    
+    Alert.alert(
+      `Editar ${getDayName(dayIndex)}`,
+      `${worker.profile.name}\nHorario actual: ${dayAvail.start} - ${dayAvail.end}`,
+      [
+        {
+          text: "08:00 - 20:00",
+          onPress: () => updateTimeSlot(worker.id, dayIndex, "08:00", "20:00"),
+        },
+        {
+          text: "09:00 - 18:00",
+          onPress: () => updateTimeSlot(worker.id, dayIndex, "09:00", "18:00"),
+        },
+        {
+          text: "10:00 - 19:00",
+          onPress: () => updateTimeSlot(worker.id, dayIndex, "10:00", "19:00"),
+        },
+        {
+          text: "09:00 - 14:00 (Medio día)",
+          onPress: () => updateTimeSlot(worker. id, dayIndex, "09:00", "14:00"),
+        },
+        { text: "Cancelar", style: "cancel" },
+      ]
+    );
+  };
+
+  const updateTimeSlot = async (workerId: number, dayIndex:  number, start: string, end: string) => {
+    const updatedWorkers = workers.map(worker => {
+      if (worker.id === workerId) {
+        const updatedAvailability = worker.availability.map((avail: any) => {
+          if (avail.day === dayIndex) {
+            return { ... avail, start, end };
+          }
+          return avail;
+        });
+        return { ... worker, availability: updatedAvailability };
+      }
+      return worker;
+    });
+
+    setWorkers(updatedWorkers);
+
+    // TODO: Guardar en Supabase
+    Alert.alert("Actualizado", `Horario cambiado a ${start} - ${end}`);
+  };
+
+  const getDayName = (day: number) => {
+    const days = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+    return days[day];
+  };
+
+  const getAvatar = (name: string) => {
+    if (name.toLowerCase().includes("ana") || name.toLowerCase().includes("maría")) {
+      return "👩";
+    }
+    return "👨";
+  };
 
   return (
     <View style={styles.container}>
-      <WorkersHeader />
+      <WorkersAvailabilityHeader />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        <WorkersStatsSection
-          total={totalWorkers}
-          available={availableWorkers}
-          busy={busyWorkers}
-        />
-        <WorkersListSection workers={workers} loading={loading} />
+        {loading ? (
+          <View style={styles. loadingContainer}>
+            <Text style={styles.loadingText}>Cargando... </Text>
+          </View>
+        ) : (
+          <View style={styles.workersContainer}>
+            {workers. map(worker => (
+              <WorkerAvailabilityCard
+                key={worker. id}
+                worker={worker}
+                onToggleDay={toggleDayAvailability}
+                onEditTimeSlot={editTimeSlot}
+                getDayName={getDayName}
+                getAvatar={getAvatar}
+              />
+            ))}
+          </View>
+        )}
       </ScrollView>
     </View>
   );
 }
 
 // ============================================================================
-// SECCIÓN: HEADER
+// HEADER
 // ============================================================================
-function WorkersHeader() {
+function WorkersAvailabilityHeader() {
   return (
     <View style={styles.header}>
-      <View>
-        <Text style={styles. headerTitle}>Trabajadores</Text>
-        <Text style={styles.headerSubtitle}>Gestiona tu equipo</Text>
+      <TouchableOpacity
+        style={styles.backButton}
+        onPress={() => router.back()}
+        activeOpacity={0.7}
+      >
+        <Text style={styles.backIcon}>←</Text>
+      </TouchableOpacity>
+      <View style={styles.headerContent}>
+        <Text style={styles.headerTitle}>Gestionar Disponibilidad</Text>
+        <Text style={styles.headerSubtitle}>Configura horarios por trabajador</Text>
       </View>
     </View>
   );
 }
 
 // ============================================================================
-// SECCIÓN: ESTADÍSTICAS
+// WORKER AVAILABILITY CARD
 // ============================================================================
-function WorkersStatsSection({ total, available, busy }: any) {
+function WorkerAvailabilityCard({ worker, onToggleDay, onEditTimeSlot, getDayName, getAvatar }: any) {
   return (
-    <View style={styles.statsSection}>
-      <WorkerStatCard icon="👥" label="Total" value={total} color="#3B82F6" />
-      <WorkerStatCard
-        icon="✅"
-        label="Disponibles"
-        value={available}
-        color="#10B981"
-      />
-      <WorkerStatCard
-        icon="🔄"
-        label="En servicio"
-        value={busy}
-        color="#F59E0B"
-      />
+    <View style={styles.workerCard}>
+      <View style={styles.workerHeader}>
+        <Text style={styles.workerAvatar}>{getAvatar(worker.profile.name)}</Text>
+        <Text style={styles. workerName}>{worker.profile.name}</Text>
+      </View>
+
+      <View style={styles. daysContainer}>
+        {worker. availability
+          .sort((a:  any, b: any) => a.day - b.day)
+          .map((dayAvail: any) => (
+            <View key={dayAvail.day} style={styles.dayRow}>
+              <View style={styles.dayInfo}>
+                <Text style={styles.dayLabel}>{getDayName(dayAvail.day)}</Text>
+                {dayAvail.enabled && (
+                  <TouchableOpacity
+                    onPress={() => onEditTimeSlot(worker, dayAvail.day)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.timeRange}>
+                      {dayAvail.start} - {dayAvail.end} ✏️
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              <Switch
+                value={dayAvail. enabled}
+                onValueChange={() => onToggleDay(worker. id, dayAvail.day)}
+                trackColor={{ false: "#D1D5DB", true: "#86EFAC" }}
+                thumbColor={dayAvail.enabled ?  "#10B981" : "#F3F4F6"}
+              />
+            </View>
+          ))}
+      </View>
     </View>
-  );
-}
-
-function WorkerStatCard({ icon, label, value, color }: any) {
-  return (
-    <View style={[styles.workerStatCard, { borderLeftColor: color }]}>
-      <Text style={styles.workerStatIcon}>{icon}</Text>
-      <Text style={styles.workerStatValue}>{value}</Text>
-      <Text style={styles.workerStatLabel}>{label}</Text>
-    </View>
-  );
-}
-
-// ============================================================================
-// SECCIÓN: LISTA DE TRABAJADORES
-// ============================================================================
-function WorkersListSection({ workers, loading }: any) {
-  if (loading) {
-    return (
-      <View style={styles.workersSection}>
-        <Text style={styles.loadingText}>Cargando trabajadores...</Text>
-      </View>
-    );
-  }
-
-  return (
-    <View style={styles.workersSection}>
-      <Text style={styles.sectionTitle}>Equipo activo</Text>
-      {workers.map((worker: any) => (
-        <WorkerCard key={worker.id} worker={worker} />
-      ))}
-    </View>
-  );
-}
-
-function WorkerCard({ worker }: any) {
-  const statusConfig = {
-    available: { label: "Disponible", color:  "#10B981", icon: "✅" },
-    busy: { label: "En servicio", color: "#F59E0B", icon: "🔄" },
-    offline:  { label: "No disponible", color: "#6B7280", icon: "⭕" },
-  };
-
-  const config = statusConfig[worker.stats. status as keyof typeof statusConfig];
-
-  const getAvatar = (name: string) => {
-    if (
-      name.toLowerCase().includes("ana") ||
-      name.toLowerCase().includes("maría")
-    ) {
-      return "👩";
-    }
-    return "👨";
-  };
-
-  const handlePress = () => {
-    Alert.alert(
-      worker.profile.name,
-      `Comisión: ${worker.commission_rate}%\nGanado este mes: $${worker.stats.monthEarnings.toLocaleString()}\nPagado:  $${worker.stats.monthPaid.toLocaleString()}\nPendiente: $${worker.stats.monthPending. toLocaleString()}`
-    );
-  };
-
-  return (
-    <TouchableOpacity
-      style={styles.workerCard}
-      onPress={handlePress}
-      activeOpacity={0.7}
-    >
-      <View style={styles.workerAvatar}>
-        <Text style={styles.workerAvatarText}>
-          {getAvatar(worker.profile.name)}
-        </Text>
-      </View>
-
-      <View style={styles.workerInfo}>
-        <Text style={styles.workerName}>{worker.profile.name}</Text>
-        <View style={styles.workerStatus}>
-          <Text style={styles.workerStatusIcon}>{config.icon}</Text>
-          <Text style={[styles.workerStatusText, { color: config.color }]}>
-            {config.label}
-          </Text>
-        </View>
-        <Text style={styles.workerCommission}>
-          Comisión: {worker.commission_rate}%
-        </Text>
-      </View>
-
-      <View style={styles.workerStats}>
-        <Text style={styles.workerStatsText}>
-          {worker.stats.completedToday}/{worker.stats.todayAppointments} turnos 
-        </Text>
-        <Text style={styles.workerEarnings}>
-          ${worker.stats.monthEarnings.toLocaleString()}
-        </Text>
-        {worker.stats.monthPending > 0 && (
-          <Text style={styles. workerPending}>
-            Debe:  ${worker.stats.monthPending. toLocaleString()}
-          </Text>
-        )}
-      </View>
-
-      <Text style={styles.workerArrow}>›</Text>
-    </TouchableOpacity>
   );
 }
 
@@ -252,155 +252,114 @@ function WorkerCard({ worker }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F9FAFB",
+    backgroundColor:  "#F9FAFB",
   },
-  content:  {
+  content: {
     flex: 1,
   },
 
   // Header
   header: {
-    padding: 24,
+    flexDirection:  "row",
+    alignItems: "center",
+    padding: 16,
     paddingTop: 60,
     backgroundColor: "#FFFFFF",
     borderBottomWidth: 1,
     borderBottomColor: "#E5E7EB",
   },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: "#111827",
-  },
-  headerSubtitle:  {
-    fontSize: 14,
-    color: "#6B7280",
-    marginTop: 4,
-  },
-
-  // Stats Section
-  statsSection: {
-    flexDirection: "row",
-    padding: 16,
-    gap: 12,
-  },
-  workerStatCard: {
-    flex: 1,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    padding: 16,
-    borderLeftWidth: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity:  0.05,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  workerStatIcon: {
-    fontSize:  24,
-    marginBottom: 8,
-  },
-  workerStatValue: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#111827",
-  },
-  workerStatLabel: {
-    fontSize:  12,
-    color: "#6B7280",
-    marginTop:  4,
-  },
-
-  // Workers Section
-  workersSection: {
-    padding: 16,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#111827",
-    marginBottom: 16,
-  },
-  loadingText: {
-    fontSize: 14,
-    color: "#6B7280",
-    textAlign: "center",
-    paddingVertical: 32,
-  },
-
-  // Worker Card
-  workerCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity:  0.05,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  workerAvatar: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: "#F3F4F6",
     justifyContent: "center",
     alignItems: "center",
     marginRight: 12,
   },
-  workerAvatarText: {
-    fontSize: 28,
+  backIcon: {
+    fontSize: 24,
+    color: "#111827",
   },
-  workerInfo: {
+  headerContent: {
     flex: 1,
   },
-  workerName: {
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#111827",
+  },
+  headerSubtitle:  {
+    fontSize: 13,
+    color: "#6B7280",
+    marginTop: 2,
+  },
+
+  // Loading
+  loadingContainer: {
+    padding: 32,
+    alignItems: "center",
+  },
+  loadingText: {
     fontSize: 16,
+    color: "#6B7280",
+  },
+
+  // Workers
+  workersContainer: {
+    padding: 16,
+  },
+  workerCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  workerHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 16,
+    paddingBottom: 16,
+    borderBottomWidth:  1,
+    borderBottomColor: "#F3F4F6",
+  },
+  workerAvatar: {
+    fontSize: 32,
+    marginRight: 12,
+  },
+  workerName: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#111827",
+  },
+
+  // Days
+  daysContainer: {
+    gap: 12,
+  },
+  dayRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 8,
+  },
+  dayInfo: {
+    flex: 1,
+  },
+  dayLabel: {
+    fontSize: 15,
     fontWeight: "600",
     color: "#111827",
     marginBottom: 4,
   },
-  workerStatus: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 4,
-  },
-  workerStatusIcon: {
-    fontSize:  12,
-    marginRight: 4,
-  },
-  workerStatusText: {
-    fontSize:  13,
-    fontWeight: "500",
-  },
-  workerCommission:  {
-    fontSize: 12,
-    color: "#6B7280",
-  },
-  workerStats: {
-    alignItems: "flex-end",
-    marginRight: 12,
-  },
-  workerStatsText: {
+  timeRange: {
     fontSize: 13,
-    color: "#6B7280",
-    marginBottom: 4,
-  },
-  workerEarnings: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#10B981",
-    marginBottom: 2,
-  },
-  workerPending: {
-    fontSize:  12,
-    fontWeight: "600",
-    color: "#EF4444",
-  },
-  workerArrow:  {
-    fontSize: 24,
-    color: "#D1D5DB",
+    color: "#3B82F6",
+    fontWeight: "500",
   },
 });
