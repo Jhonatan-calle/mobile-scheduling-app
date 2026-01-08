@@ -254,7 +254,7 @@ function NewAppointmentHeader() {
       <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
         <Text style={styles.backButtonText}>← Volver</Text>
       </TouchableOpacity>
-      <Text style={styles.headerTitle}>Nueva Cita</Text>
+      <Text style={styles.headerTitle}>Nueva Turno</Text>
       <View style={styles.headerSpacer} />
     </View>
   );
@@ -325,7 +325,7 @@ function CustomerInfoSection({
                     <Text style={styles.suggestionPhone}>{item.phone_number}</Text>
                     {item.last_appointment_at && (
                       <Text style={styles.suggestionDate}>
-                        Última cita: {new Date(item.last_appointment_at).toLocaleDateString('es-AR')}
+                        Última turno: {new Date(item.last_appointment_at).toLocaleDateString('es-AR')}
                       </Text>
                     )}
                   </View>
@@ -380,7 +380,7 @@ function CustomerInfoSection({
                     <Text style={styles.suggestionPhone}>{item.phone_number}</Text>
                     {item. last_appointment_at && (
                       <Text style={styles. suggestionDate}>
-                        Última cita: {new Date(item.last_appointment_at).toLocaleDateString('es-AR')}
+                        Última turno: {new Date(item.last_appointment_at).toLocaleDateString('es-AR')}
                       </Text>
                     )}
                   </View>
@@ -906,27 +906,27 @@ function ActionButtons({ formData, loading, setLoading, selectedClientId }: any)
         updated_at: new Date().toISOString(),
       };
 
-      console.log("📋 Datos de la cita a guardar:", appointmentData);
+      console.log("📋 Datos de la turno a guardar:", appointmentData);
 
       // Simulación de guardado
       await new Promise((resolve) => setTimeout(resolve, 1500));
 
-      Alert.alert("¡Éxito!", "La cita ha sido creada correctamente", [
+      Alert.alert("¡Éxito!", "El turno ha sido creada correctamente", [
         {
-          text:  "Ver citas",
+          text:  "Ver turnos",
           onPress: () => router.replace("/admin/appointments"),
         },
       ]);
     } catch (error:  any) {
       console.error("Error creating appointment:", error);
-      Alert.alert("Error", "No se pudo crear la cita");
+      Alert.alert("Error", "No se pudo crear el turno");
       setLoading(false);
     }
   };
 
   return (
     <View style={styles. actionsSection}>
-      <Button title="Crear Cita" onPress={handleSave} loading={loading} />
+      <Button title="Crear Repaso" onPress={handleSave} loading={loading} />
 
       <TouchableOpacity
         style={styles.cancelButton}

@@ -229,7 +229,7 @@ function WorkerCard({ worker }: any) {
 
       <View style={styles.workerStats}>
         <Text style={styles.workerStatsText}>
-          {worker.stats.completedToday}/{worker.stats.todayAppointments} citas
+          {worker.stats.completedToday}/{worker.stats.todayAppointments} turnos 
         </Text>
         <Text style={styles.workerEarnings}>
           ${worker.stats.monthEarnings.toLocaleString()}

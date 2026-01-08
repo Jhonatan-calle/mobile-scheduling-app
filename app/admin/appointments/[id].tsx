@@ -36,7 +36,7 @@ export default function AppointmentDetailScreen() {
         estimate_time: 120, // minutos
         cost: 15000.00,
         commission_rate: 60.00,
-        status: "pending", // 'pending' | 'in_progress' | 'completed' | 'cancelled'
+        status: "completed", // 'pending' | 'in_progress' | 'completed' | 'cancelled'
         has_retouches: false,
         paid_to_worker: false,
         payment_method: "cash", // 'cash' | 'transfer' | 'debit' | 'credit' | 'mercadopago' | 'other' | null
@@ -65,7 +65,7 @@ export default function AppointmentDetailScreen() {
       setLoading(false);
     } catch (error) {
       console.error("Error loading appointment:", error);
-      Alert.alert("Error", "No se pudo cargar la cita");
+      Alert.alert("Error", "No se pudo cargar el turno");
       setLoading(false);
     }
   };
@@ -598,8 +598,8 @@ function PaymentStatusCard({ label, paid, onToggle }: any) {
 function ActionButtonsSection({ appointment, onUpdate }: any) {
   const handleDelete = () => {
     Alert.alert(
-      "Eliminar cita",
-      "¿Estás seguro que deseas eliminar esta cita?  Esta acción no se puede deshacer.",
+      "Eliminar turno",
+      "¿Estás seguro que deseas eliminar esta turno?  Esta acción no se puede deshacer.",
       [
         { text: "Cancelar", style: "cancel" },
         {
@@ -609,8 +609,8 @@ function ActionButtonsSection({ appointment, onUpdate }: any) {
             // TODO: Eliminar de Supabase
             // await supabase. from('appointments').delete().eq('id', appointment.id);
             
-            console.log("Eliminando cita:", appointment.id);
-            Alert.alert("Eliminada", "La cita ha sido eliminada", [
+            console.log("Eliminando turno:", appointment.id);
+            Alert.alert("Eliminada", "La repaso ha sido eliminada", [
               {
                 text: "OK",
                 onPress: () => router.replace("/admin/appointments"),
@@ -624,8 +624,8 @@ function ActionButtonsSection({ appointment, onUpdate }: any) {
 
   const handleToggleRetouches = () => {
     Alert.alert(
-      appointment.has_retouches ? "Quitar retoques" : "Marcar con retoques",
-      `¿${appointment.has_retouches ?  "Ya no" : ""} requiere retoques?`,
+      appointment.has_retouches ? "Quitar repasos" : "Marcar con repasos",
+      `¿${appointment.has_retouches ?  "Ya no" : ""} requiere repasos?`,
       [
         { text: "Cancelar", style: "cancel" },
         {
@@ -641,7 +641,7 @@ function ActionButtonsSection({ appointment, onUpdate }: any) {
             //   .eq('id', appointment.id);
             
             console.log("Cambiando has_retouches a:", !appointment.has_retouches);
-            Alert.alert("Actualizado", "Estado de retoques actualizado");
+            Alert.alert("Actualizado", "Estado de repasos actualizado");
             onUpdate();
           },
         },
@@ -651,7 +651,7 @@ function ActionButtonsSection({ appointment, onUpdate }: any) {
 
   return (
     <View style={styles.section}>
-      {/* Botón de retoques */}
+      {/* Botón de repasos */}
       <TouchableOpacity
         style={[
           styles.retouchButton,
@@ -665,13 +665,13 @@ function ActionButtonsSection({ appointment, onUpdate }: any) {
             appointment.has_retouches && styles.retouchButtonTextActive,
           ]}
         >
-          {appointment.has_retouches ?  "✓ Requiere retoques" : "Marcar retoques"}
+          {appointment.has_retouches ?  "✓ Requiere repasos" : "Marcar repasos"}
         </Text>
       </TouchableOpacity>
 
       {/* Botón eliminar */}
       <TouchableOpacity style={styles.deleteButton} onPress={handleDelete}>
-        <Text style={styles.deleteButtonText}>🗑️ Eliminar cita</Text>
+        <Text style={styles.deleteButtonText}>🗑️ Eliminar Turno</Text>
       </TouchableOpacity>
     </View>
   );
@@ -693,7 +693,7 @@ function RetouchesSection({ appointment, onUpdate }: any) {
     try {
       setLoading(true);
 
-      // Mock:  Retoques asociados a esta cita
+      // Mock:  Retoques asociados a esta turno/ 
       const mockRetouches = [
         {
           id: 1,
@@ -715,7 +715,7 @@ function RetouchesSection({ appointment, onUpdate }: any) {
         },
       ];
 
-      // Filtrar solo los de esta cita
+      // Filtrar solo los de esta repaso
       const filtered = mockRetouches.filter(
         (r) => r.appointment_id === appointment.id
       );
@@ -732,7 +732,7 @@ function RetouchesSection({ appointment, onUpdate }: any) {
     if (appointment.status !== "completed") {
       Alert.alert(
         "No disponible",
-        "Solo puedes crear retoques para citas completadas"
+        "Solo puedes crear repasos para turnos completados"
       );
       return;
     }
@@ -758,7 +758,7 @@ function RetouchesSection({ appointment, onUpdate }: any) {
       </View>
 
       {loading ? (
-        <Text style={styles.loadingText}>Cargando retoques...</Text>
+        <Text style={styles.loadingText}>Cargando repasos...</Text>
       ) : retouches.length > 0 ? (
         retouches.map((retouch) => (
           <RetouchCard
@@ -774,8 +774,8 @@ function RetouchesSection({ appointment, onUpdate }: any) {
           <Text style={styles.  noRetouchesIcon}>✨</Text>
           <Text style={styles.noRetouchesText}>
             {appointment.status === "completed"
-              ? "No hay retoques registrados"
-              : "Los retoques estarán disponibles al completar la cita"}
+              ? "No hay repasos registrados"
+              : "Los repasos estarán disponibles al completar los turno"}
           </Text>
         </View>
       )}

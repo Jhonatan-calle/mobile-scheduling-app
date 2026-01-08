@@ -77,7 +77,7 @@ export default function LoginScreen() {
             Limpieza de Tapizados{"\n"}Río Cuarto
           </Text>
           <Text style={styles.subtitle}>
-            Gestiona tus citas y horarios
+            Gestiona tus turnos y horarios
           </Text>
         </View>
 

@@ -37,7 +37,7 @@ export default function NewRetouchScreen() {
 
   const loadAppointment = async () => {
     try {
-      // Mock: Cargar cita original
+      // Mock: Cargar repaso original
       const mockAppointment = {
         id:  parseInt(appointmentId as string),
         client:  {
@@ -63,7 +63,7 @@ export default function NewRetouchScreen() {
       });
     } catch (error) {
       console.error("Error loading appointment:", error);
-      Alert.alert("Error", "No se pudo cargar la cita");
+      Alert.alert("Error", "No se pudo cargar el turno");
     }
   };
 
@@ -98,7 +98,7 @@ export default function NewRetouchScreen() {
 
   const validateForm = () => {
     if (!formData.reason. trim()) {
-      Alert.alert("Error", "Debes especificar el motivo del retoque");
+      Alert.alert("Error", "Debes especificar el motivo del repaso");
       return false;
     }
     if (!formData.workerId) {
@@ -131,7 +131,7 @@ export default function NewRetouchScreen() {
         created_at: new Date().toISOString(),
       };
 
-      console.log("📋 Datos del retoque a guardar:", retouchData);
+      console.log("📋 Datos del repaso a guardar:", retouchData);
 
       // TODO: Guardar en Supabase
       // const { data, error } = await supabase
@@ -142,15 +142,15 @@ export default function NewRetouchScreen() {
 
       await new Promise((resolve) => setTimeout(resolve, 1500));
 
-      Alert.alert("¡Éxito!", "El retoque ha sido creado correctamente", [
+      Alert.alert("¡Éxito!", "El repaso ha sido creado correctamente", [
         {
-          text: "Ver cita",
+          text: "Ver turno",
           onPress: () => router.back(),
         },
       ]);
     } catch (error:  any) {
       console.error("Error creating retouch:", error);
-      Alert.alert("Error", "No se pudo crear el retoque");
+      Alert.alert("Error", "No se pudo crear el repaso");
       setLoading(false);
     }
   };
@@ -220,7 +220,7 @@ function AppointmentInfoSection({ appointment }:  any) {
   return (
     <View style={styles.section}>
       <View style={styles.infoCard}>
-        <Text style={styles.infoCardTitle}>Cita Original</Text>
+        <Text style={styles.infoCardTitle}>Turno Original</Text>
         <View style={styles.infoRow}>
           <Text style={styles.infoLabel}>Cliente:</Text>
           <Text style={styles.infoValue}>{appointment.client.name}</Text>
@@ -249,7 +249,7 @@ function RetouchReasonSection({ formData, setFormData }: any) {
       <SectionHeader
         icon="📝"
         title="Motivo del Retoque"
-        subtitle="¿Por qué se necesita el retoque?"
+        subtitle="¿Por qué se necesita el repaso?"
       />
 
       <Input
@@ -304,7 +304,7 @@ function DateTimeSection({
       <SectionHeader
         icon="📅"
         title="Fecha y Hora"
-        subtitle="Cuándo se realizará el retoque"
+        subtitle="Cuándo se realizará el repaso"
       />
 
       <Text style={styles.label}>Fecha *</Text>
@@ -404,7 +404,7 @@ function WorkerSection({ formData, setFormData, workers }:  any) {
       <SectionHeader
         icon="👥"
         title="Trabajador Asignado"
-        subtitle="Quién realizará el retoque"
+        subtitle="Quién realizará el repaso"
       />
 
       <View style={styles.workersGrid}>
@@ -461,7 +461,7 @@ function AddressSection({ formData, setFormData }: any) {
       />
 
       <Text style={styles.helperText}>
-        💡 Por defecto se usa la misma dirección de la cita original
+        💡 Por defecto se usa la misma dirección del turno original
       </Text>
     </View>
   );

@@ -110,7 +110,7 @@ export default function AdminHome() {
         monthlyRevenue,
       });
 
-      // Transformar citas de hoy
+      // Transformar turno de hoy
       const transformedAppointments = todayApts. map((apt) => ({
         id: apt.id. toString(),
         time: new Date(apt.date).toLocaleTimeString("es-AR", {
@@ -156,7 +156,7 @@ function StatsSection({ stats }: any) {
     <View style={styles.statsGrid}>
       <StatCard
         icon="📅"
-        label="Citas Hoy"
+        label="Turnos Hoy"
         value={stats.todayAppointments}
         color="#3B82F6"
       />
@@ -192,7 +192,7 @@ function QuickActionsSection() {
 
       <QuickActionButton
         icon="➕"
-        title="Nueva Cita"
+        title="Nuevo Turno"
         subtitle="Agendar nuevo servicio"
         onPress={() => router.push("/admin/appointments/new")}
         color="#3B82F6"
@@ -200,7 +200,7 @@ function QuickActionsSection() {
 
       <QuickActionButton
         icon="📋"
-        title="Ver Todas las Citas"
+        title="Ver Todas los turnos"
         subtitle="Gestionar appointments"
         onPress={() => router.push("/admin/appointments")}
         color="#10B981"
@@ -232,7 +232,7 @@ function TodayAppointmentsSection({ appointments, loading }: any) {
   if (loading) {
     return (
       <View style={styles. section}>
-        <Text style={styles.sectionTitle}>Citas de Hoy</Text>
+        <Text style={styles.sectionTitle}>Turnos de Hoy</Text>
         <Text style={styles.loadingText}>Cargando... </Text>
       </View>
     );
@@ -241,7 +241,7 @@ function TodayAppointmentsSection({ appointments, loading }: any) {
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Citas de Hoy</Text>
+        <Text style={styles.sectionTitle}>Turnos de Hoy</Text>
         <TouchableOpacity
           onPress={() => router.push("/admin/appointments")}
         >
@@ -280,7 +280,7 @@ function EmptyAppointments() {
     <View style={styles.emptyState}>
       <Text style={styles.emptyIcon}>📭</Text>
       <Text style={styles.emptyText}>
-        No hay citas programadas para hoy
+        No hay turnos programados para hoy
       </Text>
     </View>
   );
