@@ -7,7 +7,7 @@ import {
   Alert,
 } from "react-native";
 import { router } from "expo-router";
-import { supabase } from "../../utils/supabase";
+import { supabase } from "../../../utils/supabase";
 
 export default function ProfileScreen() {
   return (

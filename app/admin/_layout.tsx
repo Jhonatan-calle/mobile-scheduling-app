@@ -23,7 +23,7 @@ export default function AdminLayout() {
       }}
     >
       <Tabs. Screen
-        name="index"
+        name="dashboard"
         options={{
           title: "Inicio",
           tabBarIcon: ({ color }) => <TabIcon emoji="🏠" color={color} />,
@@ -48,13 +48,6 @@ export default function AdminLayout() {
         options={{
           title: "Contabilidad",
           tabBarIcon: ({ color }) => <TabIcon emoji="💰" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: "Perfil",
-          tabBarIcon: ({ color }) => <TabIcon emoji="⚙️" color={color} />,
         }}
       />
     </Tabs>

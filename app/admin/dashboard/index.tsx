@@ -12,7 +12,7 @@ import {
   StatCard,
   QuickActionButton,
   AppointmentPreviewCard,
-} from "../../components/admin/dashboard";
+} from "../../../components/admin/dashboard";
 
 export default function AdminHome() {
   const [stats, setStats] = useState({
