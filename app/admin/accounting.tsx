@@ -49,7 +49,6 @@ export default function AccountingScreen() {
         style={styles.content}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          // ← NUEVO
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}

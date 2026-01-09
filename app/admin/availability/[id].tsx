@@ -7,6 +7,8 @@ import {
   Switch,
   Alert,
   RefreshControl,
+  Linking, // ← AGREGADO
+  Platform, // ← AGREGADO
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState, useEffect } from "react";
@@ -26,14 +28,12 @@ export default function WorkerDetailScreen() {
     try {
       if (!refreshing) setLoading(true);
 
-      // Mock:  Datos del trabajador
       const mockWorker = {
         id: parseInt(id as string),
         profile: {
           id: 1,
           name: "Carlos González",
-          email: "carlos@example.com",
-          phone: "351 234 5678",
+          phone: "3584800460",
         },
         commission_rate: 60,
         availability: [
@@ -45,7 +45,6 @@ export default function WorkerDetailScreen() {
           { day: 6, start: "09:00", end: "14:00", enabled: true },
           { day: 0, start: "00:00", end: "00:00", enabled: false },
         ],
-        // Estadísticas del mes seleccionado
         monthStats: {
           month: selectedMonth.getMonth() + 1,
           year: selectedMonth.getFullYear(),
@@ -53,8 +52,8 @@ export default function WorkerDetailScreen() {
           totalRetouches: 8,
           completedAppointments: 42,
           pendingAppointments: 3,
-          totalEarned: 270000, // Total que ganó el trabajador
-          totalGenerated: 450000, // Total que generó para el negocio
+          totalEarned: 270000,
+          totalGenerated: 450000,
           averagePerAppointment: 6000,
           appointmentsByService: {
             sillones: 20,
@@ -90,9 +89,6 @@ export default function WorkerDetailScreen() {
     });
 
     setWorker({ ...worker, availability: updatedAvailability });
-
-    // TODO: Guardar en Supabase
-    // await supabase. from('worker_availability').update({ enabled }).match({ worker_id: id, day: dayIndex })
   };
 
   const editTimeSlot = (dayIndex: number) => {
@@ -136,8 +132,6 @@ export default function WorkerDetailScreen() {
     });
 
     setWorker({ ...worker, availability: updatedAvailability });
-
-    // TODO: Guardar en Supabase
     Alert.alert("Actualizado", `Horario cambiado a ${start} - ${end}`);
   };
 
@@ -209,7 +203,7 @@ export default function WorkerDetailScreen() {
         }
       >
         <WorkerInfoSection worker={worker} getAvatar={getAvatar} />
-        
+
         <AvailabilitySection
           availability={worker.availability}
           onToggleDay={toggleDayAvailability}
@@ -256,6 +250,51 @@ function WorkerDetailHeader({ workerId }: { workerId: string }) {
 // INFORMACIÓN DEL TRABAJADOR
 // ============================================================================
 function WorkerInfoSection({ worker, getAvatar }: any) {
+  const handleCall = async (phoneNumber: string, name: string) => {
+    const cleanNumber = phoneNumber.replace(/\s/g, "").replace(/[^\d+]/g, "");
+    const phoneUrl = `tel:${cleanNumber}`;
+
+    try {
+      const canOpen = await Linking.canOpenURL(phoneUrl);
+
+      if (canOpen) {
+        await Linking.openURL(phoneUrl);
+      } else {
+        Alert.alert(
+          "Error",
+          "No se puede realizar la llamada en este dispositivo",
+        );
+      }
+    } catch (error) {
+      console.error("Error al intentar llamar:", error);
+      Alert.alert("Error", "No se pudo iniciar la llamada");
+    }
+  };
+
+  const handleWhatsApp = async (phoneNumber: string, name: string) => {
+    // Limpiar el número
+    let cleanNumber = phoneNumber.replace(/\s/g, "").replace(/[^\d+]/g, "");
+
+    cleanNumber = "+54" + cleanNumber;
+
+    // Remover el + para la URL de WhatsApp
+    const whatsappNumber = cleanNumber.replace("+", "");
+    const whatsappUrl = `https://wa.me/${whatsappNumber}`;
+
+    try {
+      const canOpen = await Linking.canOpenURL(whatsappUrl);
+
+      if (canOpen) {
+        await Linking.openURL(whatsappUrl);
+      } else {
+        Alert.alert("Error", "WhatsApp no está instalado");
+      }
+    } catch (error) {
+      console.error("Error abriendo WhatsApp:", error);
+      Alert.alert("Error", "No se pudo abrir WhatsApp");
+    }
+  };
+
   return (
     <View style={styles.section}>
       <View style={styles.workerInfoCard}>
@@ -266,6 +305,29 @@ function WorkerInfoSection({ worker, getAvatar }: any) {
           <Text style={styles.workerName}>{worker.profile.name}</Text>
           <Text style={styles.workerContact}>📞 {worker.profile.phone}</Text>
         </View>
+      </View>
+
+      {/* Botones de contacto rápido */}
+      <View style={styles.contactButtons}>
+        <TouchableOpacity
+          style={[styles.contactButton, styles.callButton]}
+          onPress={() => handleCall(worker.profile.phone, worker.profile.name)}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.contactButtonIcon}>📞</Text>
+          <Text style={styles.contactButtonText}>Llamar</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.contactButton, styles.whatsappButton]}
+          onPress={() =>
+            handleWhatsApp(worker.profile.phone, worker.profile.name)
+          }
+          activeOpacity={0.7}
+        >
+          <Text style={styles.contactButtonIcon}>💬</Text>
+          <Text style={styles.contactButtonText}>WhatsApp</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -576,6 +638,7 @@ const styles = StyleSheet.create({
   workerInfoCard: {
     flexDirection: "row",
     alignItems: "center",
+    marginBottom: 16,
   },
   workerAvatar: {
     fontSize: 64,
@@ -592,21 +655,37 @@ const styles = StyleSheet.create({
   },
   workerContact: {
     fontSize: 14,
-    color: "#6B7280",
+    color: "#3B82F6",
     marginBottom: 4,
-  },
-  commissionBadge: {
-    backgroundColor: "#DBEAFE",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-    alignSelf: "flex-start",
-    marginTop: 8,
-  },
-  commissionText: {
-    fontSize: 13,
     fontWeight: "600",
-    color: "#1E40AF",
+  },
+  // Contact Buttons
+  contactButtons: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  contactButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 12,
+    borderRadius: 10,
+    gap: 8,
+  },
+  callButton: {
+    backgroundColor: "#10B981",
+  },
+  whatsappButton: {
+    backgroundColor: "#25D366",
+  },
+  contactButtonIcon: {
+    fontSize: 18,
+  },
+  contactButtonText: {
+    fontSize: 15,
+    fontWeight: "bold",
+    color: "#FFFFFF",
   },
 
   // Month Selector
