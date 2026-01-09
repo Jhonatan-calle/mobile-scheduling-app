@@ -4,15 +4,15 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Alert,
-  Switch,
+  RefreshControl,
 } from "react-native";
 import { router } from "expo-router";
 import { useState, useEffect } from "react";
 
-export default function WorkersAvailabilityScreen() {
+export default function WorkersScreen() {
   const [workers, setWorkers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     loadWorkers();
@@ -20,163 +20,90 @@ export default function WorkersAvailabilityScreen() {
 
   const loadWorkers = async () => {
     try {
-      setLoading(true);
+      if (!refreshing) setLoading(true);
 
-      // Mock:  workers con disponibilidad
+      // Mock:  Datos de trabajadores
       const mockWorkers = [
         {
           id: 1,
-          profile: { name: "Carlos González" },
-          availability: [
-            { day: 1, start: "08:00", end: "20:00", enabled: true }, // Lunes
-            { day: 2, start: "08:00", end: "20:00", enabled: true },
-            { day: 3, start: "08:00", end: "20:00", enabled:  true },
-            { day: 4, start: "08:00", end: "20:00", enabled: true },
-            { day: 5, start: "08:00", end: "20:00", enabled: true },
-            { day: 6, start:  "09:00", end: "14:00", enabled: true },
-            { day: 0, start: "00:00", end: "00:00", enabled: false }, // Domingo
-          ],
+          profile: {
+            id: 1,
+            name: "Carlos González",
+          },
+          commission_rate: 60,
+          status: "available",
+          todayAppointments: 3,
+          completedToday: 2,
+          currentAppointment: {
+            client: "Juan Pérez",
+            service: "Limpieza de sillón",
+          },
         },
         {
           id: 2,
-          profile: { name: "Ana Martínez" },
-          availability: [
-            { day: 1, start: "09:00", end: "18:00", enabled: true },
-            { day: 2, start: "09:00", end:  "18:00", enabled: true },
-            { day: 3, start: "09:00", end: "18:00", enabled: true },
-            { day:  4, start: "09:00", end: "18:00", enabled: true },
-            { day: 5, start: "09:00", end: "18:00", enabled: true },
-            { day: 6, start: "00:00", end: "00:00", enabled: false },
-            { day: 0, start: "00:00", end: "00:00", enabled: false },
-          ],
+          profile: {
+            id: 2,
+            name: "Ana Martínez",
+          },
+          commission_rate: 55,
+          status: "busy",
+          todayAppointments: 2,
+          completedToday: 2,
+          currentAppointment: null,
         },
         {
           id: 3,
-          profile: { name: "Luis Rodríguez" },
-          availability: [
-            { day:  1, start: "10:00", end: "19:00", enabled: true },
-            { day: 2, start: "10:00", end:  "19:00", enabled: true },
-            { day: 3, start: "10:00", end: "19:00", enabled: false }, // Miércoles no trabaja
-            { day: 4, start: "10:00", end: "19:00", enabled: true },
-            { day:  5, start: "10:00", end: "19:00", enabled: true },
-            { day: 6, start: "10:00", end: "15:00", enabled: true },
-            { day: 0, start: "00:00", end:  "00:00", enabled: false },
-          ],
+          profile: {
+            id: 3,
+            name: "Luis Rodríguez",
+          },
+          commission_rate: 50,
+          status: "available",
+          todayAppointments: 4,
+          completedToday: 1,
+          currentAppointment: {
+            client: "María López",
+            service: "Limpieza de auto",
+          },
         },
       ];
 
       setWorkers(mockWorkers);
       setLoading(false);
+      setRefreshing(false);
     } catch (error) {
       console.error("Error loading workers:", error);
-      Alert.alert("Error", "No se pudo cargar la disponibilidad");
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
-  const toggleDayAvailability = async (workerId: number, dayIndex: number) => {
-    const updatedWorkers = workers.map(worker => {
-      if (worker.id === workerId) {
-        const updatedAvailability = worker.availability.map((avail: any) => {
-          if (avail.day === dayIndex) {
-            return { ... avail, enabled: !avail.enabled };
-          }
-          return avail;
-        });
-        return { ...worker, availability: updatedAvailability };
-      }
-      return worker;
-    });
-
-    setWorkers(updatedWorkers);
-
-    // TODO: Guardar en Supabase
-    // await supabase. from('worker_availability').update({ enabled }).match({ worker_id, day })
+  const onRefresh = () => {
+    setRefreshing(true);
+    loadWorkers();
   };
 
-  const editTimeSlot = (worker: any, dayIndex: number) => {
-    const dayAvail = worker.availability.find((a: any) => a.day === dayIndex);
-    
-    Alert.alert(
-      `Editar ${getDayName(dayIndex)}`,
-      `${worker.profile.name}\nHorario actual: ${dayAvail.start} - ${dayAvail.end}`,
-      [
-        {
-          text: "08:00 - 20:00",
-          onPress: () => updateTimeSlot(worker.id, dayIndex, "08:00", "20:00"),
-        },
-        {
-          text: "09:00 - 18:00",
-          onPress: () => updateTimeSlot(worker.id, dayIndex, "09:00", "18:00"),
-        },
-        {
-          text: "10:00 - 19:00",
-          onPress: () => updateTimeSlot(worker.id, dayIndex, "10:00", "19:00"),
-        },
-        {
-          text: "09:00 - 14:00 (Medio día)",
-          onPress: () => updateTimeSlot(worker. id, dayIndex, "09:00", "14:00"),
-        },
-        { text: "Cancelar", style: "cancel" },
-      ]
-    );
-  };
-
-  const updateTimeSlot = async (workerId: number, dayIndex:  number, start: string, end: string) => {
-    const updatedWorkers = workers.map(worker => {
-      if (worker.id === workerId) {
-        const updatedAvailability = worker.availability.map((avail: any) => {
-          if (avail.day === dayIndex) {
-            return { ... avail, start, end };
-          }
-          return avail;
-        });
-        return { ... worker, availability: updatedAvailability };
-      }
-      return worker;
-    });
-
-    setWorkers(updatedWorkers);
-
-    // TODO: Guardar en Supabase
-    Alert.alert("Actualizado", `Horario cambiado a ${start} - ${end}`);
-  };
-
-  const getDayName = (day: number) => {
-    const days = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
-    return days[day];
-  };
-
-  const getAvatar = (name: string) => {
-    if (name.toLowerCase().includes("ana") || name.toLowerCase().includes("maría")) {
-      return "👩";
-    }
-    return "👨";
-  };
+  const availableWorkers = workers.filter(
+    (w) => w.status === "available",
+  ).length;
 
   return (
     <View style={styles.container}>
-      <WorkersAvailabilityHeader />
+      <WorkersHeader />
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {loading ? (
-          <View style={styles. loadingContainer}>
-            <Text style={styles.loadingText}>Cargando... </Text>
-          </View>
-        ) : (
-          <View style={styles.workersContainer}>
-            {workers. map(worker => (
-              <WorkerAvailabilityCard
-                key={worker. id}
-                worker={worker}
-                onToggleDay={toggleDayAvailability}
-                onEditTimeSlot={editTimeSlot}
-                getDayName={getDayName}
-                getAvatar={getAvatar}
-              />
-            ))}
-          </View>
-        )}
+      <ScrollView
+        style={styles.content}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={["#3B82F6"]}
+            tintColor="#3B82F6"
+          />
+        }
+      >
+        <WorkersListSection workers={workers} loading={loading} />
       </ScrollView>
     </View>
   );
@@ -185,64 +112,142 @@ export default function WorkersAvailabilityScreen() {
 // ============================================================================
 // HEADER
 // ============================================================================
-function WorkersAvailabilityHeader() {
+function WorkersHeader() {
   return (
     <View style={styles.header}>
-      <TouchableOpacity
-        style={styles.backButton}
-        onPress={() => router.back()}
-        activeOpacity={0.7}
-      >
-        <Text style={styles.backIcon}>←</Text>
-      </TouchableOpacity>
-      <View style={styles.headerContent}>
-        <Text style={styles.headerTitle}>Gestionar Disponibilidad</Text>
-        <Text style={styles.headerSubtitle}>Configura horarios por trabajador</Text>
+      <View>
+        <Text style={styles.headerTitle}>Trabajadores</Text>
+        <Text style={styles.headerSubtitle}>Gestiona tu equipo</Text>
       </View>
     </View>
   );
 }
 
 // ============================================================================
-// WORKER AVAILABILITY CARD
+// LISTA DE TRABAJADORES
 // ============================================================================
-function WorkerAvailabilityCard({ worker, onToggleDay, onEditTimeSlot, getDayName, getAvatar }: any) {
+function WorkersListSection({ workers, loading }: any) {
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Text style={styles.loadingText}>Cargando trabajadores...</Text>
+      </View>
+    );
+  }
+
+  if (workers.length === 0) {
+    return (
+      <View style={styles.emptyContainer}>
+        <Text style={styles.emptyIcon}>👥</Text>
+        <Text style={styles.emptyTitle}>No hay trabajadores</Text>
+        <Text style={styles.emptyText}>
+          Agrega trabajadores para comenzar a gestionar tu equipo
+        </Text>
+      </View>
+    );
+  }
+
   return (
-    <View style={styles.workerCard}>
-      <View style={styles.workerHeader}>
-        <Text style={styles.workerAvatar}>{getAvatar(worker.profile.name)}</Text>
-        <Text style={styles. workerName}>{worker.profile.name}</Text>
-      </View>
-
-      <View style={styles. daysContainer}>
-        {worker. availability
-          .sort((a:  any, b: any) => a.day - b.day)
-          .map((dayAvail: any) => (
-            <View key={dayAvail.day} style={styles.dayRow}>
-              <View style={styles.dayInfo}>
-                <Text style={styles.dayLabel}>{getDayName(dayAvail.day)}</Text>
-                {dayAvail.enabled && (
-                  <TouchableOpacity
-                    onPress={() => onEditTimeSlot(worker, dayAvail.day)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.timeRange}>
-                      {dayAvail.start} - {dayAvail.end} ✏️
-                    </Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-
-              <Switch
-                value={dayAvail. enabled}
-                onValueChange={() => onToggleDay(worker. id, dayAvail.day)}
-                trackColor={{ false: "#D1D5DB", true: "#86EFAC" }}
-                thumbColor={dayAvail.enabled ?  "#10B981" : "#F3F4F6"}
-              />
-            </View>
-          ))}
-      </View>
+    <View style={styles.workersSection}>
+      <Text style={styles.sectionTitle}>Equipo de Trabajo</Text>
+      {workers.map((worker: any) => (
+        <WorkerCard key={worker.id} worker={worker} />
+      ))}
     </View>
+  );
+}
+
+function WorkerCard({ worker }: any) {
+  const getAvatar = (name: string) => {
+    if (
+      name.toLowerCase().includes("ana") ||
+      name.toLowerCase().includes("maría")
+    ) {
+      return "👩";
+    }
+    return "👨";
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "available":
+        return "#10B981";
+      case "busy":
+        return "#F59E0B";
+      default:
+        return "#6B7280";
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case "available":
+        return "Disponible";
+      case "busy":
+        return "Ocupado";
+      default:
+        return "Inactivo";
+    }
+  };
+
+  return (
+    <TouchableOpacity
+      style={styles.workerCard}
+      onPress={() => {
+        router.push(`/admin/availability/${worker.id}`);
+      }}
+      activeOpacity={0.7}
+    >
+      <View style={styles.workerCardHeader}>
+        <Text style={styles.workerAvatar}>
+          {getAvatar(worker.profile.name)}
+        </Text>
+        <View style={styles.workerInfo}>
+          <Text style={styles.workerName}>{worker.profile.name}</Text>
+          <Text style={styles.workerCommission}>
+            Comisión: {worker.commission_rate}%
+          </Text>
+        </View>
+        <View
+          style={[
+            styles.statusBadge,
+            { backgroundColor: getStatusColor(worker.status) + "20" },
+          ]}
+        >
+          <Text
+            style={[
+              styles.statusText,
+              { color: getStatusColor(worker.status) },
+            ]}
+          >
+            {getStatusLabel(worker.status)}
+          </Text>
+        </View>
+      </View>
+
+      <View style={styles.workerCardBody}>
+        <View style={styles.workerStat}>
+          <Text style={styles.workerStatLabel}>Hoy</Text>
+          <Text style={styles.workerStatValue}>
+            {worker.completedToday}/{worker.todayAppointments} Turnos
+          </Text>
+        </View>
+
+        {worker.currentAppointment && (
+          <View style={styles.currentAppointment}>
+            <Text style={styles.currentAppointmentLabel}>🔄 En curso: </Text>
+            <Text style={styles.currentAppointmentText}>
+              {worker.currentAppointment.client} -{" "}
+              {worker.currentAppointment.service}
+            </Text>
+          </View>
+        )}
+      </View>
+
+      <View style={styles.workerCardFooter}>
+        <Text style={styles.viewDetailsText}>Ver detalles →</Text>
+      </View>
+    </TouchableOpacity>
   );
 }
 
@@ -252,7 +257,7 @@ function WorkerAvailabilityCard({ worker, onToggleDay, onEditTimeSlot, getDayNam
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor:  "#F9FAFB",
+    backgroundColor: "#F9FAFB",
   },
   content: {
     flex: 1,
@@ -260,39 +265,54 @@ const styles = StyleSheet.create({
 
   // Header
   header: {
-    flexDirection:  "row",
-    alignItems: "center",
-    padding: 16,
+    padding: 24,
     paddingTop: 60,
     backgroundColor: "#FFFFFF",
     borderBottomWidth: 1,
     borderBottomColor: "#E5E7EB",
   },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#F3F4F6",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 12,
-  },
-  backIcon: {
-    fontSize: 24,
-    color: "#111827",
-  },
-  headerContent: {
-    flex: 1,
-  },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 28,
     fontWeight: "bold",
     color: "#111827",
   },
-  headerSubtitle:  {
-    fontSize: 13,
+  headerSubtitle: {
+    fontSize: 14,
     color: "#6B7280",
-    marginTop: 2,
+    marginTop: 4,
+  },
+
+  // Stats Section
+  statsSection: {
+    flexDirection: "row",
+    padding: 16,
+    gap: 12,
+  },
+  statCard: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    padding: 16,
+    borderLeftWidth: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  statIcon: {
+    fontSize: 24,
+    marginBottom: 8,
+  },
+  statValue: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#111827",
+    marginBottom: 4,
+  },
+  statLabel: {
+    fontSize: 12,
+    color: "#6B7280",
   },
 
   // Loading
@@ -305,61 +325,129 @@ const styles = StyleSheet.create({
     color: "#6B7280",
   },
 
-  // Workers
-  workersContainer: {
+  // Empty State
+  emptyContainer: {
+    padding: 64,
+    alignItems: "center",
+  },
+  emptyIcon: {
+    fontSize: 64,
+    marginBottom: 16,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#111827",
+    marginBottom: 8,
+  },
+  emptyText: {
+    fontSize: 14,
+    color: "#6B7280",
+    textAlign: "center",
+  },
+
+  // Workers Section
+  workersSection: {
     padding: 16,
   },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#111827",
+    marginBottom: 16,
+  },
+
+  // Worker Card
   workerCard: {
     backgroundColor: "#FFFFFF",
     borderRadius: 12,
     padding: 16,
-    marginBottom: 16,
+    marginBottom: 12,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 2,
   },
-  workerHeader: {
+  workerCardHeader: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 16,
-    paddingBottom: 16,
-    borderBottomWidth:  1,
-    borderBottomColor: "#F3F4F6",
+    marginBottom: 12,
   },
   workerAvatar: {
-    fontSize: 32,
+    fontSize: 40,
     marginRight: 12,
+  },
+  workerInfo: {
+    flex: 1,
   },
   workerName: {
     fontSize: 18,
     fontWeight: "bold",
     color: "#111827",
-  },
-
-  // Days
-  daysContainer: {
-    gap: 12,
-  },
-  dayRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 8,
-  },
-  dayInfo: {
-    flex: 1,
-  },
-  dayLabel: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#111827",
     marginBottom: 4,
   },
-  timeRange: {
+  workerCommission: {
     fontSize: 13,
+    color: "#6B7280",
+  },
+  statusBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  statusText: {
+    fontSize: 12,
+    fontWeight: "600",
+  },
+
+  // Worker Card Body
+  workerCardBody: {
+    borderTopWidth: 1,
+    borderTopColor: "#F3F4F6",
+    paddingTop: 12,
+  },
+  workerStat: {
+    marginBottom: 8,
+  },
+  workerStatLabel: {
+    fontSize: 12,
+    color: "#6B7280",
+    marginBottom: 4,
+  },
+  workerStatValue: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#111827",
+  },
+  currentAppointment: {
+    backgroundColor: "#FEF3C7",
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 4,
+  },
+  currentAppointmentLabel: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#92400E",
+    marginBottom: 4,
+  },
+  currentAppointmentText: {
+    fontSize: 13,
+    color: "#78350F",
+  },
+
+  // Worker Card Footer
+  workerCardFooter: {
+    borderTopWidth: 1,
+    borderTopColor: "#F3F4F6",
+    paddingTop: 12,
+    marginTop: 12,
+    alignItems: "flex-end",
+  },
+  viewDetailsText: {
+    fontSize: 14,
+    fontWeight: "600",
     color: "#3B82F6",
-    fontWeight: "500",
   },
 });

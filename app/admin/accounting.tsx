@@ -4,20 +4,63 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  RefreshControl,
 } from "react-native";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function AccountingScreen() {
-  const [selectedPeriod, setSelectedPeriod] = useState<"current" | "month">("current");
+  const [selectedPeriod, setSelectedPeriod] = useState<"current" | "month">(
+    "current",
+  );
+  const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadAccountingData();
+  }, [selectedPeriod]);
+
+  const loadAccountingData = async () => {
+    try {
+      setLoading(true);
+
+      // Simular carga de datos
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      setLoading(false);
+      setRefreshing(false); // ← NUEVO
+    } catch (error) {
+      console.error("Error loading accounting:", error);
+      setLoading(false);
+      setRefreshing(false); // ← NUEVO
+    }
+  };
+
+  // ← NUEVO
+  const onRefresh = () => {
+    setRefreshing(true);
+    loadAccountingData();
+  };
 
   return (
     <View style={styles.container}>
       <AccountingHeader />
-      
-      <ScrollView style={styles. content} showsVerticalScrollIndicator={false}>
-        <PeriodSelector 
-          selected={selectedPeriod} 
-          onSelect={setSelectedPeriod} 
+
+      <ScrollView
+        style={styles.content}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          // ← NUEVO
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={["#3B82F6"]}
+            tintColor="#3B82F6"
+          />
+        }
+      >
+        <PeriodSelector
+          selected={selectedPeriod}
+          onSelect={setSelectedPeriod}
         />
         <FinancialSummarySection period={selectedPeriod} />
         <WorkerPaymentsSection />
@@ -34,7 +77,7 @@ function AccountingHeader() {
   return (
     <View style={styles.header}>
       <View>
-        <Text style={styles. headerTitle}>Contabilidad</Text>
+        <Text style={styles.headerTitle}>Contabilidad</Text>
         <Text style={styles.headerSubtitle}>Resumen financiero</Text>
       </View>
     </View>
@@ -57,7 +100,7 @@ function PeriodSelector({ selected, onSelect }: any) {
       >
         <Text
           style={[
-            styles. periodButtonText,
+            styles.periodButtonText,
             selected === "current" && styles.periodButtonTextActive,
           ]}
         >
@@ -76,7 +119,7 @@ function PeriodSelector({ selected, onSelect }: any) {
         <Text
           style={[
             styles.periodButtonText,
-            selected === "month" && styles. periodButtonTextActive,
+            selected === "month" && styles.periodButtonTextActive,
           ]}
         >
           Mes completo
@@ -168,7 +211,7 @@ function WorkerPaymentsSection() {
   const workers = [
     {
       id: "1",
-      name:  "Carlos González",
+      name: "Carlos González",
       earned: 120000,
       paid: 100000,
       pending: 20000,
@@ -185,7 +228,7 @@ function WorkerPaymentsSection() {
     {
       id: "3",
       name: "Luis Rodríguez",
-      earned:  70000,
+      earned: 70000,
       paid: 50000,
       pending: 20000,
       status: "partial",
@@ -205,9 +248,9 @@ function WorkerPaymentsSection() {
 
 function WorkerPaymentCard({ worker }: any) {
   const statusConfig = {
-    paid: { label: "Pagado", color:  "#10B981", icon: "✅" },
+    paid: { label: "Pagado", color: "#10B981", icon: "✅" },
     partial: { label: "Pago parcial", color: "#F59E0B", icon: "⏳" },
-    pending:  { label: "Pendiente", color: "#EF4444", icon: "❌" },
+    pending: { label: "Pendiente", color: "#EF4444", icon: "❌" },
   };
 
   const config = statusConfig[worker.status as keyof typeof statusConfig];
@@ -218,7 +261,9 @@ function WorkerPaymentCard({ worker }: any) {
         <Text style={styles.workerPaymentName}>{worker.name}</Text>
         <View style={styles.workerPaymentStatus}>
           <Text style={styles.workerPaymentStatusIcon}>{config.icon}</Text>
-          <Text style={[styles.workerPaymentStatusText, { color: config.color }]}>
+          <Text
+            style={[styles.workerPaymentStatusText, { color: config.color }]}
+          >
             {config.label}
           </Text>
         </View>
@@ -228,8 +273,8 @@ function WorkerPaymentCard({ worker }: any) {
         <Text style={styles.workerPaymentEarned}>
           Ganado: ${worker.earned.toLocaleString()}
         </Text>
-        <Text style={styles. workerPaymentPaid}>
-          Pagado: ${worker. paid.toLocaleString()}
+        <Text style={styles.workerPaymentPaid}>
+          Pagado: ${worker.paid.toLocaleString()}
         </Text>
         {worker.pending > 0 && (
           <Text style={styles.workerPaymentPending}>
@@ -250,11 +295,11 @@ function RecentTransactionsSection() {
       id: "1",
       type: "income",
       description: "Pago cita - Juan Pérez",
-      amount:  15000,
+      amount: 15000,
       date: "Hoy, 14:30",
     },
     {
-      id:  "2",
+      id: "2",
       type: "expense",
       description: "Pago a Carlos González",
       amount: 50000,
@@ -274,7 +319,7 @@ function RecentTransactionsSection() {
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Transacciones recientes</Text>
         <TouchableOpacity>
-          <Text style={styles. seeAll}>Ver todas →</Text>
+          <Text style={styles.seeAll}>Ver todas →</Text>
         </TouchableOpacity>
       </View>
 
@@ -290,13 +335,13 @@ function TransactionCard({ transaction }: any) {
 
   return (
     <View style={styles.transactionCard}>
-      <View style={[
-        styles.transactionIcon,
-        { backgroundColor: isIncome ? "#D1FAE5" : "#FEE2E2" }
-      ]}>
-        <Text style={styles.transactionIconText}>
-          {isIncome ? "📥" : "📤"}
-        </Text>
+      <View
+        style={[
+          styles.transactionIcon,
+          { backgroundColor: isIncome ? "#D1FAE5" : "#FEE2E2" },
+        ]}
+      >
+        <Text style={styles.transactionIconText}>{isIncome ? "📥" : "📤"}</Text>
       </View>
 
       <View style={styles.transactionInfo}>
@@ -306,10 +351,12 @@ function TransactionCard({ transaction }: any) {
         <Text style={styles.transactionDate}>{transaction.date}</Text>
       </View>
 
-      <Text style={[
-        styles.transactionAmount,
-        { color: isIncome ?  "#10B981" : "#EF4444" }
-      ]}>
+      <Text
+        style={[
+          styles.transactionAmount,
+          { color: isIncome ? "#10B981" : "#EF4444" },
+        ]}
+      >
         {isIncome ? "+" : "-"}${transaction.amount.toLocaleString()}
       </Text>
     </View>
@@ -342,7 +389,7 @@ const styles = StyleSheet.create({
     color: "#111827",
   },
   headerSubtitle: {
-    fontSize:  14,
+    fontSize: 14,
     color: "#6B7280",
     marginTop: 4,
   },
@@ -351,7 +398,7 @@ const styles = StyleSheet.create({
   periodSelector: {
     flexDirection: "row",
     padding: 16,
-    gap:  12,
+    gap: 12,
   },
   periodButton: {
     flex: 1,
@@ -369,7 +416,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#6B7280",
   },
-  periodButtonTextActive:  {
+  periodButtonTextActive: {
     color: "#FFFFFF",
   },
 
@@ -379,7 +426,7 @@ const styles = StyleSheet.create({
   },
   sectionHeader: {
     flexDirection: "row",
-    justifyContent:  "space-between",
+    justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 16,
   },
@@ -421,7 +468,7 @@ const styles = StyleSheet.create({
     color: "#6B7280",
   },
   summaryDivider: {
-    height:  1,
+    height: 1,
     backgroundColor: "#E5E7EB",
     marginVertical: 16,
   },
@@ -443,7 +490,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: "#6B7280",
   },
-  summaryRowAmount:  {
+  summaryRowAmount: {
     fontSize: 16,
     fontWeight: "600",
   },
@@ -461,27 +508,27 @@ const styles = StyleSheet.create({
     color: "#166534",
   },
   profitAmount: {
-    fontSize:  20,
+    fontSize: 20,
     fontWeight: "bold",
     color: "#10B981",
   },
 
   // Worker Payment Card
-  workerPaymentCard:  {
+  workerPaymentCard: {
     backgroundColor: "#FFFFFF",
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity:  0.05,
+    shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 1,
   },
   workerPaymentInfo: {
     marginBottom: 12,
   },
-  workerPaymentName:  {
+  workerPaymentName: {
     fontSize: 16,
     fontWeight: "600",
     color: "#111827",
@@ -530,7 +577,7 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 1,
   },
-  transactionIcon:  {
+  transactionIcon: {
     width: 40,
     height: 40,
     borderRadius: 20,
@@ -538,7 +585,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginRight: 12,
   },
-  transactionIconText:  {
+  transactionIconText: {
     fontSize: 20,
   },
   transactionInfo: {

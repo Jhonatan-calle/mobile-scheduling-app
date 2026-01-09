@@ -4,6 +4,7 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  RefreshControl,
 } from "react-native";
 import { router } from "expo-router";
 import { useState, useEffect } from "react";
@@ -23,6 +24,7 @@ export default function AdminHome() {
   });
   const [todayAppointments, setTodayAppointments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     loadDashboardData();
@@ -40,7 +42,7 @@ export default function AdminHome() {
           cost: 15000,
           status: "pending",
           payment_method: "cash",
-          client:  {
+          client: {
             id: 1,
             name: "Juan Pérez",
             phone_number: "351 234 5678",
@@ -49,7 +51,7 @@ export default function AdminHome() {
             id: 1,
             profile: {
               id: 1,
-              name:  "Carlos González",
+              name: "Carlos González",
             },
           },
           service: "sillones",
@@ -71,7 +73,7 @@ export default function AdminHome() {
             phone_number: "351 456 7890",
           },
           worker: {
-            id:  2,
+            id: 2,
             profile: {
               id: 2,
               name: "Ana Martínez",
@@ -89,15 +91,15 @@ export default function AdminHome() {
       const todayApts = mockAppointments.filter((apt) => {
         const aptDate = new Date(apt.date);
         aptDate.setHours(0, 0, 0, 0);
-        return aptDate. getTime() === today.getTime();
+        return aptDate.getTime() === today.getTime();
       });
 
       const pendingApts = mockAppointments.filter(
-        (apt) => apt.status === "pending"
+        (apt) => apt.status === "pending",
       );
 
       const completedToday = todayApts.filter(
-        (apt) => apt.status === "completed"
+        (apt) => apt.status === "completed",
       ).length;
 
       // Mock: Revenue del mes (vendría de month_summaries)
@@ -111,8 +113,8 @@ export default function AdminHome() {
       });
 
       // Transformar turno de hoy
-      const transformedAppointments = todayApts. map((apt) => ({
-        id: apt.id. toString(),
+      const transformedAppointments = todayApts.map((apt) => ({
+        id: apt.id.toString(),
         time: new Date(apt.date).toLocaleTimeString("es-AR", {
           hour: "2-digit",
           minute: "2-digit",
@@ -126,17 +128,35 @@ export default function AdminHome() {
 
       setTodayAppointments(transformedAppointments);
       setLoading(false);
+      setRefreshing(false);
     } catch (error) {
       console.error("Error loading dashboard:", error);
       setLoading(false);
+      setRefreshing(false);
     }
+  };
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    loadDashboardData();
   };
 
   return (
     <View style={styles.container}>
       <DashboardHeader />
 
-      <ScrollView style={styles. content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.content}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={["#3B82F6"]}
+            tintColor="#3B82F6"
+          />
+        }
+      >
         <StatsSection stats={stats} />
         <QuickActionsSection />
         <TodayAppointmentsSection
@@ -231,7 +251,7 @@ function QuickActionsSection() {
 function TodayAppointmentsSection({ appointments, loading }: any) {
   if (loading) {
     return (
-      <View style={styles. section}>
+      <View style={styles.section}>
         <Text style={styles.sectionTitle}>Turnos de Hoy</Text>
         <Text style={styles.loadingText}>Cargando... </Text>
       </View>
@@ -242,9 +262,7 @@ function TodayAppointmentsSection({ appointments, loading }: any) {
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Turnos de Hoy</Text>
-        <TouchableOpacity
-          onPress={() => router.push("/admin/appointments")}
-        >
+        <TouchableOpacity onPress={() => router.push("/admin/appointments")}>
           <Text style={styles.seeAll}>Ver todas →</Text>
         </TouchableOpacity>
       </View>
@@ -253,9 +271,7 @@ function TodayAppointmentsSection({ appointments, loading }: any) {
         appointments.map((appointment: any) => (
           <TouchableOpacity
             key={appointment.id}
-            onPress={() =>
-              router.push(`/admin/appointments/${appointment.id}`)
-            }
+            onPress={() => router.push(`/admin/appointments/${appointment.id}`)}
             activeOpacity={0.7}
           >
             <AppointmentPreviewCard
@@ -279,9 +295,7 @@ function EmptyAppointments() {
   return (
     <View style={styles.emptyState}>
       <Text style={styles.emptyIcon}>📭</Text>
-      <Text style={styles.emptyText}>
-        No hay turnos programados para hoy
-      </Text>
+      <Text style={styles.emptyText}>No hay turnos programados para hoy</Text>
     </View>
   );
 }
@@ -312,7 +326,7 @@ const styles = StyleSheet.create({
   },
   sectionHeader: {
     flexDirection: "row",
-    justifyContent:  "space-between",
+    justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 16,
   },
@@ -332,7 +346,7 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: 14,
     color: "#6B7280",
-    textAlign:  "center",
+    textAlign: "center",
     paddingVertical: 32,
   },
 
@@ -344,7 +358,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity:  0.05,
+    shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 1,
   },
@@ -355,6 +369,6 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 14,
     color: "#6B7280",
-    textAlign:  "center",
+    textAlign: "center",
   },
 });
