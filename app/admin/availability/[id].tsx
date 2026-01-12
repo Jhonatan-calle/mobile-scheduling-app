@@ -7,9 +7,8 @@ import {
   Switch,
   Alert,
   RefreshControl,
-  Linking, // ← AGREGADO
-  Platform, // ← AGREGADO
 } from "react-native";
+import { handleCall } from "@/utils/contact";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState, useEffect } from "react";
 
@@ -250,50 +249,6 @@ function WorkerDetailHeader({ workerId }: { workerId: string }) {
 // INFORMACIÓN DEL TRABAJADOR
 // ============================================================================
 function WorkerInfoSection({ worker, getAvatar }: any) {
-  const handleCall = async (phoneNumber: string, name: string) => {
-    const cleanNumber = phoneNumber.replace(/\s/g, "").replace(/[^\d+]/g, "");
-    const phoneUrl = `tel:${cleanNumber}`;
-
-    try {
-      const canOpen = await Linking.canOpenURL(phoneUrl);
-
-      if (canOpen) {
-        await Linking.openURL(phoneUrl);
-      } else {
-        Alert.alert(
-          "Error",
-          "No se puede realizar la llamada en este dispositivo",
-        );
-      }
-    } catch (error) {
-      console.error("Error al intentar llamar:", error);
-      Alert.alert("Error", "No se pudo iniciar la llamada");
-    }
-  };
-
-  const handleWhatsApp = async (phoneNumber: string, name: string) => {
-    // Limpiar el número
-    let cleanNumber = phoneNumber.replace(/\s/g, "").replace(/[^\d+]/g, "");
-
-    cleanNumber = "+54" + cleanNumber;
-
-    // Remover el + para la URL de WhatsApp
-    const whatsappNumber = cleanNumber.replace("+", "");
-    const whatsappUrl = `https://wa.me/${whatsappNumber}`;
-
-    try {
-      const canOpen = await Linking.canOpenURL(whatsappUrl);
-
-      if (canOpen) {
-        await Linking.openURL(whatsappUrl);
-      } else {
-        Alert.alert("Error", "WhatsApp no está instalado");
-      }
-    } catch (error) {
-      console.error("Error abriendo WhatsApp:", error);
-      Alert.alert("Error", "No se pudo abrir WhatsApp");
-    }
-  };
 
   return (
     <View style={styles.section}>
@@ -311,23 +266,13 @@ function WorkerInfoSection({ worker, getAvatar }: any) {
       <View style={styles.contactButtons}>
         <TouchableOpacity
           style={[styles.contactButton, styles.callButton]}
-          onPress={() => handleCall(worker.profile.phone, worker.profile.name)}
+          onPress={() => handleCall(worker.profile.phone)}
           activeOpacity={0.7}
         >
           <Text style={styles.contactButtonIcon}>📞</Text>
           <Text style={styles.contactButtonText}>Llamar</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.contactButton, styles.whatsappButton]}
-          onPress={() =>
-            handleWhatsApp(worker.profile.phone, worker.profile.name)
-          }
-          activeOpacity={0.7}
-        >
-          <Text style={styles.contactButtonIcon}>💬</Text>
-          <Text style={styles.contactButtonText}>WhatsApp</Text>
-        </TouchableOpacity>
       </View>
     </View>
   );

@@ -82,7 +82,7 @@ export const handleCall = async (dirtyPhoneNumber: string) => {
   }
 };
 
-const handleWhatsApp = async (phoneNumber: string) => {
+export const handleWhatsApp = async (phoneNumber: string) => {
   const whatsappNumber = "+54" + phoneNumber;
 
   const whatsappUrl = `https://wa.me/${whatsappNumber.replace(/\D/g, "")}`;
