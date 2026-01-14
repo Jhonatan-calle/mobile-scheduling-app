@@ -9,7 +9,10 @@ module.exports = defineConfig([
     files: ["**/*.js", "**/*.jsx"],
     rules: {
       "no-unused-vars": "warn",
-      "no-undef": "error"
+      "no-undef": "error",
+      "no-magic-numbers": "off",
+      "react-native/no-unused-styles": "warn",
+
     }
   },
 ]);
