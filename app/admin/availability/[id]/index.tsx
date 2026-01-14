@@ -218,7 +218,7 @@ export default function WorkerDetailScreen() {
 
         <MonthStatsSection stats={worker.monthStats} />
 
-        <ServiceBreakdownSection stats={worker.monthStats} />
+        <WorkHistoryPreviewSection workerId={id} stats={worker.monthStats} />
       </ScrollView>
     </View>
   );
@@ -249,7 +249,6 @@ function WorkerDetailHeader({ workerId }: { workerId: string }) {
 // INFORMACIÓN DEL TRABAJADOR
 // ============================================================================
 function WorkerInfoSection({ worker, getAvatar }: any) {
-
   return (
     <View style={styles.section}>
       <View style={styles.workerInfoCard}>
@@ -272,7 +271,6 @@ function WorkerInfoSection({ worker, getAvatar }: any) {
           <Text style={styles.contactButtonIcon}>📞</Text>
           <Text style={styles.contactButtonText}>Llamar</Text>
         </TouchableOpacity>
-
       </View>
     </View>
   );
@@ -412,52 +410,17 @@ function StatCard({ icon, label, value, color }: any) {
 // ============================================================================
 // DESGLOSE POR SERVICIO
 // ============================================================================
-function ServiceBreakdownSection({ stats }: any) {
-  const serviceLabels: any = {
-    sillones: "Sillones",
-    alfombra: "Alfombras",
-    auto: "Autos",
-    sillas: "Sillas",
-  };
-
-  const total = Object.values(stats.appointmentsByService).reduce(
-    (a: any, b: any) => a + b,
-    0,
-  );
-
+function WorkHistoryPreviewSection({ workerId, stats }: any) {
   return (
-    <View style={styles.section}>
-      <Text style={styles.sectionTitle}>🧹 Desglose por Servicio</Text>
-
-      <View style={styles.serviceList}>
-        {Object.entries(stats.appointmentsByService).map(
-          ([service, count]: any) => {
-            const percentage = ((count / total) * 100).toFixed(0);
-
-            return (
-              <View key={service} style={styles.serviceRow}>
-                <View style={styles.serviceInfo}>
-                  <Text style={styles.serviceName}>
-                    {serviceLabels[service]}
-                  </Text>
-                  <View style={styles.serviceBar}>
-                    <View
-                      style={[
-                        styles.serviceBarFill,
-                        { width: `${percentage}%` },
-                      ]}
-                    />
-                  </View>
-                </View>
-                <Text style={styles.serviceCount}>
-                  {count} ({percentage}%)
-                </Text>
-              </View>
-            );
-          },
-        )}
-      </View>
-    </View>
+      <TouchableOpacity
+        style={styles.viewHistoryButton}
+        onPress={() => router.push(`/admin/availability/${workerId}/history`)} //aqui creo hay que pasarle que trabajador
+        activeOpacity={0.8}
+      >
+        <Text style={styles.viewHistoryButtonIcon}>📊</Text>
+        <Text style={styles.viewHistoryButtonText}>Ver Historial Completo</Text>
+        <Text style={styles.viewHistoryButtonArrow}>→</Text>
+      </TouchableOpacity>
   );
 }
 
@@ -789,5 +752,61 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#3B82F6",
     fontWeight: "500",
+  },
+  sectionTitleContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  seeAllText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#3B82F6",
+  },
+  historyPreview: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 16,
+  },
+  previewStat: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  previewIcon: {
+    fontSize: 32,
+  },
+  previewValue: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#111827",
+  },
+  previewLabel: {
+    fontSize: 11,
+    color: "#6B7280",
+  },
+  viewHistoryButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#3B82F6",
+    borderRadius: 12,
+    padding: 16,
+    gap: 8,
+  },
+  viewHistoryButtonIcon: {
+    fontSize: 20,
+  },
+  viewHistoryButtonText: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#FFFFFF",
+    flex: 1,
+    textAlign: "center",
+  },
+  viewHistoryButtonArrow: {
+    fontSize: 20,
+    color: "#FFFFFF",
   },
 });
