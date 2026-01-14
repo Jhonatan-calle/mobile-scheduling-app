@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { handleCall } from "@/utils/contact";
 import { router, useLocalSearchParams } from "expo-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 export default function WorkerDetailScreen() {
   const { id } = useLocalSearchParams();
@@ -19,14 +19,10 @@ export default function WorkerDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    loadWorkerData();
-  }, [selectedMonth]);
-
-  const loadWorkerData = async () => {
+  const loadWorkerData = useCallback(async () => {
     try {
       if (!refreshing) setLoading(true);
-
+      await new Promise((resolve) => setTimeout(resolve, 1000));
       const mockWorker = {
         id: parseInt(id as string),
         profile: {
@@ -72,12 +68,11 @@ export default function WorkerDetailScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  });
 
-  const onRefresh = () => {
-    setRefreshing(true);
+  useEffect(() => {
     loadWorkerData();
-  };
+  }, [selectedMonth, refreshing]);
 
   const toggleDayAvailability = async (dayIndex: number) => {
     const updatedAvailability = worker.availability.map((avail: any) => {
@@ -195,7 +190,9 @@ export default function WorkerDetailScreen() {
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
-            onRefresh={onRefresh}
+            onRefresh={() => {
+              setRefreshing(true);
+            }}
             colors={["#3B82F6"]}
             tintColor="#3B82F6"
           />
@@ -412,15 +409,15 @@ function StatCard({ icon, label, value, color }: any) {
 // ============================================================================
 function WorkHistoryPreviewSection({ workerId, stats }: any) {
   return (
-      <TouchableOpacity
-        style={styles.viewHistoryButton}
-        onPress={() => router.push(`/admin/availability/${workerId}/history`)} //aqui creo hay que pasarle que trabajador
-        activeOpacity={0.8}
-      >
-        <Text style={styles.viewHistoryButtonIcon}>📊</Text>
-        <Text style={styles.viewHistoryButtonText}>Ver Historial Completo</Text>
-        <Text style={styles.viewHistoryButtonArrow}>→</Text>
-      </TouchableOpacity>
+    <TouchableOpacity
+      style={styles.viewHistoryButton}
+      onPress={() => router.push(`/admin/availability/${workerId}/history`)} //aqui creo hay que pasarle que trabajador
+      activeOpacity={0.8}
+    >
+      <Text style={styles.viewHistoryButtonIcon}>📊</Text>
+      <Text style={styles.viewHistoryButtonText}>Ver Historial Completo</Text>
+      <Text style={styles.viewHistoryButtonArrow}>→</Text>
+    </TouchableOpacity>
   );
 }
 

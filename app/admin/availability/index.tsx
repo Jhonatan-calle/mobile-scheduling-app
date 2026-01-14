@@ -5,24 +5,22 @@ import {
   ScrollView,
   TouchableOpacity,
   RefreshControl,
+  ActivityIndicator
 } from "react-native";
 import { router } from "expo-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 export default function WorkersScreen() {
   const [workers, setWorkers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    loadWorkers();
-  }, []);
-
-  const loadWorkers = async () => {
+  const loadWorkers = useCallback(async () => {
     try {
       if (!refreshing) setLoading(true);
+      await new Promise((resolve) => setTimeout(resolve, 1000));
 
-      // Mock:  Datos de trabajadores
+      // Mock: Datos de trabajadores
       const mockWorkers = [
         {
           id: 1,
@@ -76,16 +74,11 @@ export default function WorkersScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, [refreshing]); // ← refreshing es la única dependencia
 
-  const onRefresh = () => {
-    setRefreshing(true);
+  useEffect(() => {
     loadWorkers();
-  };
-
-  const availableWorkers = workers.filter(
-    (w) => w.status === "available",
-  ).length;
+  }, [loadWorkers]);
 
   return (
     <View style={styles.container}>
@@ -97,7 +90,9 @@ export default function WorkersScreen() {
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
-            onRefresh={onRefresh}
+            onRefresh={() => {
+              setRefreshing(true);
+            }}
             colors={["#3B82F6"]}
             tintColor="#3B82F6"
           />
@@ -130,7 +125,7 @@ function WorkersListSection({ workers, loading }: any) {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>Cargando trabajadores...</Text>
+        <ActivityIndicator size="large" color="#3B82F6" />
       </View>
     );
   }
