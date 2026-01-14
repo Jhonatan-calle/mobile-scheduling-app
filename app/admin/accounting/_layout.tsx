@@ -5,8 +5,8 @@ export default function AccountingLayout() {
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="index" />
       <Stack.Screen name="expenses" />
-      <Stack.Screen name="payments" />
       <Stack.Screen name="summary" />
+      <Stack.Screen name="payments" />
     </Stack>
   );
 }
