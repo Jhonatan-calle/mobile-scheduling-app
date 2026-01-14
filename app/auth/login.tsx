@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  Alert,
 } from "react-native";
 import { router } from "expo-router";
 import FormContainer from "../../components/FormContainer";
@@ -21,7 +20,7 @@ export default function LoginScreen() {
 
   const signInWithGoogle = async () => {
     setGoogleLoading(true);
-    // setError(null);
+    setError(null);
     //
     // try {
     //   const redirectUrl = Linking.createURL("/(auth)/login");

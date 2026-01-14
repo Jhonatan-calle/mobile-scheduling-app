@@ -288,8 +288,9 @@ function DangerZoneSection({ onLogout }: { onLogout: () => void }) {
         <Text style={styles.logoutText}>Cerrar sesión</Text>
       </TouchableOpacity>
       <View style={styles.versionContainer}>
-        // TODO: Obtener versión dinámica
+        {/* TODO: Obtener versión dinámica */}
         <Text style={styles.versionText}>Versión 1.0.0</Text>
+        versión dinámica
       </View>
     </View>
   );

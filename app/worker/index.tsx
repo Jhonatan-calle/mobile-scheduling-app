@@ -1,4 +1,4 @@
-import { View, ActivityIndicator, StyleSheet } from "react-native";
+import { View, StyleSheet } from "react-native";
 
 export default function Index() {
   return (
