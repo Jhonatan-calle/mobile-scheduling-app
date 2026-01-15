@@ -10,7 +10,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { router } from "expo-router";
-import { supabase } from "../../../utils/supabase";
+import { supabase } from "../../../supabase/supabase.ts";
 import { useState, useEffect } from "react";
 
 interface Profile {
@@ -288,9 +288,7 @@ function DangerZoneSection({ onLogout }: { onLogout: () => void }) {
         <Text style={styles.logoutText}>Cerrar sesión</Text>
       </TouchableOpacity>
       <View style={styles.versionContainer}>
-        {/* TODO: Obtener versión dinámica */}
-        <Text style={styles.versionText}>Versión 1.0.0</Text>
-        versión dinámica
+        <Text style={styles.versionText}>Versión 1.0.0</Text>{/* TODO: Obtener versión dinámica */}
       </View>
     </View>
   );

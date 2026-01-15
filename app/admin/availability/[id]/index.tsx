@@ -68,11 +68,11 @@ export default function WorkerDetailScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  });
+  },[id, selectedMonth, refreshing]);
 
   useEffect(() => {
     loadWorkerData();
-  }, [selectedMonth, refreshing]);
+  }, [loadWorkerData]);
 
   const toggleDayAvailability = async (dayIndex: number) => {
     const updatedAvailability = worker.availability.map((avail: any) => {

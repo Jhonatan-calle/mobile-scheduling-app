@@ -8,7 +8,7 @@ import {
   RefreshControl,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 const ITEMS_PER_PAGE = 15;
 
@@ -23,25 +23,23 @@ export default function WorkerHistoryScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [hasMore, setHasMore] = useState(true);
 
-  useEffect(() => {
-    loadHistory();
-  }, []);
-
-  const loadHistory = async () => {
+  const loadHistory = useCallback(async () => {
     try {
       if (!refreshing) setLoading(true);
+      await new Promise((resolve) => setTimeout(resolve, 1000));
 
       // TODO: Cargar de Supabase
       const mockWork = generateMockWorkData(50); // 50 items para testing
-      
+
       // Ordenar por fecha descendente
-      const sortedWork = mockWork.sort((a: any, b: any) => 
-        new Date(b.date).getTime() - new Date(a.date).getTime()
+      const sortedWork = mockWork.sort(
+        (a: any, b: any) =>
+          new Date(b.date).getTime() - new Date(a.date).getTime(),
       );
 
       setWorkerName("Carlos González"); // TODO: Obtener de Supabase
       setAllWork(sortedWork);
-      
+
       // Primera página
       const firstPage = sortedWork.slice(0, ITEMS_PER_PAGE);
       setDisplayedWork(firstPage);
@@ -55,42 +53,50 @@ export default function WorkerHistoryScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, [refreshing]);
 
-  const generateMockWorkData = (count:  number) => {
+  useEffect(() => {
+    loadHistory();
+  }, [loadHistory]);
+
+  const generateMockWorkData = (count: number) => {
     const work = [];
     const today = new Date();
-    
+
     for (let i = 0; i < count; i++) {
       const date = new Date(today);
       date.setDate(date.getDate() - i);
       date.setHours(9 + (i % 10), 0, 0, 0);
 
       const isAppointment = i % 3 !== 0;
-      
+
       work.push({
         id: i + 1,
-        type: isAppointment ? "appointment" :  "retouch",
+        type: isAppointment ? "appointment" : "retouch",
         date: date.toISOString(),
         client: {
           name: `Cliente ${i + 1}`,
           phone: `351 ${Math.floor(Math.random() * 900000 + 100000)}`,
         },
-        service: isAppointment 
-          ? ["Limpieza de sillón", "Alfombra persa", "Auto completo", "Sillas"][i % 4]
+        service: isAppointment
+          ? ["Limpieza de sillón", "Alfombra persa", "Auto completo", "Sillas"][
+              i % 4
+            ]
           : `Repaso de ${["sillón", "alfombra", "auto"][i % 3]}`,
         address: `Calle ${i + 1}, ${100 + i}`,
-        ...(isAppointment ? {
-          cost: 12000 + (i * 500),
-          workerEarned: (12000 + (i * 500)) * 0.6,
-        } : {
-          reason: `Motivo del repaso #${i + 1}`,
-          appointmentId: Math.floor(i / 3) + 1,
-        }),
+        ...(isAppointment
+          ? {
+              cost: 12000 + i * 500,
+              workerEarned: (12000 + i * 500) * 0.6,
+            }
+          : {
+              reason: `Motivo del repaso #${i + 1}`,
+              appointmentId: Math.floor(i / 3) + 1,
+            }),
         status: "completed",
       });
     }
-    
+
     return work;
   };
 
@@ -103,9 +109,9 @@ export default function WorkerHistoryScreen() {
       const nextPage = currentPage + 1;
       const startIndex = currentPage * ITEMS_PER_PAGE;
       const endIndex = startIndex + ITEMS_PER_PAGE;
-      
+
       const newItems = allWork.slice(startIndex, endIndex);
-      
+
       if (newItems.length > 0) {
         setDisplayedWork([...displayedWork, ...newItems]);
         setCurrentPage(nextPage);
@@ -118,14 +124,9 @@ export default function WorkerHistoryScreen() {
     }, 500);
   };
 
-  const onRefresh = () => {
-    setRefreshing(true);
-    loadHistory();
-  };
-
   if (loading) {
     return (
-      <View style={styles. container}>
+      <View style={styles.container}>
         <HistoryHeader workerName={workerName} />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#3B82F6" />
@@ -144,21 +145,18 @@ export default function WorkerHistoryScreen() {
         renderItem={({ item }) => <WorkItem item={item} />}
         keyExtractor={(item) => `${item.type}-${item.id}`}
         contentContainerStyle={styles.listContent}
-        
         // Infinite scroll
         onEndReached={loadMore}
         onEndReachedThreshold={0.3}
-        
         // Pull to refresh
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
-            onRefresh={onRefresh}
+            onRefresh={() => {setRefreshing(true)}}
             colors={["#3B82F6"]}
             tintColor="#3B82F6"
           />
         }
-        
         // Footer
         ListFooterComponent={() => (
           <>
@@ -177,13 +175,10 @@ export default function WorkerHistoryScreen() {
             )}
           </>
         )}
-        
         ListEmptyComponent={() => (
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyIcon}>📭</Text>
-            <Text style={styles.emptyText}>
-              No hay historial de trabajos
-            </Text>
+            <Text style={styles.emptyText}>No hay historial de trabajos</Text>
           </View>
         )}
       />
@@ -204,11 +199,11 @@ function HistoryHeader({ workerName, totalItems }: any) {
       >
         <Text style={styles.backIcon}>←</Text>
       </TouchableOpacity>
-      
+
       <View style={styles.headerContent}>
         <Text style={styles.headerTitle}>Historial de Trabajo</Text>
         <Text style={styles.headerSubtitle}>
-          {workerName} {totalItems ?  `• ${totalItems} trabajos` : ""}
+          {workerName} {totalItems ? `• ${totalItems} trabajos` : ""}
         </Text>
       </View>
     </View>
@@ -223,7 +218,7 @@ function WorkItem({ item }: any) {
     const date = new Date(dateString);
     return date.toLocaleDateString("es-AR", {
       day: "numeric",
-      month:  "short",
+      month: "short",
       hour: "2-digit",
       minute: "2-digit",
     });
@@ -252,26 +247,16 @@ function WorkItem({ item }: any) {
             {item.type === "appointment" ? "Turno" : "Repaso"}
           </Text>
         </View>
-        <Text style={styles.workCardDate}>
-          {formatDate(item. date)}
-        </Text>
+        <Text style={styles.workCardDate}>{formatDate(item.date)}</Text>
       </View>
 
       <View style={styles.workCardBody}>
-        <Text style={styles.workCardClient}>
-          👤 {item.client.name}
-        </Text>
-        <Text style={styles.workCardService}>
-          🧹 {item.service}
-        </Text>
-        <Text style={styles.workCardAddress}>
-          📍 {item.address}
-        </Text>
+        <Text style={styles.workCardClient}>👤 {item.client.name}</Text>
+        <Text style={styles.workCardService}>🧹 {item.service}</Text>
+        <Text style={styles.workCardAddress}>📍 {item.address}</Text>
 
         {item.type === "retouch" && item.reason && (
-          <Text style={styles.workCardReason}>
-            💬 {item.reason}
-          </Text>
+          <Text style={styles.workCardReason}>💬 {item.reason}</Text>
         )}
       </View>
 
@@ -286,7 +271,7 @@ function WorkItem({ item }: any) {
           <View style={styles.workCardAmount}>
             <Text style={styles.workCardAmountLabel}>Ganancia: </Text>
             <Text style={styles.workCardEarned}>
-              ${item. workerEarned.toLocaleString()}
+              ${item.workerEarned.toLocaleString()}
             </Text>
           </View>
         </View>
@@ -305,9 +290,9 @@ function WorkItem({ item }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor:  "#F9FAFB",
+    backgroundColor: "#F9FAFB",
   },
-  
+
   // Header
   header: {
     flexDirection: "row",
@@ -320,8 +305,8 @@ const styles = StyleSheet.create({
   },
   backButton: {
     width: 40,
-    height:  40,
-    borderRadius:  20,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: "#F3F4F6",
     justifyContent: "center",
     alignItems: "center",
@@ -340,9 +325,9 @@ const styles = StyleSheet.create({
     color: "#111827",
   },
   headerSubtitle: {
-    fontSize:  13,
+    fontSize: 13,
     color: "#6B7280",
-    marginTop:  2,
+    marginTop: 2,
   },
 
   // List
@@ -370,7 +355,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity:  0.05,
+    shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 2,
     position: "relative",
@@ -382,14 +367,14 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   workCardType: {
-    flexDirection:  "row",
-    alignItems:  "center",
+    flexDirection: "row",
+    alignItems: "center",
     gap: 6,
   },
   workCardTypeIcon: {
-    fontSize:  16,
+    fontSize: 16,
   },
-  workCardTypeText:  {
+  workCardTypeText: {
     fontSize: 13,
     fontWeight: "600",
     color: "#6B7280",
@@ -413,7 +398,7 @@ const styles = StyleSheet.create({
     color: "#374151",
   },
   workCardAddress: {
-    fontSize:  13,
+    fontSize: 13,
     color: "#6B7280",
   },
   workCardReason: {
@@ -460,7 +445,7 @@ const styles = StyleSheet.create({
   },
 
   // Loading More
-  loadingMoreContainer:  {
+  loadingMoreContainer: {
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
@@ -468,7 +453,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   loadingMoreText: {
-    fontSize:  14,
+    fontSize: 14,
     color: "#6B7280",
   },
 
