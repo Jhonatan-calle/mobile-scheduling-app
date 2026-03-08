@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { View, ActivityIndicator, StyleSheet } from "react-native";
 import { router } from "expo-router";
-// import { supabase } from "../utils/supabase";
+import { supabase } from "../supabase/supabase";
 
 export default function Index() {
   useEffect(() => {
@@ -9,27 +9,31 @@ export default function Index() {
   }, []);
 
   const checkSession = async () => {
-    // const { data: { session } } = await supabase.auth.getSession();
-    //
-    // if (!session)    //   router.replace("/(auth)/login");
-    //   return;
-    // }
-    //
-    // const { data: profile } = await supabase
-    //   . from("profiles")
-    //   .select("role")
-    //   .eq("id", session.user.id)
-    //   .single();
-    //
-    // if (profile?. role === "ADMIN") {
-    //   router.replace("/(admin)");
-    // } else {
-    //   router.replace("/(worker)");
-    // }
-    
-    await new Promise(resolve => setTimeout(resolve, 3000));
-    router.replace("/auth/login");
-    
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (!session) {
+      router.replace("/auth/login");
+      return;
+    }
+
+    const { data: profile, error } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", session.user.id)
+      .single();
+
+    if (error) {
+      router.replace("/auth/login");
+      return;
+    }
+
+    if (profile?.role === "ADMIN") {
+      router.replace("/admin/dashboard");
+    } else {
+      router.replace("/worker");
+    }
   };
 
   return (

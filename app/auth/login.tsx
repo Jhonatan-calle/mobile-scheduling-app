@@ -3,16 +3,17 @@ import {
   View,
   Text,
   StyleSheet,
+  Alert,
 } from "react-native";
 import { router } from "expo-router";
+import * as WebBrowser from "expo-web-browser";
+import * as Linking from "expo-linking";
 import FormContainer from "../../components/FormContainer";
 import SocialButton from "../../components/SocialButton";
-// import { supabase } from "../../utils/supabase";
-// import * as WebBrowser from "expo-web-browser";
-// import * as Linking from "expo-linking";
+import { supabase } from "../../supabase/supabase";
 
 // Necesario para que funcione el OAuth
-// WebBrowser.maybeCompleteAuthSession();
+WebBrowser.maybeCompleteAuthSession();
 
 export default function LoginScreen() {
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -21,53 +22,88 @@ export default function LoginScreen() {
   const signInWithGoogle = async () => {
     setGoogleLoading(true);
     setError(null);
-    //
-    // try {
-    //   const redirectUrl = Linking.createURL("/(auth)/login");
-    //
-    //   const { data, error } = await supabase. auth.signInWithOAuth({
-    //     provider: "google",
-    //     options: {
-    //       redirectTo: redirectUrl,
-    //       skipBrowserRedirect: false,
-    //     },
-    //   });
-    //
-    //   if (error) {
-    //     setError(error.message);
-    //     Alert.alert("Error", error.message);
-    //     setGoogleLoading(false);
-    //     return;
-    //   }
-    //
-    //   // Abrir navegador para autenticación
-    //   if (data?. url) {
-    //     const result = await WebBrowser.openAuthSessionAsync(
-    //       data.url,
-    //       redirectUrl
-    //     );
-    //
-    //     if (result.type === "success") {
-    //       // La autenticación fue exitosa
-    //       // El listener en _layout.tsx manejará la redirección
-    //       console.log("Autenticación exitosa");
-    //     } else if (result.type === "cancel") {
-    //       Alert.alert("Cancelado", "Inicio de sesión cancelado");
-    //     }
-    //   }
-    // } catch (err) {
-    //   console.error("Error con Google:", err);
-    //   setError("Error al iniciar sesión con Google");
-    //   Alert.alert("Error", "No se pudo iniciar sesión con Google");
-    // } finally {
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    router.replace("/admin");
-    setGoogleLoading(false);
-    // }
+    try {
+      const redirectUrl = Linking.createURL("auth/callback", {
+        scheme: "tapizadosrc",
+      });
+
+      console.log("🔵 Redirect URL generada:", redirectUrl);
+
+      const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: redirectUrl,
+          skipBrowserRedirect: true,
+        },
+      });
+
+      if (oauthError) {
+        console.error("❌ Error OAuth:", oauthError);
+        throw oauthError;
+      }
+
+      if (!data?.url) {
+        throw new Error("No se pudo iniciar el flujo de OAuth.");
+      }
+
+      console.log("🔵 URL de Google que se abrirá:", data.url);
+
+      const result = await WebBrowser.openAuthSessionAsync(
+        data.url,
+        redirectUrl
+      );
+
+      if (result.type === "cancel" || result.type === "dismiss") {
+        console.log("⚠️ Usuario canceló el login");
+        return;
+      }
+
+      if (result.type !== "success") {
+        console.error("❌ Error en WebBrowser:", result);
+        throw new Error("No se pudo completar la autenticación.");
+      }
+
+      console.log("✅ WebBrowser success:", result.url);
+
+      const parsedUrl = Linking.parse(result.url);
+      const code =
+        typeof parsedUrl.queryParams?.code === "string"
+          ? parsedUrl.queryParams.code
+          : undefined;
+
+      if (!code) {
+        console.error("❌ No hay code en la URL:", parsedUrl);
+        throw new Error("No se recibió el código de autenticación.");
+      }
+
+      console.log("🔵 Code recibido, intercambiando por sesión...");
+
+      const { error: exchangeError } =
+        await supabase.auth.exchangeCodeForSession(code);
+
+      if (exchangeError) {
+        console.error("❌ Error al intercambiar code:", exchangeError);
+        throw exchangeError;
+      }
+
+      console.log("✅ Sesión creada exitosamente");
+      router.replace("/");
+    } catch (err) {
+      console.error("❌ Error general:", err);
+      const message =
+        err instanceof Error
+          ? err.message
+          : "No se pudo iniciar sesión con Google";
+
+      setError(message);
+      Alert.alert("Error", message);
+    } finally {
+      setGoogleLoading(false);
+    }
   };
 
   return (
-    <View style={styles. container}>
+    <View style={styles.container}>
       <View style={styles.content}>
         {/* Header */}
         <View style={styles.headerContainer}>
@@ -125,7 +161,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#F9FAFB",
   },
   content: {
-    flex:  1,
+    flex: 1,
     justifyContent: "center",
     padding: 24,
   },
@@ -133,11 +169,11 @@ const styles = StyleSheet.create({
     marginBottom: 48,
     alignItems: "center",
   },
-  icon:  {
+  icon: {
     fontSize: 64,
     marginBottom: 16,
   },
-  title:  {
+  title: {
     fontSize: 28,
     fontWeight: "bold",
     color: "#111827",
@@ -145,7 +181,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 36,
   },
-  subtitle:  {
+  subtitle: {
     fontSize: 16,
     color: "#6B7280",
     textAlign: "center",
@@ -160,7 +196,7 @@ const styles = StyleSheet.create({
   instructionText: {
     fontSize: 15,
     color: "#6B7280",
-    textAlign:  "center",
+    textAlign: "center",
     marginBottom: 24,
     lineHeight: 22,
   },
@@ -178,15 +214,15 @@ const styles = StyleSheet.create({
   infoContainer: {
     marginTop: 20,
     padding: 16,
-    backgroundColor:  "#EFF6FF",
-    borderRadius:  12,
+    backgroundColor: "#EFF6FF",
+    borderRadius: 12,
     borderLeftWidth: 4,
     borderLeftColor: "#3B82F6",
   },
   infoText: {
     fontSize: 14,
-    color:  "#1E40AF",
-    textAlign:  "center",
+    color: "#1E40AF",
+    textAlign: "center",
   },
   footer: {
     marginTop: 32,
