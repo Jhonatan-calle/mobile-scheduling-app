@@ -9,6 +9,7 @@ erDiagram
 
     PROFILES {
         int id PK
+        int user_id FK
         string name
     }
 
@@ -38,12 +39,14 @@ erDiagram
 
     ADMINS {
         int id PK
+        int profile_id FK
     }
 
     CLIENTS {
         int id PK
         string name
         string phone_number
+        datetime last_appointment_at
     }
 
     APPOINTMENTS {
@@ -62,8 +65,6 @@ erDiagram
         string payment_method
         decimal cost
         boolean has_retouches
-        datetime created_at
-        datetime updated_at
     }
 
     RETOUCHES {
@@ -75,7 +76,6 @@ erDiagram
         string reason
         int estimate_time
         int status_id FK
-        datetime created_at
     }
 
     MONTH_SUMMARIES {
