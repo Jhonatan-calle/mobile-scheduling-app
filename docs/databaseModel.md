@@ -2,6 +2,7 @@
 erDiagram
     
     AUTH.USERS {
+        int id PK
         string role
         string email
         string phone
@@ -21,7 +22,10 @@ erDiagram
 
     SERVICES {
         int id PK
-        string name
+        string objeto
+        string combo
+        string description
+        boolean is_active
     }
 
     APPOINTMENT_STATUSES {
