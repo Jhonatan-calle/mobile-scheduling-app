@@ -13,16 +13,17 @@ export default function Index() {
       data: { session },
     } = await supabase.auth.getSession();
 
-    if (!session) {
-      router.replace("/auth/login");
+    if (!session) { // por ahora entra por aqui
+      router.replace("/auth/login"); 
       return;
     }
 
-    const { data: profile, error } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", session.user.id)
-      .single();
+    //TODO: esto hay que adaptarlo a la estructura real de la base de datos 
+    // const { data: profile, error } = await supabase
+    //   .from("profiles")
+    //   .select("role")
+    //   .eq("id", session.user.id)
+    //   .single();
 
     if (error) {
       router.replace("/auth/login");
