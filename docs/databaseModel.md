@@ -1,5 +1,12 @@
 ```mermaid
 erDiagram
+    
+    AUTH.USERS {
+        string role
+        string email
+        string phone
+    }
+
     PROFILES {
         int id PK
         string name
@@ -9,6 +16,16 @@ erDiagram
         int id PK
         int profile_id FK
         decimal commission_rate
+    }
+
+    SERVICES {
+        int id PK
+        string name
+    }
+
+    APPOINTMENT_STATUSES {
+        int id PK
+        string name
     }
 
     WORKER_AVAILABILITY {
@@ -27,7 +44,6 @@ erDiagram
         int id PK
         string name
         string phone_number
-        datetime last_appointment_at
     }
 
     APPOINTMENTS {
@@ -37,14 +53,14 @@ erDiagram
         int admin_id FK
         int worker_id FK
         int client_id FK
+        int service_id FK
+        int status_id FK
         int estimate_time
-        string service
-        string service_details
-        boolean paidToWorker
+        string notes
+        boolean paid_to_worker
         decimal commission_rate
         string payment_method
         decimal cost
-        string status
         boolean has_retouches
         datetime created_at
         datetime updated_at
@@ -58,7 +74,7 @@ erDiagram
         int worker_id FK
         string reason
         int estimate_time
-        string status
+        int status_id FK
         datetime created_at
     }
 
@@ -83,14 +99,16 @@ erDiagram
 
     SALARIES {
         int id PK
-        int profile_id FK
+        int user_id FK
         decimal amount
         int month
         int year
     }
 
+    AUTH.USERS ||--o| PROFILES : is
     PROFILES ||--o| WORKERS : is
     PROFILES ||--o| ADMINS : is
+    PROFILES ||--o{ SALARIES : receives
 
     WORKERS ||--o{ APPOINTMENTS : attends
     WORKERS ||--o{ WORKER_AVAILABILITY : has
@@ -99,6 +117,9 @@ erDiagram
     ADMINS ||--o{ APPOINTMENTS : manages
     CLIENTS ||--o{ APPOINTMENTS : books
 
+    SERVICES ||--o{ APPOINTMENTS : categorizes
+    APPOINTMENT_STATUSES ||--o{ APPOINTMENTS : defines
+    APPOINTMENT_STATUSES ||--o{ RETOUCHES : defines
+
     APPOINTMENTS ||--o{ RETROUCHES : has
 
-    PROFILES ||--o{ SALARIES : receives
