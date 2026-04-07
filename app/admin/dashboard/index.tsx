@@ -149,6 +149,7 @@ export default function AdminHome() {
         style={styles.content}
         showsVerticalScrollIndicator={false}
         refreshControl={
+          // ← NUEVO
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
@@ -230,7 +231,7 @@ function QuickActionsSection() {
         icon="👥"
         title="Gestionar Trabajadores"
         subtitle="Ver disponibilidad y asignaciones"
-        onPress={() => router.push("/admin/workers")}
+        onPress={() => router.push("/admin/availability")}
         color="#F59E0B"
       />
 
