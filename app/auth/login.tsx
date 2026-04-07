@@ -1,104 +1,51 @@
 import { useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  Alert,
-} from "react-native";
+import { View, Text, Pressable, StyleSheet, Alert } from "react-native";
 import { router } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
-import * as Linking from "expo-linking";
 import FormContainer from "../../components/FormContainer";
-import SocialButton from "../../components/SocialButton";
+import Input from "../../components/Input";
+import Button from "../../components/Button";
 import { supabase } from "../../supabase/supabase";
+
 
 // Necesario para que funcione el OAuth
 WebBrowser.maybeCompleteAuthSession();
 
 export default function LoginScreen() {
-  const [googleLoading, setGoogleLoading] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const signInWithGoogle = async () => {
-    setGoogleLoading(true);
+  const signInWithEmail = async () => {
+    setLoading(true);
     setError(null);
+
     try {
-      const redirectUrl = Linking.createURL("auth/callback", {
-        scheme: "tapizadosrc",
-      });
+      const cleanEmail = email.trim().toLowerCase();
 
-      console.log("🔵 Redirect URL generada:", redirectUrl);
-
-      const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: redirectUrl,
-          skipBrowserRedirect: true,
-        },
-      });
-
-      if (oauthError) {
-        console.error("❌ Error OAuth:", oauthError);
-        throw oauthError;
+      if (!cleanEmail || !password) {
+        throw new Error("Completa email y contraseña.");
       }
 
-      if (!data?.url) {
-        throw new Error("No se pudo iniciar el flujo de OAuth.");
-      }
+      const { data, error: signInError } =
+        await supabase.auth.signInWithPassword({
+          email: cleanEmail,
+          password,
+        });
 
-      console.log("🔵 URL de Google que se abrirá:", data.url);
+      if (signInError) throw signInError;
 
-      const result = await WebBrowser.openAuthSessionAsync(
-        data.url,
-        redirectUrl
-      );
-
-      if (result.type === "cancel" || result.type === "dismiss") {
-        console.log("⚠️ Usuario canceló el login");
-        return;
-      }
-
-      if (result.type !== "success") {
-        console.error("❌ Error en WebBrowser:", result);
-        throw new Error("No se pudo completar la autenticación.");
-      }
-
-      console.log("✅ WebBrowser success:", result.url);
-
-      const parsedUrl = Linking.parse(result.url);
-      const code =
-        typeof parsedUrl.queryParams?.code === "string"
-          ? parsedUrl.queryParams.code
-          : undefined;
-
-      if (!code) {
-        console.error("❌ No hay code en la URL:", parsedUrl);
-        throw new Error("No se recibió el código de autenticación.");
-      }
-
-      console.log("🔵 Code recibido, intercambiando por sesión...");
-
-      const { error: exchangeError } =
-        await supabase.auth.exchangeCodeForSession(code);
-
-      if (exchangeError) {
-        console.error("❌ Error al intercambiar code:", exchangeError);
-        throw exchangeError;
-      }
-
-      console.log("✅ Sesión creada exitosamente");
-      router.replace("/");
+      // data.session existe si el login fue exitoso
+      router.replace("/admin/dashboard");
     } catch (err) {
-      console.error("❌ Error general:", err);
       const message =
-        err instanceof Error
-          ? err.message
-          : "No se pudo iniciar sesión con Google";
-
+        err instanceof Error ? err.message : "No se pudo iniciar sesión";
       setError(message);
       Alert.alert("Error", message);
     } finally {
-      setGoogleLoading(false);
+      setLoading(false);
     }
   };
 
@@ -111,16 +58,12 @@ export default function LoginScreen() {
           <Text style={styles.title}>
             Limpieza de Tapizados{"\n"}Río Cuarto
           </Text>
-          <Text style={styles.subtitle}>
-            Gestiona tus turnos y horarios
-          </Text>
+          <Text style={styles.subtitle}>Gestiona tus turnos y horarios</Text>
         </View>
 
         {/* Formulario */}
         <FormContainer>
-          <Text style={styles.welcomeText}>
-            Bienvenido
-          </Text>
+          <Text style={styles.welcomeText}>Bienvenido</Text>
           <Text style={styles.instructionText}>
             Inicia sesión con tu cuenta de Google para continuar
           </Text>
@@ -131,11 +74,24 @@ export default function LoginScreen() {
             </View>
           )}
 
-          <SocialButton
-            provider="google"
-            onPress={signInWithGoogle}
-            loading={googleLoading}
+          <Input
+            label="Correo"
+            value={email}
+            onChangeText={setEmail}
+            autoCapitalize="none"
+            keyboardType="email-address"
+            placeholder="tu@correo.com"
           />
+
+          <Input
+            label="Contraseña"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            placeholder="••••••••"
+          />
+
+          <Button title="Iniciar sesión" onPress={signInWithEmail} disabled={loading} />
 
           <View style={styles.infoContainer}>
             <Text style={styles.infoText}>
