@@ -5,8 +5,8 @@ export const APPOINTMENT_STATUS = {
   EN_PROCESO: 2,
   COMPLETO: 3,
   PENDIENTE_REPASO: 4,
-  COMPLETO_REPASO: 5,
-  EN_PROCESO_REPASO: 6,
+  EN_PROCESO_REPASO: 5,
+  COMPLETO_REPASO: 6,
 } as const;
 
 function startOfLocalDay(d = new Date()) {
@@ -21,8 +21,8 @@ function addDays(date: Date, days: number) {
 export type DashboardStats = {
   todayAppointments: number;
   pendingAppointments: number;
-  completedToday: number;
   monthlyRevenue: number;
+  completedToday: number;
 };
 
 export type DashboardTodayAppointment = {
@@ -40,6 +40,7 @@ export async function getAdminDashboardData() {
 
   // rango "hoy" en hora local
   const todayStart = startOfLocalDay(new Date());
+  const tomorrowStart = addDays(todayStart, 1);
 
   // 1) Turnos de hoy (del admin)
   const { data: todayRows, error: todayErr } = await supabase
@@ -59,7 +60,8 @@ export async function getAdminDashboardData() {
       service:services(id, objeto, description)
     `,
     )
-    .gte("date", todayStart.toISOString()) 
+    .gte("date", todayStart.toISOString())
+    .lt("date", tomorrowStart.toISOString())
     .order("date", { ascending: true });
 
   if (todayErr) throw todayErr;
@@ -69,7 +71,7 @@ export async function getAdminDashboardData() {
   // 2) Pendientes (global, del admin) => status 1 o 4 (pendiente - repaso)
   const { count: pendingCount, error: pendingErr } = await supabase
     .from("appointments")
-    .select("id", { count: "exact", head: true })
+    .select("id", { count: "exact", head: true }) 
     .in("status", [
       APPOINTMENT_STATUS.PENDIENTE,
       APPOINTMENT_STATUS.PENDIENTE_REPASO,
