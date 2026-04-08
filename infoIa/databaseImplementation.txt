@@ -1,0 +1,209 @@
+public.appointments (
+  id serial not null,
+  address text null,
+  admin_id integer not null,
+  worker_id integer not null,
+  client_id integer null,
+  estimate_time integer null,
+  cost numeric(10, 2) null,
+  has_retouches boolean null default false,
+  commission_rate numeric(5, 2) null default 0,
+  payment_method text null,
+  service integer null,
+  notes text null,
+  paid_to_worker boolean null default false,
+  date timestamp without time zone not null,
+  status integer not null,
+  constraint appointments_pkey primary key (id),
+  constraint appointments_admin_id_fkey foreign KEY (admin_id) references admins (id),
+  constraint appointments_client_id_fkey foreign KEY (client_id) references clients (id),
+  constraint appointments_service_fkey foreign KEY (service) references services (id),
+  constraint appointments_status_fkey foreign KEY (status) references appointment_statuses (id),
+  constraint appointments_worker_id_fkey foreign KEY (worker_id) references workers (id)
+) TABLESPACE pg_default;
+
+ trigger trigger_month_summary_delete
+after DELETE on appointments for EACH row
+execute FUNCTION update_month_summary_on_delete ();
+
+ trigger trigger_month_summary_insert
+after INSERT on appointments for EACH row
+execute FUNCTION update_month_summary_on_insert ();
+
+ trigger trigger_month_summary_update
+after
+update on appointments for EACH row
+execute FUNCTION update_month_summary_on_update ();
+
+
+ table public.admins (
+  id serial not null,
+  profile_id integer not null,
+  constraint admins_pkey primary key (id),
+  constraint admins_profile_id_key unique (profile_id),
+  constraint admins_profile_id_fkey foreign KEY (profile_id) references profiles (id) on delete CASCADE
+) TABLESPACE pg_default;
+
+ index IF not exists idx_admins_profile_id on public.admins using btree (profile_id) TABLESPACE pg_default;
+
+ table public.appointment_statuses (
+  id serial not null,
+  name text not null,
+  constraint appointment_statuses_pkey primary key (id)
+) TABLESPACE pg_default;
+
+//esta tabla no se modica nunca y su contenido es 
+1	Pendiente
+2	En proceso
+3	Completo
+4	Pendiente - Repaso
+5	Completo - Repaso
+6	En proceso - Repaso
+```
+
+
+ table public.clients (
+  id serial not null,
+  name text not null,
+  phone_number text not null,
+  last_appointment_at timestamp without time zone null,
+  constraint clients_pkey primary key (id),
+  constraint clients_phone_number_key unique (phone_number)
+) TABLESPACE pg_default;
+
+
+ table public.expenses (
+  id serial not null,
+  description text not null,
+  amount numeric(10, 2) not null,
+  date date not null,
+  constraint expenses_pkey primary key (id)
+) TABLESPACE pg_default;
+
+
+ table public.month_summaries (
+  id serial not null,
+  month integer not null,
+  year integer not null,
+  total_income numeric(10, 2) null default 0,
+  total_expenses numeric(10, 2) null default 0,
+  total_salaries numeric(10, 2) null default 0,
+  total_profit numeric(10, 2) null default 0,
+  total_appointments integer null default 0,
+  total_retouches integer null default 0,
+  constraint month_summaries_pkey primary key (id),
+  constraint month_summaries_month_check check (
+    (
+      (month >= 1)
+      and (month <= 12)
+    )
+  )
+) TABLESPACE pg_default;
+
+
+ table public.profiles (
+  id serial not null,
+  auth_user_id uuid not null default auth.uid (),
+  name text not null,
+  user_role text null,
+  constraint profiles_pkey primary key (id),
+  constraint profiles_auth_user_id_key unique (auth_user_id),
+  constraint profiles_auth_user_id_fkey foreign KEY (auth_user_id) references auth.users (id) on delete CASCADE
+) TABLESPACE pg_default;
+
+ index IF not exists idx_profiles_auth_user_id on public.profiles using btree (auth_user_id) TABLESPACE pg_default;
+
+ trigger update_profiles_updated_at BEFORE
+update on profiles for EACH row
+execute FUNCTION update_updated_at_column ();
+
+
+ table public.retouches (
+  id serial not null,
+  appointment_id integer not null,
+  worker_id integer not null,
+  reason text not null,
+  time timestamp without time zone null,
+  address text null,
+  estimate_time integer null,
+  status integer null,
+  constraint retouches_pkey primary key (id),
+  constraint retouches_appointment_id_fkey foreign KEY (appointment_id) references appointments (id) on delete CASCADE,
+  constraint retouches_status_fkey foreign KEY (status) references appointment_statuses (id),
+  constraint retouches_worker_id_fkey foreign KEY (worker_id) references workers (id)
+) TABLESPACE pg_default;
+
+ trigger trigger_retouches_changes
+after INSERT
+or DELETE
+or
+update on retouches for EACH row
+execute FUNCTION broadcast_retouches_changes ();
+
+
+ table public.salaries (
+  id serial not null,
+  profile_id integer not null,
+  amount numeric(10, 2) not null,
+  month integer not null,
+  year integer not null,
+  constraint salaries_pkey primary key (id),
+  constraint unique_salary_per_month unique (profile_id, month, year),
+  constraint salaries_profile_id_fkey foreign KEY (profile_id) references profiles (id),
+  constraint salaries_month_check check (
+    (
+      (month >= 1)
+      and (month <= 12)
+    )
+  )
+) TABLESPACE pg_default;
+
+
+ table public.services (
+  id serial not null,
+  objeto text not null,
+  combo text null,
+  description text null,
+  is_active boolean null default true,
+  constraint services_pkey primary key (id)
+) TABLESPACE pg_default;
+
+
+ table public.worker_availability (
+  id serial not null,
+  worker_id integer not null,
+  day_of_week integer not null,
+  start_time time without time zone not null,
+  end_time time without time zone not null,
+  constraint worker_availability_pkey primary key (id),
+  constraint worker_day_unique unique (worker_id, day_of_week, start_time, end_time),
+  constraint worker_availability_day_of_week_check check (
+    (
+      (day_of_week >= 0)
+      and (day_of_week <= 6)
+    )
+  )
+) TABLESPACE pg_default;
+
+ trigger trigger_worker_availability_changes
+after INSERT
+or DELETE
+or
+update on worker_availability for EACH row
+execute FUNCTION broadcast_worker_availability_changes ();
+
+
+ table public.workers (
+  id serial not null,
+  profile_id integer not null,
+  commission_rate numeric(5, 2) not null default 0.00,
+  constraint workers_pkey primary key (id),
+  constraint workers_profile_id_key unique (profile_id),
+  constraint workers_profile_id_fkey foreign KEY (profile_id) references profiles (id) on delete CASCADE
+) TABLESPACE pg_default;
+
+ index IF not exists idx_workers_profile_id on public.workers using btree (profile_id) TABLESPACE pg_default;
+
+ trigger update_workers_updated_at BEFORE
+update on workers for EACH row
+execute FUNCTION update_updated_at_column ();

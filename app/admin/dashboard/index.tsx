@@ -14,6 +14,7 @@ import {
   QuickActionButton,
   AppointmentPreviewCard,
 } from "../../../components/admin/dashboard";
+import { getAdminDashboardData } from "../../../utils/database";
 
 export default function AdminHome() {
   const [stats, setStats] = useState({
@@ -34,99 +35,9 @@ export default function AdminHome() {
     try {
       setLoading(true);
 
-      // Mock:  Estructura real con relaciones
-      const mockAppointments = [
-        {
-          id: 1,
-          date: new Date().toISOString(), // Hoy 09: 00
-          cost: 15000,
-          status: "pending",
-          payment_method: "cash",
-          client: {
-            id: 1,
-            name: "Juan Pérez",
-            phone_number: "351 234 5678",
-          },
-          worker: {
-            id: 1,
-            profile: {
-              id: 1,
-              name: "Carlos González",
-            },
-          },
-          service: "sillones",
-          service_details: "Limpieza de sillón 3 cuerpos",
-        },
-        {
-          id: 2,
-          date: (() => {
-            const d = new Date();
-            d.setHours(14, 0, 0, 0);
-            return d.toISOString();
-          })(),
-          cost: 12000,
-          status: "in_progress",
-          payment_method: null,
-          client: {
-            id: 2,
-            name: "María López",
-            phone_number: "351 456 7890",
-          },
-          worker: {
-            id: 2,
-            profile: {
-              id: 2,
-              name: "Ana Martínez",
-            },
-          },
-          service: "alfombra",
-          service_details: "Limpieza de alfombra persa",
-        },
-      ];
-
-      // Calcular estadísticas
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-
-      const todayApts = mockAppointments.filter((apt) => {
-        const aptDate = new Date(apt.date);
-        aptDate.setHours(0, 0, 0, 0);
-        return aptDate.getTime() === today.getTime();
-      });
-
-      const pendingApts = mockAppointments.filter(
-        (apt) => apt.status === "pending",
-      );
-
-      const completedToday = todayApts.filter(
-        (apt) => apt.status === "completed",
-      ).length;
-
-      // Mock: Revenue del mes (vendría de month_summaries)
-      const monthlyRevenue = 450000;
-
-      setStats({
-        todayAppointments: todayApts.length,
-        pendingAppointments: pendingApts.length,
-        completedToday,
-        monthlyRevenue,
-      });
-
-      // Transformar turno de hoy
-      const transformedAppointments = todayApts.map((apt) => ({
-        id: apt.id.toString(),
-        time: new Date(apt.date).toLocaleTimeString("es-AR", {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-        customer: apt.client.name,
-        service: apt.service_details,
-        worker: apt.worker.profile.name,
-        status: apt.status === "in_progress" ? "in-progress" : apt.status,
-        paymentMethod: apt.payment_method,
-      }));
-
-      setTodayAppointments(transformedAppointments);
+      const { stats, todayAppointments } = await getAdminDashboardData();
+      setStats(stats);
+      setTodayAppointments(todayAppointments);
       setLoading(false);
       setRefreshing(false);
     } catch (error) {
@@ -276,7 +187,7 @@ function TodayAppointmentsSection({ appointments, loading }: any) {
             activeOpacity={0.7}
           >
             <AppointmentPreviewCard
-              time={appointment.time}
+              date={appointment.date}
               customer={appointment.customer}
               service={appointment.service}
               worker={appointment.worker}

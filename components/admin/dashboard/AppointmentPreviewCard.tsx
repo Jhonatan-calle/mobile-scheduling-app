@@ -1,30 +1,36 @@
 import { View, Text, StyleSheet } from "react-native";
 
+type AppointmentStatus = 1 | 2 | 3 | 4 | 5 | 6;
 interface AppointmentPreviewCardProps {
-  time: string;
+  date: string;
   customer: string;
   service: string;
   worker: string;
-  status: "pending" | "in-progress" | "completed";
+  status: AppointmentStatus;
   paymentMethod?: string;
 }
-
-const statusConfig = {
-  pending: { label: "Pendiente", color: "#F59E0B", icon: "⏳" },
-  "in-progress": { label: "En curso", color: "#3B82F6", icon: "🔄" },
-  completed: { label: "Completada", color: "#10B981", icon: "✅" },
+const statusConfig: Record<
+  AppointmentStatus,
+  { label: string; color: string; icon: string }
+> = {
+  1: { label: "Pendiente", color: "#F59E0B", icon: "⏳" },
+  2: { label: "En proceso", color: "#3B82F6", icon: "🔄" },
+  3: { label: "Completo", color: "#10B981", icon: "✅" },
+  4: { label: "Pendiente - Repaso", color: "#D97706", icon: "📝" },
+  5: { label: "Completo - Repaso", color: "#059669", icon: "✅" },
+  6: { label: "En proceso - Repaso", color: "#2563EB", icon: "🔁" },
 };
 
-const paymentMethodIcons:  any = {
-  cash: '💵',
-  transfer: '🏦',
+const paymentMethodIcons: any = {
+  cash: "💵",
+  transfer: "🏦",
 };
 
-export default function AppointmentPreviewCard({ 
-  time, 
-  customer, 
-  service, 
-  worker, 
+export default function AppointmentPreviewCard({
+  date,
+  customer,
+  service,
+  worker,
   status,
   paymentMethod, // ← NUEVO
 }: AppointmentPreviewCardProps) {
@@ -33,7 +39,7 @@ export default function AppointmentPreviewCard({
   return (
     <View style={styles.appointmentCard}>
       <View style={styles.appointmentTime}>
-        <Text style={styles.appointmentTimeText}>{time}</Text>
+        <Text style={styles.appointmentTimeText}>{date}</Text>
         {/* NUEVO: Mostrar icono de método de pago */}
         {paymentMethod && (
           <Text style={styles.paymentMethodIcon}>
@@ -46,7 +52,12 @@ export default function AppointmentPreviewCard({
         <Text style={styles.appointmentService}>{service}</Text>
         <Text style={styles.appointmentWorker}>👤 {worker}</Text>
       </View>
-      <View style={[styles.appointmentStatus, { backgroundColor: config.color + '20' }]}>
+      <View
+        style={[
+          styles.appointmentStatus,
+          { backgroundColor: config.color + "20" }, // me esta arrojando error config.color dice no definiido
+        ]}
+      >
         <Text style={styles.appointmentStatusIcon}>{config.icon}</Text>
       </View>
     </View>
