@@ -14,15 +14,17 @@ import {
   QuickActionButton,
   AppointmentPreviewCard,
 } from "../../../components/admin/dashboard";
-import { getAdminDashboardData } from "../../../utils/database";
+import { getAdminDashboardData, DashboardStats } from "../../../utils/database";
 
 export default function AdminHome() {
-  const [stats, setStats] = useState({
+
+  const [stats, setStats] = useState<DashboardStats>({
     todayAppointments: 0,
     pendingAppointments: 0,
-    completedToday: 0,
     monthlyRevenue: 0,
+    completedToday: 0,
   });
+
   const [todayAppointments, setTodayAppointments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
