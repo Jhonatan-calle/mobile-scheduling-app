@@ -21,7 +21,7 @@ interface Profile {
   id: string;
   name: string;
   email: string;
-  role: "ADMIN" | "WORKER";
+  role: "Admin" | "Worker";
   hasWorkerProfile?: boolean;
 }
 
@@ -165,14 +165,14 @@ function ProfileHeader({ profile }: { profile: Profile }) {
     <View style={styles.header}>
       <View style={styles.avatarContainer}>
         <Text style={styles.avatar}>
-          {profile.role === "ADMIN" ? "👨‍💼" : "👷"}
+          {profile.role === "Admin" ? "👨‍💼" : "👷"}
         </Text>
       </View>
       <Text style={styles.headerName}>{profile.name}</Text>
       <Text style={styles.headerEmail}>{profile.email}</Text>
       <View style={styles.roleBadge}>
         <Text style={styles.roleBadgeText}>
-          {profile.role === "ADMIN" ? "Administrador" : "Trabajador"}
+          {profile.role === "Admin" ? "Administrador" : "Trabajador"}
         </Text>
       </View>
     </View>
@@ -197,7 +197,7 @@ function ProfileInfoSection({
 
       <ProfileMenuItem icon="✏️" label="Editar nombre" onPress={onEditName} />
 
-      {profile.hasWorkerProfile && profile.role === "ADMIN" && (
+      {profile.hasWorkerProfile && profile.role === "Admin" && (
         <ProfileMenuItem
           icon="🔄"
           label="Cambiar a vista de trabajador"
@@ -364,7 +364,7 @@ function AddProfileModal({
   visible: boolean;
   onClose: () => void;
 }) {
-  const [profileType, setProfileType] = useState<"ADMIN" | "WORKER">("WORKER");
+  const [profileType, setProfileType] = useState<"Admin" | "Worker">("Worker");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [commissionRate, setCommissionRate] = useState("60");
@@ -402,8 +402,8 @@ function AddProfileModal({
 
       if (profileError) throw profileError;
 
-      // 3. Si es ADMIN, crear en tabla admins
-      if (profileType === 'ADMIN') {
+      // 3. Si es Admin, crear en tabla admins
+      if (profileType === 'Admin') {
         const { error: adminError } = await supabase
           .from("admins")
           .insert({
@@ -413,8 +413,8 @@ function AddProfileModal({
         if (adminError) throw adminError;
       }
 
-      // 4. Si es WORKER, crear en tabla workers
-      if (profileType === 'WORKER') {
+      // 4. Si es Worker, crear en tabla workers
+      if (profileType === 'Worker') {
         const { error: workerError } = await supabase
           .from("workers")
           .insert({
@@ -430,7 +430,7 @@ function AddProfileModal({
 
       Alert.alert(
         "Éxito",
-        `${profileType === "ADMIN" ? "Administrador" : "Trabajador"} creado correctamente`,
+        `${profileType === "Admin" ? "Administrador" : "Trabajador"} creado correctamente`,
       );
 
       setName("");
@@ -461,14 +461,14 @@ function AddProfileModal({
             <TouchableOpacity
               style={[
                 styles.profileTypeButton,
-                profileType === "WORKER" && styles.profileTypeButtonActive,
+                profileType === "Worker" && styles.profileTypeButtonActive,
               ]}
-              onPress={() => setProfileType("WORKER")}
+              onPress={() => setProfileType("Worker")}
             >
               <Text
                 style={[
                   styles.profileTypeButtonText,
-                  profileType === "WORKER" &&
+                  profileType === "Worker" &&
                     styles.profileTypeButtonTextActive,
                 ]}
               >
@@ -478,14 +478,14 @@ function AddProfileModal({
             <TouchableOpacity
               style={[
                 styles.profileTypeButton,
-                profileType === "ADMIN" && styles.profileTypeButtonActive,
+                profileType === "Admin" && styles.profileTypeButtonActive,
               ]}
-              onPress={() => setProfileType("ADMIN")}
+              onPress={() => setProfileType("Admin")}
             >
               <Text
                 style={[
                   styles.profileTypeButtonText,
-                  profileType === "ADMIN" && styles.profileTypeButtonTextActive,
+                  profileType === "Admin" && styles.profileTypeButtonTextActive,
                 ]}
               >
                 👨‍💼 Admin
@@ -512,7 +512,7 @@ function AddProfileModal({
             autoCapitalize="none"
           />
 
-          {profileType === "WORKER" && (
+          {profileType === "Worker" && (
             <View>
               <Text style={styles.inputLabel}>Comisión (%)</Text>
               <TextInput

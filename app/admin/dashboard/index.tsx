@@ -17,7 +17,6 @@ import {
 import { getAdminDashboardData, DashboardStats } from "../../../utils/database";
 
 export default function AdminHome() {
-
   const [stats, setStats] = useState<DashboardStats>({
     todayAppointments: 0,
     pendingAppointments: 0,
@@ -57,12 +56,10 @@ export default function AdminHome() {
   return (
     <View style={styles.container}>
       <DashboardHeader />
-
       <ScrollView
         style={styles.content}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          // ← NUEVO
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
