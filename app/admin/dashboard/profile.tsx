@@ -10,8 +10,12 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { router } from "expo-router";
-import { supabase } from "../../../supabase/supabase.ts";
+import { supabase } from "../../../supabase/supabase";
 import { useState, useEffect } from "react";
+import {
+  getCurrentProfile,
+  updateCurrentProfileName,
+} from "../../../utils/adminData";
 
 interface Profile {
   id: string;
@@ -35,48 +39,15 @@ export default function ProfileScreen() {
   const loadProfile = async () => {
     try {
       setLoading(true);
+      const currentProfile = await getCurrentProfile();
 
-      // Mock data - reemplazar con la llamada real a Supabase
-      const mockProfile: Profile = {
-        id: "1",
-        name: "Administrador",
-        email: "admin@tapizados.com",
-        role: "ADMIN",
-        hasWorkerProfile: true, // Verificar si también existe en la tabla workers
-      };
-
-      // Implementación real (descomentar cuando esté listo):
-      /*
-      const { data:  { user } } = await supabase. auth.getUser();
-      
-      if (! user) {
-        router.replace("/(auth)/login");
+      if (!currentProfile) {
+        router.replace("/auth/login" as never);
         return;
       }
 
-      const { data: profileData, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", user.id)
-        .single();
-
-      if (error) throw error;
-
-      // Verificar si también es worker
-      const { data: workerData } = await supabase
-        . from("workers")
-        .select("id")
-        .eq("profile_id", user.id)
-        .single();
-
-      setProfile({
-        ... profileData,
-        hasWorkerProfile: !!workerData,
-      });
-      */
-
-      setProfile(mockProfile);
-      setNewName(mockProfile.name);
+      setProfile(currentProfile as Profile);
+      setNewName(currentProfile.name);
     } catch (error) {
       console.error("Error loading profile:", error);
       Alert.alert("Error", "No se pudo cargar el perfil");
@@ -92,20 +63,7 @@ export default function ProfileScreen() {
     }
 
     try {
-      // Mock - reemplazar con la llamada real
-      /*
-      const { data:  { user } } = await supabase.auth.getUser();
-      
-      if (!user) return;
-
-      const { error } = await supabase
-        .from("profiles")
-        .update({ name: newName. trim() })
-        .eq("id", user.id);
-
-      if (error) throw error;
-      */
-
+      await updateCurrentProfileName(newName.trim());
       setProfile((prev) => (prev ? { ...prev, name: newName.trim() } : null));
       setEditNameModalVisible(false);
       Alert.alert("Éxito", "Nombre actualizado correctamente");
@@ -124,7 +82,8 @@ export default function ProfileScreen() {
         {
           text: "Cambiar",
           onPress: () => {
-            router.replace("/worker");
+            // TODO: al immplementar cambiar por un router.replace()
+            router.push("/worker");
           },
         },
       ],
@@ -139,7 +98,7 @@ export default function ProfileScreen() {
         style: "destructive",
         onPress: async () => {
           await supabase.auth.signOut();
-          router.replace("/(auth)/login");
+          router.replace("/auth/login" as never);
         },
       },
     ]);
@@ -261,13 +220,15 @@ function ManagementSection({ onAddProfile }: { onAddProfile: () => void }) {
         icon="➕"
         label="Agregar nuevo perfil"
         subtitle="Crear admin o trabajador"
+        disabled={true}
         onPress={onAddProfile}
       />
 
       <ProfileMenuItem
         icon="👥"
-        label="Ver todos los perfiles"
-        onPress={() => router.push("/admin/profiles")}
+        label="Administrar perfiles"
+        //TODO: Implementar la vista
+        onPress={() => router.push("/admin/dashboard/admin" as never)}
       />
     </View>
   );
@@ -288,7 +249,7 @@ function DangerZoneSection({ onLogout }: { onLogout: () => void }) {
         <Text style={styles.logoutText}>Cerrar sesión</Text>
       </TouchableOpacity>
       <View style={styles.versionContainer}>
-        <Text style={styles.versionText}>Versión 1.0.0</Text>{/* TODO: Obtener versión dinámica */}
+        <Text style={styles.versionText}>Versión 1.0.0</Text>
       </View>
     </View>
   );
@@ -302,12 +263,14 @@ function ProfileMenuItem({
   label,
   subtitle,
   badge,
+  disabled = false,
   onPress,
 }: {
   icon: string;
   label: string;
   subtitle?: string;
   badge?: string;
+  disabled?: boolean;
   onPress: () => void;
 }) {
   return (
@@ -315,6 +278,7 @@ function ProfileMenuItem({
       style={styles.menuItem}
       onPress={onPress}
       activeOpacity={0.7}
+      disabled={disabled}
     >
       <View style={styles.menuItemLeft}>
         <Text style={styles.menuItemIcon}>{icon}</Text>
@@ -414,7 +378,7 @@ function AddProfileModal({
 
     try {
       setLoading(true);
-
+      //TODO:
       // Mock - reemplazar con la llamada real
       /*
       // 1. Crear usuario en auth
@@ -535,6 +499,7 @@ function AddProfileModal({
             value={name}
             onChangeText={setName}
             placeholder="Nombre completo"
+            placeholderTextColor="#9CA3AF"
           />
 
           <TextInput
@@ -543,6 +508,7 @@ function AddProfileModal({
             onChangeText={setEmail}
             placeholder="Email"
             keyboardType="email-address"
+            placeholderTextColor="#9CA3AF"
             autoCapitalize="none"
           />
 
@@ -555,6 +521,7 @@ function AddProfileModal({
                 onChangeText={setCommissionRate}
                 placeholder="60"
                 keyboardType="numeric"
+                placeholderTextColor="#9CA3AF"
               />
             </View>
           )}
