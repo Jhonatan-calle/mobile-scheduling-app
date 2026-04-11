@@ -3,7 +3,7 @@ import { router } from "expo-router";
 export default function Index() {
   return (
     <View style={styles.container}>
-      <Text>vista workers aun no implementada</Text>
+      <Text>vista administrador de perfiles aun no implementada</Text>
       <TouchableOpacity onPress={() => router.back()}>
         <Text>Volver</Text>
       </TouchableOpacity>
