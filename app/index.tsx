@@ -14,24 +14,22 @@ export default function Index() {
     } = await supabase.auth.getSession();
 
     if (!session) {
-      // por ahora entra por aqui
       router.replace("/auth/login");
       return;
     }
 
-    //TODO: esto hay que adaptarlo a la estructura real de la base de datos
     const { data: profile, error } = await supabase
       .from("profiles")
-      .select("role")
-      .eq("id", session.user.id)
+      .select("user_role")
+      .eq("auth_user_id", session.user.id)
       .single();
 
-    if (error) {
+    if (error || !profile) {
       router.replace("/auth/login");
       return;
     }
 
-    if (profile?.role === "ADMIN") {
+    if (profile?.user_role === "Admin") {
       router.replace("/admin/dashboard");
     } else {
       router.replace("/worker");
