@@ -19,37 +19,33 @@ export default function LoginScreen() {
   const [error, setError] = useState<string | null>(null);
 
   const signInWithEmail = async () => {
-    //TODO: remove this, is just for testing 
-    router.replace("/admin/dashboard");
-    // setLoading(true);
-    // setError(null);
-    //
-    // try {
-    //
-    //   const cleanEmail = email.trim().toLowerCase();
-    //
-    //   if (!cleanEmail || !password) {
-    //     throw new Error("Completa email y contraseña.");
-    //   }
-    //
-    //   const { data, error: signInError } =
-    //     await supabase.auth.signInWithPassword({
-    //       email: cleanEmail,
-    //       password,
-    //     });
-    //
-    //   if (signInError) throw signInError;
-    //
-    //   // data.session existe si el login fue exitoso
-    //   router.replace("/admin/dashboard");
-    // } catch (err) {
-    //   const message =
-    //     err instanceof Error ? err.message : "No se pudo iniciar sesión";
-    //   setError(message);
-    //   Alert.alert("Error", message);
-    // } finally {
-    //   setLoading(false);
-    // }
+    setLoading(true);
+    setError(null);
+
+    try {
+      const cleanEmail = email.trim().toLowerCase();
+
+      if (!cleanEmail || !password) {
+        throw new Error("Completa email y contraseña.");
+      }
+
+      const { error: signInError } = 
+        await supabase.auth.signInWithPassword({
+          email: cleanEmail,
+          password,
+        });
+
+      if (signInError) throw signInError;
+      
+      router.replace("/admin/dashboard");
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "No se pudo iniciar sesión";
+      setError(message);
+      Alert.alert("Error", message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
