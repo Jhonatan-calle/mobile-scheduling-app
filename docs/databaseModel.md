@@ -18,6 +18,7 @@ erDiagram
         int id PK
         int profile_id FK
         decimal commission_rate
+        boolean is_active
     }
 
     SERVICES {
@@ -39,11 +40,6 @@ erDiagram
         int day_of_week
         time start_time
         time end_time
-    }
-
-    ADMINS {
-        int id PK
-        int profile_id FK
     }
 
     CLIENTS {
@@ -111,14 +107,12 @@ erDiagram
 
     AUTH.USERS ||--o| PROFILES : is
     PROFILES ||--o| WORKERS : is
-    PROFILES ||--o| ADMINS : is
     PROFILES ||--o{ SALARIES : receives
 
     WORKERS ||--o{ APPOINTMENTS : attends
     WORKERS ||--o{ WORKER_AVAILABILITY : has
     WORKERS ||--o{ RETROUCHES : performs
 
-    ADMINS ||--o{ APPOINTMENTS : manages
     CLIENTS ||--o{ APPOINTMENTS : books
 
     SERVICES ||--o{ APPOINTMENTS : categorizes
