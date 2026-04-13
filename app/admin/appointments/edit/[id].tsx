@@ -11,6 +11,14 @@ import {
 import { router, useLocalSearchParams } from "expo-router";
 import { useState, useEffect } from "react";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import {
+  getAppointmentById,
+  getServices,
+  getWorkers,
+  updateAppointment,
+  updateClient,
+} from "../../../../utils/adminData";
+import { getServiceIcon } from "../../../../utils/lookups";
 
 export default function EditAppointmentScreen() {
   const { id } = useLocalSearchParams();
@@ -18,6 +26,7 @@ export default function EditAppointmentScreen() {
   const [saving, setSaving] = useState(false);
   const [appointment, setAppointment] = useState<any>(null);
   const [workers, setWorkers] = useState<any[]>([]);
+  const [services, setServices] = useState<any[]>([]);
 
   const [formData, setFormData] = useState({
     clientName: "",
@@ -40,61 +49,29 @@ export default function EditAppointmentScreen() {
   useEffect(() => {
     loadAppointmentData();
     loadWorkers();
+    loadServices();
   }, []);
 
   const loadAppointmentData = async () => {
     try {
       setLoading(true);
+      const appointmentData = await getAppointmentById(id as string);
+      const appointmentDate = new Date(appointmentData.date);
 
-      // Mock:  Cargar datos del appointment
-      const mockAppointment = {
-        id: parseInt(id as string),
-        admin_id: 1,
-        worker_id: 1,
-        client_id: 1,
-        service:  "sillones",
-        service_details: "Limpieza de sillón 3 cuerpos",
-        address: "Av. Colón 123",
-        date: new Date().toISOString(),
-        estimate_time: 120,
-        cost: 15000,
-        commission_rate: 60,
-        status: "pending",
-        has_retouches: false,
-        paid_to_worker: false,
-        payment_method: null,
-        client:  {
-          id: 1,
-          name:  "Juan Pérez",
-          phone_number: "351 234 5678",
-        },
-        worker: {
-          id:  1,
-          profile_id: 1,
-          commission_rate: 60,
-          profile:  {
-            id: 1,
-            name: "Carlos González",
-          },
-        },
-      };
-
-      const appointmentDate = new Date(mockAppointment.date);
-
-      setAppointment(mockAppointment);
+      setAppointment(appointmentData);
       setFormData({
-        clientName: mockAppointment.client.name,
-        clientPhone: mockAppointment.client.phone_number,
-        service: mockAppointment. service,
-        serviceDetails: mockAppointment.service_details,
-        workerId: mockAppointment.worker_id,
+        clientName: appointmentData.client?.name ?? "",
+        clientPhone: appointmentData.client?.phone_number ?? "",
+        service: String(appointmentData.service ?? ""),
+        serviceDetails: appointmentData.service_details ?? "",
+        workerId: appointmentData.worker_id,
         date: appointmentDate,
         time: appointmentDate,
-        estimateTime: mockAppointment.estimate_time. toString(),
-        address: mockAppointment.address,
-        cost: mockAppointment.cost. toString(),
-        commissionRate:  mockAppointment.commission_rate.toString(),
-        paymentMethod: mockAppointment.payment_method,
+        estimateTime: (appointmentData.estimate_time ?? 120).toString(),
+        address: appointmentData.address ?? "",
+        cost: (appointmentData.cost ?? 0).toString(),
+        commissionRate: (appointmentData.commission_rate ?? 0).toString(),
+        paymentMethod: appointmentData.payment_method,
       });
 
       setLoading(false);
@@ -107,27 +84,17 @@ export default function EditAppointmentScreen() {
 
   const loadWorkers = async () => {
     try {
-      const mockWorkers = [
-        {
-          id: 1,
-          profile: { id: 1, name: "Carlos González" },
-          commission_rate: 60,
-        },
-        {
-          id:  2,
-          profile: { id: 2, name: "Ana Martínez" },
-          commission_rate: 55,
-        },
-        {
-          id: 3,
-          profile: { id: 3, name: "Luis Rodríguez" },
-          commission_rate: 50,
-        },
-      ];
-
-      setWorkers(mockWorkers);
+      setWorkers(await getWorkers());
     } catch (error) {
       console.error("Error loading workers:", error);
+    }
+  };
+
+  const loadServices = async () => {
+    try {
+      setServices(await getServices());
+    } catch (error) {
+      console.error("Error loading services:", error);
     }
   };
 
@@ -179,7 +146,7 @@ export default function EditAppointmentScreen() {
       combinedDateTime.setMinutes(formData.time.getMinutes());
 
       const updateData = {
-        service: formData.service,
+        service: parseInt(formData.service, 10),
         service_details: formData.serviceDetails,
         worker_id:  formData.workerId,
         date: combinedDateTime.toISOString(),
@@ -190,18 +157,13 @@ export default function EditAppointmentScreen() {
         payment_method:  formData.paymentMethod,
       };
 
-      // También actualizar cliente si cambió
-      const clientUpdateData = {
-        name: formData.clientName,
-        phone_number: formData.clientPhone,
-      };
-
-      // TODO: Actualizar en Supabase
-      // await supabase.from('appointments').update(updateData).eq('id', id)
-      // await supabase.from('clients').update(clientUpdateData).eq('id', appointment.client_id)
-
-      console.log("Turno actualizado:", updateData);
-      console.log("Cliente actualizado:", clientUpdateData);
+      await updateAppointment(id as string, updateData as any);
+      if (appointment?.client_id) {
+        await updateClient(appointment.client_id, {
+          name: formData.clientName,
+          phone_number: formData.clientPhone,
+        });
+      }
 
       Alert.alert("¡Éxito!", "Turno actualizado correctamente", [
         {
@@ -231,7 +193,11 @@ export default function EditAppointmentScreen() {
 
       <ScrollView style={styles. content} showsVerticalScrollIndicator={false}>
         <CustomerInfoSection formData={formData} setFormData={setFormData} />
-        <ServiceInfoSection formData={formData} setFormData={setFormData} />
+        <ServiceInfoSection
+          formData={formData}
+          setFormData={setFormData}
+          services={services}
+        />
         <DateTimeSection
           formData={formData}
           setFormData={setFormData}
@@ -316,16 +282,7 @@ function CustomerInfoSection({ formData, setFormData }: any) {
 // ============================================================================
 // INFORMACIÓN DEL SERVICIO
 // ============================================================================
-function ServiceInfoSection({ formData, setFormData }: any) {
-  const services = [
-    { id: "sillones", label: "Sillones", icon: "🛋️" },
-    { id: "alfombra", label: "Alfombras", icon: "🧶" },
-    { id: "auto", label: "Autos", icon: "🚗" },
-    { id: "sillas", label: "Sillas", icon: "🪑" },
-    { id: "cortinas", label: "Cortinas", icon: "🪟" },
-    { id: "colchon", label: "Colchones", icon: "🛏️" },
-  ];
-
+function ServiceInfoSection({ formData, setFormData, services }: any) {
   return (
     <View style={styles.section}>
       <SectionHeader
@@ -335,12 +292,12 @@ function ServiceInfoSection({ formData, setFormData }: any) {
       />
 
       <View style={styles.servicesGrid}>
-        {services. map((service) => (
+        {services.map((service: any) => (
           <ServiceTypeCard
             key={service.id}
             service={service}
-            selected={formData.service === service.id}
-            onSelect={() => setFormData({ ...formData, service: service.id })}
+            selected={formData.service === String(service.id)}
+            onSelect={() => setFormData({ ...formData, service: String(service.id) })}
           />
         ))}
       </View>
@@ -380,8 +337,8 @@ function ServiceTypeCard({ service, selected, onSelect }: any) {
       onPress={onSelect}
       activeOpacity={0.7}
     >
-      <Text style={styles.serviceIcon}>{service.icon}</Text>
-      <Text style={styles. serviceLabel}>{service.label}</Text>
+      <Text style={styles.serviceIcon}>{getServiceIcon(service.objeto || service.description)}</Text>
+      <Text style={styles. serviceLabel}>{service.description || service.objeto}</Text>
       {selected && <Text style={styles. serviceCheck}>✓</Text>}
     </TouchableOpacity>
   );

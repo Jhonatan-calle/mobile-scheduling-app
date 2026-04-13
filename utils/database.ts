@@ -29,7 +29,6 @@ export type DashboardTodayAppointment = {
   id: string;
   time: string;
   customer: string;
-  service: string;
   worker: string;
   status: string; 
   paymentMethod: string | null;
@@ -56,8 +55,7 @@ export async function getAdminDashboardData() {
       worker:workers(
         id,
         profile:profiles(id, name)
-      ),
-      service:services(id, objeto, description)
+      )
     `,
     )
     .gte("date", todayStart.toISOString())
@@ -111,7 +109,6 @@ export async function getAdminDashboardData() {
         minute: "2-digit",
       }),
       customer: apt.client?.name ?? "Sin cliente",
-      service: apt.service?.description ?? apt.service?.objeto ?? "Servicio",
       worker: apt.worker?.profile?.name ?? "Sin asignar",
       status: String(apt.status), // o mapea a "pending/in-progress/completed" si tu card lo necesita
       paymentMethod: apt.payment_method ?? null,

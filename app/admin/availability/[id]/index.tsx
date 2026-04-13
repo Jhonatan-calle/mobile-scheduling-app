@@ -11,6 +11,7 @@ import {
 import { handleCall } from "@/utils/contact";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState, useEffect, useCallback } from "react";
+import { getWorkerDetailData } from "../../../../utils/adminData";
 
 export default function WorkerDetailScreen() {
   const { id } = useLocalSearchParams();
@@ -22,44 +23,16 @@ export default function WorkerDetailScreen() {
   const loadWorkerData = useCallback(async () => {
     try {
       if (!refreshing) setLoading(true);
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      const mockWorker = {
-        id: parseInt(id as string),
+      const data = await getWorkerDetailData(parseInt(id as string), selectedMonth);
+      setWorker({
+        ...data.worker,
         profile: {
-          id: 1,
-          name: "Carlos González",
-          phone: "3584800460",
+          ...data.worker.profile,
+          phone: "",
         },
-        commission_rate: 60,
-        availability: [
-          { day: 1, start: "08:00", end: "20:00", enabled: true },
-          { day: 2, start: "08:00", end: "20:00", enabled: true },
-          { day: 3, start: "08:00", end: "20:00", enabled: true },
-          { day: 4, start: "08:00", end: "20:00", enabled: true },
-          { day: 5, start: "08:00", end: "20:00", enabled: true },
-          { day: 6, start: "09:00", end: "14:00", enabled: true },
-          { day: 0, start: "00:00", end: "00:00", enabled: false },
-        ],
-        monthStats: {
-          month: selectedMonth.getMonth() + 1,
-          year: selectedMonth.getFullYear(),
-          totalAppointments: 45,
-          totalRetouches: 8,
-          completedAppointments: 42,
-          pendingAppointments: 3,
-          totalEarned: 270000,
-          totalGenerated: 450000,
-          averagePerAppointment: 6000,
-          appointmentsByService: {
-            sillones: 20,
-            alfombra: 12,
-            auto: 8,
-            sillas: 5,
-          },
-        },
-      };
-
-      setWorker(mockWorker);
+        availability: data.availability,
+        monthStats: data.monthStats,
+      });
       setLoading(false);
       setRefreshing(false);
     } catch (error) {
@@ -198,7 +171,7 @@ export default function WorkerDetailScreen() {
           />
         }
       >
-        <WorkerInfoSection worker={worker} getAvatar={getAvatar} />
+      <WorkerInfoSection worker={worker} getAvatar={getAvatar} />
 
         <AvailabilitySection
           availability={worker.availability}
@@ -254,20 +227,24 @@ function WorkerInfoSection({ worker, getAvatar }: any) {
         </Text>
         <View style={styles.workerDetails}>
           <Text style={styles.workerName}>{worker.profile.name}</Text>
-          <Text style={styles.workerContact}>📞 {worker.profile.phone}</Text>
+          {!!worker.profile.phone && (
+            <Text style={styles.workerContact}>📞 {worker.profile.phone}</Text>
+          )}
         </View>
       </View>
 
       {/* Botones de contacto rápido */}
       <View style={styles.contactButtons}>
-        <TouchableOpacity
-          style={[styles.contactButton, styles.callButton]}
-          onPress={() => handleCall(worker.profile.phone)}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.contactButtonIcon}>📞</Text>
-          <Text style={styles.contactButtonText}>Llamar</Text>
-        </TouchableOpacity>
+        {worker.profile.phone ? (
+          <TouchableOpacity
+            style={[styles.contactButton, styles.callButton]}
+            onPress={() => handleCall(worker.profile.phone)}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.contactButtonIcon}>📞</Text>
+            <Text style={styles.contactButtonText}>Llamar</Text>
+          </TouchableOpacity>
+        ) : null}
       </View>
     </View>
   );

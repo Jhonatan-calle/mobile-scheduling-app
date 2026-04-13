@@ -11,6 +11,7 @@ import {
 import { router, useLocalSearchParams } from "expo-router";
 import { useState, useEffect } from "react";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import { getRetouchById, getWorkers, updateRetouch } from "../../../../../utils/adminData";
 
 export default function EditRetouchScreen() {
   const { id } = useLocalSearchParams();
@@ -39,43 +40,17 @@ export default function EditRetouchScreen() {
   const loadRetouchData = async () => {
     try {
       setLoading(true);
-      
-      // Mock:  Cargar datos del repaso
-      const mockRetouch = {
-        id:  parseInt(id as string),
-        appointment_id: 1,
-        worker_id: 1,
-        time: new Date().toISOString(),
-        address: "Av. Colón 123",
-        reason: "Cliente reportó manchas persistentes en el lateral",
-        estimate_time: 60,
-        status: "pending",
-        appointment:  {
-          id: 1,
-          client:  {
-            name: "Juan Pérez",
-            phone_number: "351 234 5678",
-          },
-          service_details: "Limpieza de sillón 3 cuerpos",
-        },
-        worker: {
-          id: 1,
-          profile: {
-            name: "Carlos González",
-          },
-        },
-      };
+      const retouchData = await getRetouchById(id as string);
+      const retouchDate = new Date(retouchData.time);
 
-      const retouchDate = new Date(mockRetouch.time);
-      
-      setRetouch(mockRetouch);
+      setRetouch(retouchData);
       setFormData({
-        workerId:  mockRetouch.worker_id,
+        workerId:  retouchData.worker_id,
         date: retouchDate,
         time: retouchDate,
-        address: mockRetouch.address,
-        reason: mockRetouch.reason,
-        estimateTime: mockRetouch.estimate_time. toString(),
+        address: retouchData.address || "",
+        reason: retouchData.reason,
+        estimateTime: (retouchData.estimate_time ?? 60).toString(),
       });
 
       setLoading(false);
@@ -88,21 +63,7 @@ export default function EditRetouchScreen() {
 
   const loadWorkers = async () => {
     try {
-      // Mock: workers
-      const mockWorkers = [
-        {
-          id: 1,
-          profile: { id: 1, name: "Carlos González" },
-          commission_rate: 60,
-        },
-        {
-          id: 2,
-          profile: { id: 2, name: "Ana Martínez" },
-          commission_rate: 55,
-        },
-      ];
-
-      setWorkers(mockWorkers);
+      setWorkers(await getWorkers());
     } catch (error) {
       console.error("Error loading workers:", error);
     }
@@ -147,10 +108,7 @@ export default function EditRetouchScreen() {
         estimate_time: parseInt(formData.estimateTime),
       };
 
-      // TODO: Actualizar en Supabase
-      // await supabase.from('retouches').update(updateData).eq('id', id)
-
-      console.log("Datos actualizados:", updateData);
+      await updateRetouch(id as string, updateData as any);
 
       Alert.alert("¡Éxito!", "Repaso actualizado correctamente", [
         {

@@ -1,51 +1,40 @@
 import { View, Text, StyleSheet } from "react-native";
+import {
+  getAppointmentStatusConfig,
+  getAppointmentStatusConfigByKey,
+  getPaymentMethodConfig,
+} from "../../../utils/lookups";
 
-type AppointmentStatus = 1 | 2 | 3 | 4 | 5 | 6;
 interface AppointmentPreviewCardProps {
-  date: string;
+  date?: string;
+  time?: string;
   customer: string;
   service: string;
   worker: string;
-  status: AppointmentStatus;
+  status: number | string;
   paymentMethod?: string;
 }
-const statusConfig: Record<
-  AppointmentStatus,
-  { label: string; color: string; icon: string }
-> = {
-  1: { label: "Pendiente", color: "#F59E0B", icon: "⏳" },
-  2: { label: "En proceso", color: "#3B82F6", icon: "🔄" },
-  3: { label: "Completo", color: "#10B981", icon: "✅" },
-  4: { label: "Pendiente - Repaso", color: "#D97706", icon: "📝" },
-  5: { label: "Completo - Repaso", color: "#059669", icon: "✅" },
-  6: { label: "En proceso - Repaso", color: "#2563EB", icon: "🔁" },
-};
-
-const paymentMethodIcons: any = {
-  cash: "💵",
-  transfer: "🏦",
-};
 
 export default function AppointmentPreviewCard({
   date,
+  time,
   customer,
   service,
   worker,
   status,
-  paymentMethod, // ← NUEVO
+  paymentMethod,
 }: AppointmentPreviewCardProps) {
-  const config = statusConfig[status];
+  const config =
+    typeof status === "string"
+      ? getAppointmentStatusConfigByKey(status)
+      : getAppointmentStatusConfig(Number(status));
+  const payment = getPaymentMethodConfig(paymentMethod);
 
   return (
     <View style={styles.appointmentCard}>
       <View style={styles.appointmentTime}>
-        <Text style={styles.appointmentTimeText}>{date}</Text>
-        {/* NUEVO: Mostrar icono de método de pago */}
-        {paymentMethod && (
-          <Text style={styles.paymentMethodIcon}>
-            {paymentMethodIcons[paymentMethod]}
-          </Text>
-        )}
+        <Text style={styles.appointmentTimeText}>{date ?? time ?? "--:--"}</Text>
+        {payment && <Text style={styles.paymentMethodIcon}>{payment.icon}</Text>}
       </View>
       <View style={styles.appointmentInfo}>
         <Text style={styles.appointmentCustomer}>{customer}</Text>

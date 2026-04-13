@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState, useEffect, useCallback } from "react";
+import { getWorkerById, getWorkerHistory } from "../../../../utils/adminData";
 
 const ITEMS_PER_PAGE = 15;
 
@@ -26,25 +27,17 @@ export default function WorkerHistoryScreen() {
   const loadHistory = useCallback(async () => {
     try {
       if (!refreshing) setLoading(true);
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const worker = await getWorkerById(parseInt(id as string));
+      const work = await getWorkerHistory(parseInt(id as string));
 
-      // TODO: Cargar de Supabase
-      const mockWork = generateMockWorkData(50); // 50 items para testing
-
-      // Ordenar por fecha descendente
-      const sortedWork = mockWork.sort(
-        (a: any, b: any) =>
-          new Date(b.date).getTime() - new Date(a.date).getTime(),
-      );
-
-      setWorkerName("Carlos González"); // TODO: Obtener de Supabase
-      setAllWork(sortedWork);
+      setWorkerName(worker.profile.name);
+      setAllWork(work as any[]);
 
       // Primera página
-      const firstPage = sortedWork.slice(0, ITEMS_PER_PAGE);
+      const firstPage = (work as any[]).slice(0, ITEMS_PER_PAGE);
       setDisplayedWork(firstPage);
       setCurrentPage(1);
-      setHasMore(sortedWork.length > ITEMS_PER_PAGE);
+      setHasMore((work as any[]).length > ITEMS_PER_PAGE);
 
       setLoading(false);
       setRefreshing(false);
@@ -58,47 +51,6 @@ export default function WorkerHistoryScreen() {
   useEffect(() => {
     loadHistory();
   }, [loadHistory]);
-
-  const generateMockWorkData = (count: number) => {
-    const work = [];
-    const today = new Date();
-
-    for (let i = 0; i < count; i++) {
-      const date = new Date(today);
-      date.setDate(date.getDate() - i);
-      date.setHours(9 + (i % 10), 0, 0, 0);
-
-      const isAppointment = i % 3 !== 0;
-
-      work.push({
-        id: i + 1,
-        type: isAppointment ? "appointment" : "retouch",
-        date: date.toISOString(),
-        client: {
-          name: `Cliente ${i + 1}`,
-          phone: `351 ${Math.floor(Math.random() * 900000 + 100000)}`,
-        },
-        service: isAppointment
-          ? ["Limpieza de sillón", "Alfombra persa", "Auto completo", "Sillas"][
-              i % 4
-            ]
-          : `Repaso de ${["sillón", "alfombra", "auto"][i % 3]}`,
-        address: `Calle ${i + 1}, ${100 + i}`,
-        ...(isAppointment
-          ? {
-              cost: 12000 + i * 500,
-              workerEarned: (12000 + i * 500) * 0.6,
-            }
-          : {
-              reason: `Motivo del repaso #${i + 1}`,
-              appointmentId: Math.floor(i / 3) + 1,
-            }),
-        status: "completed",
-      });
-    }
-
-    return work;
-  };
 
   const loadMore = () => {
     if (loadingMore || !hasMore) return;

@@ -10,6 +10,18 @@ import { handleCall } from "@/utils/contact";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState, useEffect } from "react";
 import Button from "../../../components/Button";
+import {
+  deleteAppointment,
+  getAppointmentById,
+  updateAppointment,
+} from "../../../utils/adminData";
+import {
+  getAppointmentStatusConfig,
+  getAppointmentStatusConfigByKey,
+  getAppointmentStatusIdByKey,
+  getAppointmentStatusKey,
+  getPaymentMethodConfig,
+} from "../../../utils/lookups";
 
 export default function AppointmentDetailScreen() {
   const { id } = useLocalSearchParams();
@@ -23,46 +35,8 @@ export default function AppointmentDetailScreen() {
   const loadAppointment = async () => {
     try {
       setLoading(true);
-
-      // Mock:  Estructura real completa
-      const mockAppointment = {
-        id: 1,
-        admin_id: 1,
-        worker_id: 1,
-        client_id: 1,
-        service: "sillones",
-        service_details: "Limpieza de sillón 3 cuerpos",
-        address: "Av. Colón 123",
-        date: new Date().toISOString(), // timestamp con fecha y hora
-        estimate_time: 120, // minutos
-        cost: 15000.0,
-        commission_rate: 60.0,
-        status: "completed", // 'pending' | 'in_progress' | 'completed' | 'cancelled'
-        has_retouches: false,
-        paid_to_worker: false,
-        payment_method: "cash", // 'cash' | 'transfer' | 'debit' | 'credit' | 'mercadopago' | 'other' | null
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-
-        // Relaciones (JOINs)
-        client: {
-          id: 1,
-          name: "Juan Pérez",
-          phone_number: "358 4800460",
-          last_appointment_at: "2024-01-15T10:00:00Z",
-        },
-        worker: {
-          id: 1,
-          profile_id: 1,
-          commission_rate: 60.0,
-          profile: {
-            id: 1,
-            name: "Carlos González",
-          },
-        },
-      };
-
-      setAppointment(mockAppointment);
+      const data = await getAppointmentById(id as string);
+      setAppointment(data);
       setLoading(false);
     } catch (error) {
       console.error("Error loading appointment:", error);
@@ -141,51 +115,27 @@ function AppointmentDetailHeader({ appointmentId }: { appointmentId: string }) {
 // SECCIÓN:  ESTADO DE LA CITA
 // ============================================================================
 function StatusSection({ appointment, onUpdate }: any) {
-  const statusConfig = {
-    pending: {
-      label: "Pendiente",
-      color: "#F59E0B",
-      icon: "⏳",
-      bgColor: "#FEF3C7",
-    },
-    in_progress: {
-      label: "En curso",
-      color: "#3B82F6",
-      icon: "🔄",
-      bgColor: "#DBEAFE",
-    },
-    completed: {
-      label: "Completada",
-      color: "#10B981",
-      icon: "✅",
-      bgColor: "#D1FAE5",
-    },
-    cancelled: {
-      label: "Cancelada",
-      color: "#EF4444",
-      icon: "❌",
-      bgColor: "#FEE2E2",
-    },
+  const config = getAppointmentStatusConfig(appointment.status);
+  const currentStatusKey = getAppointmentStatusKey(appointment.status) as string;
+  const statusBgColors: Record<string, string> = {
+    pending: "#FEF3C7",
+    in_progress: "#DBEAFE",
+    completed: "#D1FAE5",
+    cancelled: "#FEE2E2",
   };
-
-  const config = statusConfig[appointment.status as keyof typeof statusConfig];
 
   const handleStatusChange = async (newStatus: string) => {
     Alert.alert(
       "Cambiar estado",
-      `¿Cambiar estado a "${statusConfig[newStatus as keyof typeof statusConfig].label}"?`,
+      `¿Cambiar estado a "${getAppointmentStatusConfigByKey(newStatus).label}"?`,
       [
         { text: "Cancelar", style: "cancel" },
         {
           text: "Confirmar",
           onPress: async () => {
-            // TODO: Actualizar en Supabase
-            // await supabase
-            //   .from('appointments')
-            //   .update({ status: newStatus, updated_at: new Date().toISOString() })
-            //   .eq('id', appointment.id);
-
-            console.log("Actualizando estado a:", newStatus);
+            await updateAppointment(appointment.id, {
+              status: getAppointmentStatusIdByKey(newStatus),
+            } as any);
             Alert.alert("Éxito", "Estado actualizado");
             onUpdate();
           },
@@ -196,17 +146,16 @@ function StatusSection({ appointment, onUpdate }: any) {
 
   return (
     <View style={styles.section}>
-      <View style={[styles.statusBadge, { backgroundColor: config.bgColor }]}>
+      <View style={[styles.statusBadge, { backgroundColor: statusBgColors[currentStatusKey] || "#F3F4F6" }]}> 
         <Text style={styles.statusIcon}>{config.icon}</Text>
-        <Text style={[styles.statusText, { color: config.color }]}>
+        <Text style={[styles.statusText, { color: config.color }]}> 
           {config.label}
         </Text>
       </View>
 
-      {appointment.status !== "completed" &&
-        appointment.status !== "cancelled" && (
+      {currentStatusKey !== "completed" && currentStatusKey !== "cancelled" && (
           <View style={styles.statusActions}>
-            {appointment.status === "pending" && (
+            {currentStatusKey === "pending" && (
               <TouchableOpacity
                 style={[styles.statusButton, { backgroundColor: "#DBEAFE" }]}
                 onPress={() => handleStatusChange("in_progress")}
@@ -216,8 +165,8 @@ function StatusSection({ appointment, onUpdate }: any) {
                 </Text>
               </TouchableOpacity>
             )}
-            {(appointment.status === "pending" ||
-              appointment.status === "in_progress") && (
+            {(currentStatusKey === "pending" ||
+              currentStatusKey === "in_progress") && (
               <TouchableOpacity
                 style={[styles.statusButton, { backgroundColor: "#D1FAE5" }]}
                 onPress={() => handleStatusChange("completed")}
@@ -267,15 +216,6 @@ function CustomerInfoSection({ appointment }: any) {
 // SECCIÓN: INFORMACIÓN DEL SERVICIO
 // ============================================================================
 function ServiceInfoSection({ appointment }: any) {
-  const serviceNames: any = {
-    auto: "🚗 Auto",
-    sillones: "🛋️ Sillones",
-    sillas: "🪑 Sillas",
-    alfombra: "🧶 Alfombra",
-    colchon: "🛏️ Colchón",
-    otro: "📦 Otro",
-  };
-
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString("es-AR", {
@@ -300,11 +240,11 @@ function ServiceInfoSection({ appointment }: any) {
 
       <InfoRow
         label="Tipo"
-        value={serviceNames[appointment.service] || appointment.service}
+        value={appointment.serviceData?.description || appointment.serviceData?.objeto || "Servicio"}
       />
       <InfoRow
         label="Detalles"
-        value={appointment.service_details || "Sin detalles"}
+        value={appointment.service_details || appointment.notes || "Sin detalles"}
       />
       <InfoRow label="Fecha programada" value={formatDate(appointment.date)} />
       <InfoRow label="Hora" value={formatTime(appointment.date)} />
@@ -460,13 +400,7 @@ function PaymentStatusSection({ appointment, onUpdate }: any) {
       ...paymentMethods.map((method) => ({
         text: method.name,
         onPress: async () => {
-          // TODO: Actualizar en Supabase
-          // await supabase
-          //   .from('appointments')
-          //   .update({ payment_method: method.id, updated_at: new Date().toISOString() })
-          //   .eq('id', appointment. id);
-
-          console.log("Cambiando método de pago a:", method.id);
+          await updateAppointment(appointment.id, { payment_method: method.id } as any);
           Alert.alert("Éxito", `Método cambiado a ${method.name}`);
           onUpdate();
         },
@@ -486,19 +420,9 @@ function PaymentStatusSection({ appointment, onUpdate }: any) {
         {
           text: "Confirmar",
           onPress: async () => {
-            // TODO: Actualizar en Supabase
-            // await supabase
-            //   .from('appointments')
-            //   .update({
-            //     paid_to_worker: !appointment.paid_to_worker,
-            //     updated_at: new Date().toISOString()
-            //   })
-            //   .eq('id', appointment. id);
-
-            console.log(
-              "Cambiando paid_to_worker a:",
-              !appointment.paid_to_worker,
-            );
+            await updateAppointment(appointment.id, {
+              paid_to_worker: !appointment.paid_to_worker,
+            } as any);
             Alert.alert("Éxito", "Estado de pago actualizado");
             onUpdate();
           },
@@ -518,28 +442,10 @@ function PaymentStatusSection({ appointment, onUpdate }: any) {
           <View style={styles.paymentMethodDisplay}>
             <View style={styles.paymentMethodBadgeLarge}>
               <Text style={styles.paymentMethodBadgeIcon}>
-                {
-                  {
-                    cash: "💵",
-                    transfer: "🏦",
-                    debit: "💳",
-                    credit: "💳",
-                    mercadopago: "📱",
-                    other: "💰",
-                  }[appointment.payment_method]
-                }
+                {getPaymentMethodConfig(appointment.payment_method)?.icon}
               </Text>
               <Text style={styles.paymentMethodBadgeText}>
-                {
-                  {
-                    cash: "Efectivo",
-                    transfer: "Transferencia",
-                    debit: "Débito",
-                    credit: "Crédito",
-                    mercadopago: "Mercado Pago",
-                    other: "Otro",
-                  }[appointment.payment_method]
-                }
+                {getPaymentMethodConfig(appointment.payment_method)?.label}
               </Text>
             </View>
             <TouchableOpacity
@@ -616,10 +522,7 @@ function ActionButtonsSection({ appointment, onUpdate }: any) {
           text: "Eliminar",
           style: "destructive",
           onPress: async () => {
-            // TODO: Eliminar de Supabase
-            // await supabase. from('appointments').delete().eq('id', appointment.id);
-
-            console.log("Eliminando turno:", appointment.id);
+            await deleteAppointment(appointment.id);
             Alert.alert("Eliminada", "La repaso ha sido eliminada", [
               {
                 text: "OK",
@@ -641,19 +544,9 @@ function ActionButtonsSection({ appointment, onUpdate }: any) {
         {
           text: "Confirmar",
           onPress: async () => {
-            // TODO:  Actualizar en Supabase
-            // await supabase
-            //   .from('appointments')
-            //   .update({
-            //     has_retouches: !appointment.has_retouches,
-            //     updated_at: new Date().toISOString()
-            //   })
-            //   .eq('id', appointment.id);
-
-            console.log(
-              "Cambiando has_retouches a:",
-              !appointment.has_retouches,
-            );
+            await updateAppointment(appointment.id, {
+              has_retouches: !appointment.has_retouches,
+            } as any);
             Alert.alert("Actualizado", "Estado de repasos actualizado");
             onUpdate();
           },
@@ -694,51 +587,9 @@ function ActionButtonsSection({ appointment, onUpdate }: any) {
 // SECCIÓN:  RETOQUES
 // ============================================================================
 function RetouchesSection({ appointment, onUpdate }: any) {
-  const [retouches, setRetouches] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    loadRetouches();
-  }, []);
-
-  const loadRetouches = async () => {
-    try {
-      setLoading(true);
-
-      // Mock:  Retoques asociados a esta turno/
-      const mockRetouches = [
-        {
-          id: 1,
-          appointment_id: appointment.id,
-          worker_id: 1,
-          time: new Date(appointment.date).toISOString(), // 2 días después
-          address: appointment.address,
-          reason: "Cliente reportó manchas persistentes",
-          estimate_time: 60,
-          status: "pending", // 'pending' | 'in_progress' | 'completed' | 'cancelled'
-          created_at: new Date().toISOString(),
-          worker: {
-            id: 1,
-            profile: {
-              id: 1,
-              name: "Carlos González",
-            },
-          },
-        },
-      ];
-
-      // Filtrar solo los de esta repaso
-      const filtered = mockRetouches.filter(
-        (r) => r.appointment_id === appointment.id,
-      );
-
-      setRetouches(filtered);
-      setLoading(false);
-    } catch (error) {
-      console.error("Error loading retouches:", error);
-      setLoading(false);
-    }
-  };
+  const retouches = appointment.retouches ?? [];
+  const loading = false;
+  const currentStatusKey = getAppointmentStatusKey(appointment.status) as string;
 
   const handleCreateRetouch = () => {
     if (appointment.status !== "completed") {
@@ -759,7 +610,7 @@ function RetouchesSection({ appointment, onUpdate }: any) {
     <View style={styles.section}>
       <View style={styles.sectionHeaderRow}>
         <SectionTitle icon="🔄" title="Retoques" />
-        {appointment.status === "completed" && (
+      {currentStatusKey === "completed" && (
           <TouchableOpacity
             style={styles.addRetouchButton}
             onPress={handleCreateRetouch}
@@ -772,7 +623,7 @@ function RetouchesSection({ appointment, onUpdate }: any) {
       {loading ? (
         <Text style={styles.loadingText}>Cargando repasos...</Text>
       ) : retouches.length > 0 ? (
-        retouches.map((retouch) => (
+        retouches.map((retouch: any) => (
           <RetouchCard
             key={retouch.id}
             retouch={retouch}
@@ -785,7 +636,7 @@ function RetouchesSection({ appointment, onUpdate }: any) {
         <View style={styles.noRetouchesContainer}>
           <Text style={styles.noRetouchesIcon}>✨</Text>
           <Text style={styles.noRetouchesText}>
-            {appointment.status === "completed"
+            {currentStatusKey === "completed"
               ? "No hay repasos registrados"
               : "Los repasos estarán disponibles al completar los turno"}
           </Text>
@@ -796,14 +647,7 @@ function RetouchesSection({ appointment, onUpdate }: any) {
 }
 
 function RetouchCard({ retouch, onPress }: any) {
-  const statusConfig = {
-    pending: { label: "Pendiente", color: "#F59E0B", icon: "⏳" },
-    in_progress: { label: "En curso", color: "#3B82F6", icon: "🔄" },
-    completed: { label: "Completado", color: "#10B981", icon: "✅" },
-    cancelled: { label: "Cancelado", color: "#EF4444", icon: "❌" },
-  };
-
-  const config = statusConfig[retouch.status as keyof typeof statusConfig];
+  const config = getAppointmentStatusConfigByKey(getAppointmentStatusKey(retouch.status));
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -873,9 +717,6 @@ function InfoRow({ label, value, icon }: any) {
     </View>
   );
 }
-
-// Agregar estos estilos al StyleSheet existente:
-const newStyles = {};
 
 // ============================================================================
 // ESTILOS

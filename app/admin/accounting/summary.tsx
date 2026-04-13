@@ -8,6 +8,7 @@ import {
 } from "react-native";
 import { router } from "expo-router";
 import { useState, useEffect } from "react";
+import { getDetailedAccountingSummary } from "../../../utils/adminData";
 
 export default function SummaryScreen() {
   const [summary, setSummary] = useState<any>(null);
@@ -22,61 +23,7 @@ export default function SummaryScreen() {
   const loadSummary = async () => {
     try {
       if (!refreshing) setLoading(true);
-
-      // Mock data - TODO: Cargar de Supabase
-      const mockSummary = {
-        month: selectedMonth.getMonth() + 1,
-        year: selectedMonth.getFullYear(),
-
-        // Ingresos
-        income: {
-          appointments: 680000,
-          retouches: 0, // Los repasos no generan ingreso
-          total: 680000,
-        },
-        appointmentDetails: {
-          total: 68,
-          completed: 65,
-          pending: 3,
-          cancelled: 0,
-        },
-        retouchDetails: {
-          total: 12,
-          completed: 10,
-          pending: 2,
-        },
-
-        // Egresos - Salarios
-        salaries: {
-          workers: [
-            { name: "Carlos González", earned: 270000, paid: 270000, pending: 0 },
-            { name: "Ana Martínez", earned: 150000, paid: 100000, pending: 50000 },
-            { name: "Luis Rodríguez", earned:  90000, paid: 90000, pending: 0 },
-          ],
-          totalEarned: 510000,
-          totalPaid:  460000,
-          totalPending: 50000,
-        },
-
-        // Egresos - Gastos
-        expenses: {
-          byCategory: {
-            fuel: 45000,
-            advertising: 35000,
-            supplies: 50000,
-            maintenance: 25000,
-            other: 25000,
-          },
-          total: 180000,
-        },
-
-        // Resultados
-        grossProfit: 170000, // Ingresos - Salarios Pagados
-        netProfit: -10000,   // Ingresos - Salarios Pagados - Gastos
-        theoreticalProfit: 40000, // Ingresos - Salarios Ganados (incluye pendientes)
-      };
-
-      setSummary(mockSummary);
+      setSummary(await getDetailedAccountingSummary(selectedMonth));
       setLoading(false);
       setRefreshing(false);
     } catch (error) {

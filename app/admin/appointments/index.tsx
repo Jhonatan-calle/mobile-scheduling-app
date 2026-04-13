@@ -5,12 +5,13 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
-  Platform,
   RefreshControl,
 } from "react-native";
 import { router } from "expo-router";
 import { useState, useEffect } from "react";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { AppointmentPreviewCard } from "../../../components/admin/dashboard";
+import { getAppointmentsFeed } from "../../../utils/adminData";
 
 export default function AppointmentsScreen() {
   const [filter, setFilter] = useState<"all" | "pending" | "completed">("all");
@@ -18,10 +19,10 @@ export default function AppointmentsScreen() {
     "upcoming",
   );
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchType, setSearchType] = useState<"general" | "date">("general"); // ← NUEVO
+  const [searchType, setSearchType] = useState<"general" | "date">("general");
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false); // ← NUEVO
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     loadItems();
@@ -30,308 +31,7 @@ export default function AppointmentsScreen() {
   const loadItems = async () => {
     try {
       setLoading(true);
-
-      // Mock:  Estructura real con appointments
-      const mockAppointments = [
-        {
-          id: 1,
-          admin_id: 1,
-          worker_id: 1,
-          client_id: 1,
-          service: "sillones",
-          service_details: "Limpieza de sillón 3 cuerpos",
-          address: "Av. Colón 123",
-          date: new Date().toISOString(),
-          estimate_time: 120,
-          cost: 15000,
-          commission_rate: 60,
-          status: "pending",
-          has_retouches: false,
-          paid_to_worker: false,
-          payment_method: null,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          client: {
-            id: 1,
-            name: "Juan Pérez",
-            phone_number: "351 234 5678",
-            last_appointment_at: "2024-01-15T10:00:00Z",
-          },
-          worker: {
-            id: 1,
-            profile_id: 1,
-            commission_rate: 60,
-            profile: {
-              id: 1,
-              name: "Carlos González",
-            },
-          },
-        },
-        {
-          id: 2,
-          admin_id: 1,
-          worker_id: 2,
-          client_id: 2,
-          service: "alfombra",
-          service_details: "Limpieza de alfombra persa grande",
-          address: "San Martín 456",
-          date: (() => {
-            const d = new Date();
-            d.setHours(14, 0, 0, 0);
-            return d.toISOString();
-          })(),
-          estimate_time: 90,
-          cost: 12000,
-          commission_rate: 55,
-          status: "in_progress",
-          has_retouches: false,
-          paid_to_worker: false,
-          payment_method: null,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          client: {
-            id: 2,
-            name: "María López",
-            phone_number: "351 456 7890",
-            last_appointment_at: "2024-01-10T14:00:00Z",
-          },
-          worker: {
-            id: 2,
-            profile_id: 2,
-            commission_rate: 55,
-            profile: {
-              id: 2,
-              name: "Ana Martínez",
-            },
-          },
-        },
-        {
-          id: 3,
-          admin_id: 1,
-          worker_id: 1,
-          client_id: 3,
-          service: "auto",
-          service_details: "Limpieza completa de tapizado de auto",
-          address: "Belgrano 789",
-          date: (() => {
-            const d = new Date();
-            d.setDate(d.getDate() + 1);
-            d.setHours(10, 0, 0, 0);
-            return d.toISOString();
-          })(),
-          estimate_time: 180,
-          cost: 25000,
-          commission_rate: 60,
-          status: "pending",
-          has_retouches: false,
-          paid_to_worker: false,
-          payment_method: null,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          client: {
-            id: 3,
-            name: "Roberto García",
-            phone_number: "351 678 9012",
-            last_appointment_at: null,
-          },
-          worker: {
-            id: 1,
-            profile_id: 1,
-            commission_rate: 60,
-            profile: {
-              id: 1,
-              name: "Carlos González",
-            },
-          },
-        },
-        {
-          id: 4,
-          admin_id: 1,
-          worker_id: 2,
-          client_id: 4,
-          service: "sillas",
-          service_details: "6 sillas de comedor",
-          address: "Rivadavia 321",
-          date: (() => {
-            const d = new Date();
-            d.setDate(d.getDate() - 1);
-            d.setHours(16, 0, 0, 0);
-            return d.toISOString();
-          })(),
-          estimate_time: 60,
-          cost: 8000,
-          commission_rate: 55,
-          status: "completed",
-          has_retouches: false,
-          paid_to_worker: true,
-          payment_method: "efectivo",
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          client: {
-            id: 4,
-            name: "Laura Fernández",
-            phone_number: "351 789 0123",
-            last_appointment_at: "2023-12-20T16:00:00Z",
-          },
-          worker: {
-            id: 2,
-            profile_id: 2,
-            commission_rate: 55,
-            profile: {
-              id: 2,
-              name: "Ana Martínez",
-            },
-          },
-        },
-        {
-          id: 5,
-          admin_id: 1,
-          worker_id: 1,
-          client_id: 1,
-          service: "cortinas",
-          service_details: "Limpieza de cortinas blackout",
-          address: "Av. Colón 123",
-          date: (() => {
-            const d = new Date();
-            d.setDate(d.getDate() - 7);
-            d.setHours(10, 0, 0, 0);
-            return d.toISOString();
-          })(),
-          estimate_time: 90,
-          cost: 10000,
-          commission_rate: 60,
-          status: "completed",
-          has_retouches: false,
-          paid_to_worker: true,
-          payment_method: "transferencia",
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          client: {
-            id: 1,
-            name: "Juan Pérez",
-            phone_number: "351 234 5678",
-            last_appointment_at: "2024-01-15T10:00:00Z",
-          },
-          worker: {
-            id: 1,
-            profile_id: 1,
-            commission_rate: 60,
-            profile: {
-              id: 1,
-              name: "Carlos González",
-            },
-          },
-        },
-      ];
-
-      // Mock:  Estructura de retouches (repasos)
-      const mockRetouches = [
-        {
-          id: 1,
-          appointment_id: 1,
-          worker_id: 1,
-          time: (() => {
-            const d = new Date();
-            d.setHours(11, 30, 0, 0);
-            return d.toISOString();
-          })(),
-          address: "Av. Colón 123",
-          reason: "Cliente reportó manchas persistentes",
-          estimate_time: 60,
-          status: "pending",
-          created_at: new Date().toISOString(),
-          appointment: {
-            id: 1,
-            client: {
-              id: 1,
-              name: "Juan Pérez",
-            },
-            service_details: "Limpieza de sillón 3 cuerpos",
-          },
-          worker: {
-            id: 1,
-            profile: {
-              id: 1,
-              name: "Carlos González",
-            },
-          },
-        },
-        {
-          id: 2,
-          appointment_id: 4,
-          worker_id: 2,
-          time: (() => {
-            const d = new Date();
-            d.setDate(d.getDate() + 1);
-            d.setHours(15, 0, 0, 0);
-            return d.toISOString();
-          })(),
-          address: "Rivadavia 321",
-          reason: "Verificar resultado final",
-          estimate_time: 45,
-          status: "pending",
-          created_at: new Date().toISOString(),
-          appointment: {
-            id: 4,
-            client: {
-              id: 4,
-              name: "Laura Fernández",
-            },
-            service_details: "6 sillas de comedor",
-          },
-          worker: {
-            id: 2,
-            profile: {
-              id: 2,
-              name: "Ana Martínez",
-            },
-          },
-        },
-      ];
-
-      // Transformar appointments
-      const transformedAppointments = mockAppointments.map((apt) => ({
-        id: apt.id.toString(),
-        type: "appointment",
-        time: new Date(apt.date).toLocaleTimeString("es-AR", {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-        date: formatDateLabel(new Date(apt.date)),
-        dateForSearch: new Date(apt.date).toLocaleDateString("es-AR"), // ← NUEVO para búsqueda
-        customer: apt.client.name,
-        service: apt.service_details,
-        worker: apt.worker.profile.name,
-        status: mapStatus(apt.status),
-        amount: apt.cost,
-        rawDate: new Date(apt.date),
-      }));
-
-      // Transformar retouches
-      const transformedRetouches = mockRetouches.map((retouch) => ({
-        id: retouch.id.toString(),
-        type: "retouch",
-        time: new Date(retouch.time).toLocaleTimeString("es-AR", {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-        date: formatDateLabel(new Date(retouch.time)),
-        dateForSearch: new Date(retouch.time).toLocaleDateString("es-AR"), // ← NUEVO
-        customer: retouch.appointment.client.name,
-        service: `🔄 Repaso:  ${retouch.appointment.service_details}`,
-        worker: retouch.worker.profile.name,
-        status: mapStatus(retouch.status),
-        amount: 0,
-        rawDate: new Date(retouch.time),
-        reason: retouch.reason,
-      }));
-
-      // Combinar y ordenar por fecha
-      const allItems = [
-        ...transformedAppointments,
-        ...transformedRetouches,
-      ].sort((a, b) => a.rawDate.getTime() - b.rawDate.getTime());
-
+      const allItems = await getAppointmentsFeed();
       setItems(allItems);
       setLoading(false);
       setRefreshing(false);
@@ -342,46 +42,13 @@ export default function AppointmentsScreen() {
     }
   };
 
-  const formatDateLabel = (date: Date) => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-
-    const compareDate = new Date(date);
-    compareDate.setHours(0, 0, 0, 0);
-
-    if (compareDate.getTime() === today.getTime()) return "Hoy";
-    if (compareDate.getTime() === tomorrow.getTime()) return "Mañana";
-    if (compareDate.getTime() === yesterday.getTime()) return "Ayer";
-
-    return date.toLocaleDateString("es-AR", {
-      day: "numeric",
-      month: "short",
-    });
-  };
-
-  const mapStatus = (status: string) => {
-    const statusMap: any = {
-      pending: "pending",
-      in_progress: "in-progress",
-      completed: "completed",
-      cancelled: "cancelled",
-    };
-    return statusMap[status] || "pending";
-  };
-
   const onRefresh = () => {
     setRefreshing(true);
     loadItems();
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
       <AppointmentsHeader />
 
       <ScrollView
@@ -418,7 +85,7 @@ export default function AppointmentsScreen() {
       </ScrollView>
 
       <FloatingAddButton />
-    </View>
+    </SafeAreaView>
   );
 }
 

@@ -29,7 +29,7 @@ erDiagram
 
     SERVICE_COMBOS {
         int id PK
-        int objeto_id FK
+        int object_id FK
         string name
         string description
         int precio
@@ -42,7 +42,6 @@ erDiagram
         int service_objet_id FK
         int service_combo_id FK
         string notes
-        float price
     }
 
     APPOINTMENT_STATUSES {
@@ -134,7 +133,6 @@ erDiagram
     SERVICE_OBJECTS ||--o{ SERVICE_COMBOS : has
     SERVICE_OBJECTS ||--o{ APPOINTMENT_ITEMS : includes
     SERVICE_COMBOS ||--o{ APPOINTMENT_ITEMS : specifies
-    APPOINTMENTS ||--o{ APPOINTMENT_ITEMS : contains
     PROFILES ||--o{ SALARIES : receives
     APPOINTMENTS ||--o{ APPOINTMENT_ITEMS : contains
 

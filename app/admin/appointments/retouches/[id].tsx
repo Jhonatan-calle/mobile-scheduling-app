@@ -8,6 +8,7 @@ import {
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState, useEffect } from "react";
+import { deleteRetouch, getRetouchById, updateRetouch } from "../../../../utils/adminData";
 
 export default function RetouchDetailScreen() {
   const { id } = useLocalSearchParams();
@@ -20,34 +21,7 @@ export default function RetouchDetailScreen() {
 
   const loadRetouch = async () => {
     try {
-      // Mock: Cargar repaso
-      const mockRetouch = {
-        id: parseInt(id as string),
-        appointment_id: 1,
-        worker_id: 1,
-        time: new Date().toISOString(),
-        address: "Av. Colón 123",
-        reason: "Cliente reportó manchas persistentes en el lateral",
-        estimate_time: 60,
-        status: "pending",
-        created_at: new Date().toISOString(),
-        appointment: {
-          id: 1,
-          client: {
-            name: "Juan Pérez",
-            phone_number: "351 234 5678",
-          },
-          service_details: "Limpieza de sillón 3 cuerpos",
-        },
-        worker: {
-          id: 1,
-          profile: {
-            name: "Carlos González",
-          },
-        },
-      };
-
-      setRetouch(mockRetouch);
+      setRetouch(await getRetouchById(id as string));
       setLoading(false);
     } catch (error) {
       console.error("Error loading retouch:", error);
@@ -72,7 +46,7 @@ export default function RetouchDetailScreen() {
         {
           text: "Confirmar",
           onPress: async () => {
-            // TODO: Actualizar en Supabase
+            await updateRetouch(retouch.id, { status: newStatus === "completed" ? 3 : newStatus === "in_progress" ? 2 : 1 } as any);
             setRetouch({ ...retouch, status: newStatus });
             Alert.alert("¡Listo!", "Estado actualizado correctamente");
           },
@@ -312,10 +286,10 @@ function ActionButtonsSection({ retouch }: any) {
       [
         { text: "Cancelar", style: "cancel" },
         {
-          text: "Eliminar",
-          style: "destructive",
-          onPress: async () => {
-            // TODO: Eliminar de Supabase
+            text: "Eliminar",
+            style: "destructive",
+            onPress: async () => {
+            await deleteRetouch(retouch.id);
             Alert.alert("¡Eliminado!", "El repaso ha sido eliminado", [
               {
                 text: "OK",
@@ -410,6 +384,11 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "bold",
     color: "#111827",
+  },
+  headerSubtitle: {
+    fontSize: 13,
+    color: "#6B7280",
+    marginTop: 2,
   },
   headerSpacer: {
     width: 60,
@@ -588,4 +567,3 @@ const styles = StyleSheet.create({
     color: "#DC2626",
   },
 });
-

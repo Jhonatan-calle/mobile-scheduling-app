@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { router } from "expo-router";
 import { useState, useEffect } from "react";
+import { getPaymentsOverview } from "../../../utils/adminData";
 
 export default function PaymentsScreen() {
   const [workers, setWorkers] = useState<any[]>([]);
@@ -30,42 +31,7 @@ export default function PaymentsScreen() {
   const loadPayments = async () => {
     try {
       if (! refreshing) setLoading(true);
-
-      // Mock data - TODO: Cargar de Supabase
-      const mockWorkers = [
-        {
-          id: 1,
-          name: "Carlos González",
-          phone: "351 234 5678",
-          totalEarned: 270000,
-          totalPaid: 270000,
-          pending: 0,
-          appointments: 42,
-          retouches: 5,
-        },
-        {
-          id:  2,
-          name: "Ana Martínez",
-          phone: "351 456 7890",
-          totalEarned: 150000,
-          totalPaid:  100000,
-          pending: 50000,
-          appointments: 28,
-          retouches: 3,
-        },
-        {
-          id: 3,
-          name: "Luis Rodríguez",
-          phone: "351 678 9012",
-          totalEarned: 90000,
-          totalPaid: 90000,
-          pending: 0,
-          appointments: 18,
-          retouches: 4,
-        },
-      ];
-
-      setWorkers(mockWorkers);
+      setWorkers(await getPaymentsOverview(selectedMonth));
       setLoading(false);
       setRefreshing(false);
     } catch (error) {
@@ -111,7 +77,6 @@ export default function PaymentsScreen() {
     }
 
     try {
-      // TODO: Actualizar en Supabase
       // await supabase
       //   .from('workers')
       //   .update({ 

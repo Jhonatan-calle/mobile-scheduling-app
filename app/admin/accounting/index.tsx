@@ -8,6 +8,8 @@ import {
 } from "react-native";
 import { router } from "expo-router";
 import { useState, useEffect } from "react";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { getMonthlySummary } from "../../../utils/adminData";
 
 export default function AccountingScreen() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -22,41 +24,7 @@ export default function AccountingScreen() {
   const loadSummary = async () => {
     try {
       if (! refreshing) setLoading(true);
-
-      // Mock data - TODO: Cargar de Supabase
-      const mockSummary = {
-        month: currentMonth.getMonth() + 1,
-        year:  currentMonth.getFullYear(),
-        
-        // Ingresos
-        totalIncome:  850000,
-        totalAppointments: 68,
-        totalRetouches: 12,
-        
-        // Egresos
-        totalExpenses:  180000,
-        expenses: {
-          fuel: 45000,
-          advertising: 35000,
-          supplies: 50000,
-          maintenance: 25000,
-          other: 25000,
-        },
-        
-        // Salarios
-        totalSalaries:  510000,
-        workerPayments: [
-          { id: 1, name: "Carlos González", earned: 270000, paid: 270000, pending: 0 },
-          { id: 2, name: "Ana Martínez", earned: 150000, paid: 100000, pending: 50000 },
-          { id: 3, name:  "Luis Rodríguez", earned: 90000, paid: 90000, pending: 0 },
-        ],
-        
-        // Resultados
-        grossProfit: 340000, // Ingresos - Salarios
-        netProfit: 160000,   // Ingresos - Salarios - Gastos
-      };
-
-      setSummary(mockSummary);
+      setSummary(await getMonthlySummary(currentMonth));
       setLoading(false);
       setRefreshing(false);
     } catch (error) {
@@ -103,17 +71,17 @@ export default function AccountingScreen() {
 
   if (loading) {
     return (
-      <View style={styles. container}>
+      <SafeAreaView style={styles.container} edges={["top"]}>
         <AccountingHeader />
         <View style={styles.loadingContainer}>
           <Text style={styles.loadingText}>Cargando... </Text>
         </View>
-      </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
       <AccountingHeader />
 
       <ScrollView
@@ -178,7 +146,7 @@ export default function AccountingScreen() {
         {/* Desglose Rápido */}
         <BreakdownSection summary={summary} />
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 

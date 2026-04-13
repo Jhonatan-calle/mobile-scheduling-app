@@ -9,6 +9,8 @@ import {
 } from "react-native";
 import { router } from "expo-router";
 import { useState, useEffect, useCallback } from "react";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { getWorkersOverview } from "../../../utils/adminData";
 
 export default function WorkersScreen() {
   const [workers, setWorkers] = useState<any[]>([]);
@@ -18,55 +20,7 @@ export default function WorkersScreen() {
   const loadWorkers = useCallback(async () => {
     try {
       if (!refreshing) setLoading(true);
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // Mock: Datos de trabajadores
-      const mockWorkers = [
-        {
-          id: 1,
-          profile: {
-            id: 1,
-            name: "Carlos González",
-          },
-          commission_rate: 60,
-          status: "available",
-          todayAppointments: 3,
-          completedToday: 2,
-          currentAppointment: {
-            client: "Juan Pérez",
-            service: "Limpieza de sillón",
-          },
-        },
-        {
-          id: 2,
-          profile: {
-            id: 2,
-            name: "Ana Martínez",
-          },
-          commission_rate: 55,
-          status: "busy",
-          todayAppointments: 2,
-          completedToday: 2,
-          currentAppointment: null,
-        },
-        {
-          id: 3,
-          profile: {
-            id: 3,
-            name: "Luis Rodríguez",
-          },
-          commission_rate: 50,
-          status: "available",
-          todayAppointments: 4,
-          completedToday: 1,
-          currentAppointment: {
-            client: "María López",
-            service: "Limpieza de auto",
-          },
-        },
-      ];
-
-      setWorkers(mockWorkers);
+      setWorkers(await getWorkersOverview());
       setLoading(false);
       setRefreshing(false);
     } catch (error) {
@@ -74,14 +28,14 @@ export default function WorkersScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [refreshing]); // ← refreshing es la única dependencia
+  }, [refreshing]);
 
   useEffect(() => {
     loadWorkers();
   }, [loadWorkers]);
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
       <WorkersHeader />
 
       <ScrollView
@@ -100,7 +54,7 @@ export default function WorkersScreen() {
       >
         <WorkersListSection workers={workers} loading={loading} />
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 

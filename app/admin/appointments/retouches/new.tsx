@@ -9,10 +9,10 @@ import {
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState, useEffect } from "react";
-import { TextInput } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import Input from "../../../../components/Input";
 import Button from "../../../../components/Button";
+import { createRetouch, getAppointmentById, getWorkers } from "../../../../utils/adminData";
 
 export default function NewRetouchScreen() {
   const { appointmentId } = useLocalSearchParams();
@@ -28,7 +28,7 @@ export default function NewRetouchScreen() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [workers, setWorkers] = useState([]);
+  const [workers, setWorkers] = useState<any[]>([]);
 
   useEffect(() => {
     loadAppointment();
@@ -37,29 +37,14 @@ export default function NewRetouchScreen() {
 
   const loadAppointment = async () => {
     try {
-      // Mock: Cargar repaso original
-      const mockAppointment = {
-        id:  parseInt(appointmentId as string),
-        client:  {
-          name: "Juan Pérez",
-        },
-        worker: {
-          id: 1,
-          profile: {
-            name: "Carlos González",
-          },
-        },
-        service_details: "Limpieza de sillón 3 cuerpos",
-        address: "Av. Colón 123",
-      };
-
-      setAppointment(mockAppointment);
+      const appointmentData = await getAppointmentById(parseInt(appointmentId as string));
+      setAppointment(appointmentData);
       
       // Pre-llenar datos
       setFormData({
         ... formData,
-        workerId: mockAppointment.worker.id. toString(),
-        address: mockAppointment.address,
+        workerId: String(appointmentData.worker_id),
+        address: appointmentData.address || "",
       });
     } catch (error) {
       console.error("Error loading appointment:", error);
@@ -69,28 +54,7 @@ export default function NewRetouchScreen() {
 
   const loadWorkers = async () => {
     try {
-      const mockWorkers = [
-        {
-          id: 1,
-          profile_id: 1,
-          commission_rate: 60.0,
-          profile: {
-            id: 1,
-            name: "Carlos González",
-          },
-        },
-        {
-          id: 2,
-          profile_id: 2,
-          commission_rate: 55.0,
-          profile: {
-            id: 2,
-            name: "Ana Martínez",
-          },
-        },
-      ];
-
-      setWorkers(mockWorkers);
+      setWorkers(await getWorkers());
     } catch (error) {
       console.error("Error loading workers:", error);
     }
@@ -133,14 +97,14 @@ export default function NewRetouchScreen() {
 
       console.log("📋 Datos del repaso a guardar:", retouchData);
 
-      // TODO: Guardar en Supabase
-      // const { data, error } = await supabase
-      //   .from('retouches')
-      //   .insert([retouchData])
-      //   .select()
-      //   .single();
-
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      await createRetouch({
+        appointment_id: parseInt(appointmentId as string),
+        worker_id: parseInt(formData.workerId),
+        time: combinedDate.toISOString(),
+        address: formData.address,
+        reason: formData.reason,
+        estimate_time: parseInt(formData.estimateTime),
+      });
 
       Alert.alert("¡Éxito!", "El repaso ha sido creado correctamente", [
         {

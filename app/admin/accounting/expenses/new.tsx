@@ -9,14 +9,13 @@ import {
 } from "react-native";
 import { router } from "expo-router";
 import { useState } from "react";
+import { createExpense } from "../../../../utils/adminData";
+import { EXPENSE_CATEGORIES } from "../../../../utils/lookups";
 
-const CATEGORIES = [
-  { id: "fuel", icon: "⛽", label:  "Nafta", color: "#EF4444" },
-  { id: "advertising", icon:  "📢", label: "Publicidad", color: "#8B5CF6" },
-  { id: "supplies", icon: "🧴", label: "Insumos", color: "#3B82F6" },
-  { id: "maintenance", icon:  "🔧", label: "Mantenimiento", color: "#F59E0B" },
-  { id: "other", icon: "📦", label: "Otros", color: "#6B7280" },
-];
+const CATEGORIES = Object.entries(EXPENSE_CATEGORIES).map(([id, config]) => ({
+  id,
+  ...config,
+}));
 
 export default function NewExpenseScreen() {
   const [category, setCategory] = useState("");
@@ -43,20 +42,12 @@ export default function NewExpenseScreen() {
 
     try {
       setSaving(true);
-
-      // TODO: Guardar en Supabase
-      const newExpense = {
+      await createExpense({
         category,
-        description:  description.trim(),
+        description: description.trim(),
         amount: parseFloat(amount),
         date: new Date().toISOString(),
-        createdBy: "Admin", // TODO: Obtener del usuario actual
-      };
-
-      console.log("Guardando gasto:", newExpense);
-
-      // Simular delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      });
 
       Alert.alert("Éxito", "Gasto registrado correctamente", [
         {

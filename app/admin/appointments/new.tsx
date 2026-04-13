@@ -7,81 +7,76 @@ import {
   Alert,
   Platform,
   FlatList,
+  TextInput,
 } from "react-native";
 import { router } from "expo-router";
 import { useState, useEffect } from "react";
-import { TextInput } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import Input from "../../../components/Input";
 import Button from "../../../components/Button";
+import {
+  createAppointment,
+  findOrCreateClient as findOrCreateClientInDb,
+  getCurrentProfile,
+  getClients,
+  getServiceObjectsWithCombos, // <-- reemplaza getServices
+  getWorkers,
+} from "../../../utils/adminData";
+import type {
+  ServiceObjectWithCombos,
+  AppointmentItem,
+} from "../../../utils/adminData";
+import { getServiceIcon } from "../../../utils/lookups";
 
 export default function NewAppointmentScreen() {
   const [formData, setFormData] = useState({
     customerName: "",
     customerPhone: "",
     customerAddress: "",
-    service: "",
-    serviceDetails: "",
     cost: "",
     date: new Date(),
     time: new Date(),
     estimateTime: "60",
-    notes: "",
+    observaciones: "",
     workerId: "",
     commissionRate: "",
   });
 
+  const [appointmentItems, setAppointmentItems] = useState<AppointmentItem[]>(
+    [],
+  );
+  const [serviceObjects, setServiceObjects] = useState<
+    ServiceObjectWithCombos[]
+  >([]);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [workers, setWorkers] = useState([]);
-  
+  const [workers, setWorkers] = useState<any[]>([]);
+
   // Estados para sugerencias de clientes
-  const [clientSuggestions, setClientSuggestions] = useState([]);
+  const [clientSuggestions, setClientSuggestions] = useState<any[]>([]);
   const [showNameSuggestions, setShowNameSuggestions] = useState(false);
   const [showPhoneSuggestions, setShowPhoneSuggestions] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState<number | null>(null);
 
   useEffect(() => {
     loadWorkers();
+    loadServices();
   }, []);
 
   const loadWorkers = async () => {
     try {
-      // Mock:  Estructura real con profiles y workers
-      const mockWorkers = [
-        {
-          id: 1,
-          profile_id: 1,
-          commission_rate: 60.00,
-          profile: {
-            id: 1,
-            name: "Carlos González",
-          },
-        },
-        {
-          id: 2,
-          profile_id: 2,
-          commission_rate: 55.00,
-          profile: {
-            id: 2,
-            name: "Ana Martínez",
-          },
-        },
-        {
-          id: 3,
-          profile_id:  3,
-          commission_rate: 50.00,
-          profile: {
-            id: 3,
-            name: "Luis Rodríguez",
-          },
-        },
-      ];
-
-      setWorkers(mockWorkers);
+      setWorkers(await getWorkers());
     } catch (error) {
       console.error("Error loading workers:", error);
+    }
+  };
+
+  const loadServices = async () => {
+    try {
+      setServiceObjects(await getServiceObjectsWithCombos());
+    } catch (error) {
+      console.error("Error loading services:", error);
     }
   };
 
@@ -94,37 +89,9 @@ export default function NewAppointmentScreen() {
     }
 
     try {
-      // Mock: Base de datos de clientes
-      const mockClients = [
-        {
-          id: 1,
-          name:  "Juan Pérez",
-          phone_number: "351 234 5678",
-          last_appointment_at: "2024-01-15T10:00:00Z",
-        },
-        {
-          id: 2,
-          name: "María López",
-          phone_number: "351 456 7890",
-          last_appointment_at: "2024-01-10T14:00:00Z",
-        },
-        {
-          id: 3,
-          name: "Juan Carlos Gómez",
-          phone_number: "351 567 8901",
-          last_appointment_at: "2024-01-05T09:00:00Z",
-        },
-        {
-          id: 4,
-          name: "Laura Fernández",
-          phone_number: "351 789 0123",
-          last_appointment_at: "2023-12-20T16:00:00Z",
-        },
-      ];
-
-      // Filtrar clientes que coincidan con el nombre
-      const filtered = mockClients.filter((client) =>
-        client.name.toLowerCase().includes(searchText. toLowerCase())
+      const clients = await getClients(searchText);
+      const filtered = clients.filter((client) =>
+        client.name.toLowerCase().includes(searchText.toLowerCase()),
       );
 
       setClientSuggestions(filtered);
@@ -135,7 +102,7 @@ export default function NewAppointmentScreen() {
   };
 
   // Buscar clientes por teléfono
-  const searchClientsByPhone = async (searchText:  string) => {
+  const searchClientsByPhone = async (searchText: string) => {
     if (searchText.trim().length < 3) {
       setClientSuggestions([]);
       setShowPhoneSuggestions(false);
@@ -143,38 +110,10 @@ export default function NewAppointmentScreen() {
     }
 
     try {
-      // Mock: Base de datos de clientes
-      const mockClients = [
-        {
-          id: 1,
-          name: "Juan Pérez",
-          phone_number: "351 234 5678",
-          last_appointment_at: "2024-01-15T10:00:00Z",
-        },
-        {
-          id: 2,
-          name: "María López",
-          phone_number: "351 456 7890",
-          last_appointment_at: "2024-01-10T14:00:00Z",
-        },
-        {
-          id: 3,
-          name: "Juan Carlos Gómez",
-          phone_number: "351 567 8901",
-          last_appointment_at: "2024-01-05T09:00:00Z",
-        },
-        {
-          id: 4,
-          name: "Laura Fernández",
-          phone_number: "351 789 0123",
-          last_appointment_at: "2023-12-20T16:00:00Z",
-        },
-      ];
-
-      // Filtrar clientes que coincidan con el teléfono
+      const clients = await getClients(searchText);
       const cleanSearch = searchText.replace(/\s/g, "");
-      const filtered = mockClients.filter((client) =>
-        client.phone_number.replace(/\s/g, "").includes(cleanSearch)
+      const filtered = clients.filter((client) =>
+        client.phone_number.replace(/\s/g, "").includes(cleanSearch),
       );
 
       setClientSuggestions(filtered);
@@ -185,13 +124,13 @@ export default function NewAppointmentScreen() {
   };
 
   // Seleccionar un cliente de las sugerencias
-  const selectClient = (client:  any) => {
+  const selectClient = (client: any) => {
     setFormData({
       ...formData,
       customerName: client.name,
-      customerPhone: client. phone_number,
+      customerPhone: client.phone_number,
     });
-    setSelectedClientId(client. id);
+    setSelectedClientId(client.id);
     setShowNameSuggestions(false);
     setShowPhoneSuggestions(false);
     setClientSuggestions([]);
@@ -219,7 +158,11 @@ export default function NewAppointmentScreen() {
           setShowPhoneSuggestions={setShowPhoneSuggestions}
           selectedClientId={selectedClientId}
         />
-        <ServiceInfoSection formData={formData} setFormData={setFormData} />
+        <ServiceInfoSection
+          serviceObjects={serviceObjects}
+          appointmentItems={appointmentItems}
+          setAppointmentItems={setAppointmentItems}
+        />
         <DateTimeSection
           formData={formData}
           setFormData={setFormData}
@@ -239,6 +182,7 @@ export default function NewAppointmentScreen() {
           loading={loading}
           setLoading={setLoading}
           selectedClientId={selectedClientId}
+          appointmentItems={appointmentItems}
         />
       </ScrollView>
     </View>
@@ -275,7 +219,7 @@ function CustomerInfoSection({
   setShowNameSuggestions,
   setShowPhoneSuggestions,
   selectedClientId,
-}:  any) {
+}: any) {
   return (
     <View style={styles.section}>
       <SectionHeader
@@ -302,46 +246,21 @@ function CustomerInfoSection({
             if (selectedClientId) setShowNameSuggestions(false); // No mostrar si ya seleccionó uno
           }}
           onFocus={() => {
-            if (formData.customerName.length >= 2 && clientSuggestions.length > 0) {
+            if (
+              formData.customerName.length >= 2 &&
+              clientSuggestions.length > 0
+            ) {
               setShowNameSuggestions(true);
             }
           }}
         />
 
-        {showNameSuggestions && clientSuggestions.length > 0 && (
-          <View style={styles.suggestionsContainer}>
-            <Text style={styles.suggestionsTitle}>Clientes encontrados:</Text>
-            <FlatList
-              data={clientSuggestions}
-              keyExtractor={(item) => item.id.toString()}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={styles.suggestionItem}
-                  onPress={() => selectClient(item)}
-                  activeOpacity={0.7}
-                >
-                  <View style={styles.suggestionContent}>
-                    <Text style={styles.suggestionName}>{item.name}</Text>
-                    <Text style={styles.suggestionPhone}>{item.phone_number}</Text>
-                    {item.last_appointment_at && (
-                      <Text style={styles.suggestionDate}>
-                        Última turno: {new Date(item.last_appointment_at).toLocaleDateString('es-AR')}
-                      </Text>
-                    )}
-                  </View>
-                  <Text style={styles.suggestionArrow}>→</Text>
-                </TouchableOpacity>
-              )}
-              scrollEnabled={false}
-            />
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={() => setShowNameSuggestions(false)}
-            >
-              <Text style={styles.closeButtonText}>Cerrar</Text>
-            </TouchableOpacity>
-          </View>
-        )}
+        <ClientSuggestionsList
+          suggestions={clientSuggestions}
+          show={showNameSuggestions}
+          onSelect={selectClient}
+          onClose={() => setShowNameSuggestions(false)}
+        />
       </View>
 
       {/* Campo de teléfono con sugerencias */}
@@ -357,52 +276,26 @@ function CustomerInfoSection({
           }}
           keyboardType="phone-pad"
           onFocus={() => {
-            if (formData. customerPhone.length >= 3 && clientSuggestions. length > 0) {
+            if (
+              formData.customerPhone.length >= 3 &&
+              clientSuggestions.length > 0
+            ) {
               setShowPhoneSuggestions(true);
             }
           }}
         />
-
-        {showPhoneSuggestions && clientSuggestions.length > 0 && (
-          <View style={styles.suggestionsContainer}>
-            <Text style={styles.suggestionsTitle}>Clientes encontrados:</Text>
-            <FlatList
-              data={clientSuggestions}
-              keyExtractor={(item) => item.id.toString()}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={styles.suggestionItem}
-                  onPress={() => selectClient(item)}
-                  activeOpacity={0.7}
-                >
-                  <View style={styles.suggestionContent}>
-                    <Text style={styles.suggestionName}>{item. name}</Text>
-                    <Text style={styles.suggestionPhone}>{item.phone_number}</Text>
-                    {item. last_appointment_at && (
-                      <Text style={styles. suggestionDate}>
-                        Última turno: {new Date(item.last_appointment_at).toLocaleDateString('es-AR')}
-                      </Text>
-                    )}
-                  </View>
-                  <Text style={styles.suggestionArrow}>→</Text>
-                </TouchableOpacity>
-              )}
-              scrollEnabled={false}
-            />
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={() => setShowPhoneSuggestions(false)}
-            >
-              <Text style={styles.closeButtonText}>Cerrar</Text>
-            </TouchableOpacity>
-          </View>
-        )}
+        <ClientSuggestionsList
+          suggestions={clientSuggestions}
+          show={showPhoneSuggestions}
+          onSelect={selectClient}
+          onClose={() => setShowPhoneSuggestions(false)}
+        />
       </View>
 
       <Input
         label="Dirección"
         placeholder="Ej:  Av. Colón 123"
-        value={formData. customerAddress}
+        value={formData.customerAddress}
         onChangeText={(text) =>
           setFormData({ ...formData, customerAddress: text })
         }
@@ -413,84 +306,265 @@ function CustomerInfoSection({
 }
 
 // ============================================================================
+// COMPONENTE AUXILIAR: CLIENT SUGGESTIONS LIST
+// ============================================================================
+function ClientSuggestionsList({
+  suggestions,
+  show,
+  onSelect,
+  onClose,
+}: {
+  suggestions: any[];
+  show: boolean;
+  onSelect: (client: any) => void;
+  onClose: () => void;
+}) {
+  if (!show || suggestions.length === 0) return null;
+
+  return (
+    <View style={styles.suggestionsContainer}>
+      <Text style={styles.suggestionsTitle}>Clientes encontrados:</Text>
+      <FlatList
+        data={suggestions}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            style={styles.suggestionItem}
+            onPress={() => onSelect(item)}
+            activeOpacity={0.7}
+          >
+            <View style={styles.suggestionContent}>
+              <Text style={styles.suggestionName}>{item.name}</Text>
+              <Text style={styles.suggestionPhone}>{item.phone_number}</Text>
+              {item.last_appointment_at && (
+                <Text style={styles.suggestionDate}>
+                  Última turno:{" "}
+                  {new Date(item.last_appointment_at).toLocaleDateString(
+                    "es-AR",
+                  )}
+                </Text>
+              )}
+            </View>
+            <Text style={styles.suggestionArrow}>→</Text>
+          </TouchableOpacity>
+        )}
+        scrollEnabled={false}
+      />
+      <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+        <Text style={styles.closeButtonText}>Cerrar</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+// ============================================================================
 // SECCIÓN: INFORMACIÓN DEL SERVICIO
 // ============================================================================
-function ServiceInfoSection({ formData, setFormData }: any) {
-  const serviceTypes = [
-    { id:  "auto", name: "Auto", icon: "🚗" },
-    { id: "sillones", name: "Sillones", icon: "🛋️" },
-    { id: "sillas", name: "Sillas", icon: "🪑" },
-    { id: "alfombra", name: "Alfombra", icon: "🧶" },
-    { id: "colchon", name: "Colchón", icon: "🛏️" },
-    { id: "otro", name: "Otro", icon: "📦" },
-  ];
+function ServiceInfoSection({
+  serviceObjects,
+  appointmentItems,
+  setAppointmentItems,
+}: {
+  serviceObjects: ServiceObjectWithCombos[];
+  appointmentItems: AppointmentItem[];
+  setAppointmentItems: (items: AppointmentItem[]) => void;
+}) {
+  const [selectedObjectId, setSelectedObjectId] = useState<number | null>(null);
+
+  const selectedObject = serviceObjects.find((o) => o.id === selectedObjectId);
+
+  const isObjectInItems = (objectId: number) =>
+    appointmentItems.some((i) => i.service_object_id === objectId);
+
+  const addItem = (objectId: number, comboId: number | null = null) => {
+    // Evitar duplicar el mismo objeto+combo
+    const exists = appointmentItems.some(
+      (i) =>
+        i.service_object_id === objectId &&
+        (i.service_combo_id ?? null) === comboId,
+    );
+    if (exists) return;
+
+    setAppointmentItems([
+      ...appointmentItems,
+      {
+        service_object_id: objectId,
+        service_combo_id: comboId,
+        detalle: null,
+        price_override: null,
+      },
+    ]);
+    setSelectedObjectId(null);
+  };
+
+  const removeItem = (index: number) => {
+    setAppointmentItems(appointmentItems.filter((_, i) => i !== index));
+  };
+
+  const updateItemDetalle = (index: number, detalle: string) => {
+    const updated = [...appointmentItems];
+    updated[index] = { ...updated[index], detalle: detalle || null };
+    setAppointmentItems(updated);
+  };
+
+  const getObjectLabel = (objectId: number) =>
+    serviceObjects.find((o) => o.id === objectId)?.objeto ?? "Objeto";
+
+  const getComboLabel = (objectId: number, comboId: number | null) => {
+    if (!comboId) return null;
+    const obj = serviceObjects.find((o) => o.id === objectId);
+    return obj?.combos.find((c) => c.id === comboId)?.name ?? null;
+  };
 
   return (
     <View style={styles.section}>
       <SectionHeader
         icon="🧼"
-        title="Servicio"
-        subtitle="Descripción del trabajo"
+        title="Servicios"
+        subtitle="Qué se va a limpiar"
       />
 
-      <Text style={styles.label}>Tipo de servicio *</Text>
-      <View style={styles.serviceGrid}>
-        {serviceTypes.map((service) => (
-          <ServiceTypeCard
-            key={service.id}
-            service={service}
-            selected={formData.service === service. id}
-            onSelect={() => {
-              setFormData({
-                ...formData,
-                service: service.id,
-              });
-            }}
-          />
-        ))}
-      </View>
+      {/* Items ya agregados */}
+      {appointmentItems.length > 0 && (
+        <View style={styles.itemsList}>
+          {appointmentItems.map((item, index) => {
+            const objectLabel = getObjectLabel(item.service_object_id);
+            const comboLabel = getComboLabel(
+              item.service_object_id,
+              item.service_combo_id,
+            );
+            return (
+              <View key={index} style={styles.itemCard}>
+                <View style={styles.itemCardHeader}>
+                  <View style={styles.itemCardTitles}>
+                    <Text style={styles.itemCardObject}>{objectLabel}</Text>
+                    {comboLabel && (
+                      <Text style={styles.itemCardCombo}>{comboLabel}</Text>
+                    )}
+                  </View>
+                  <TouchableOpacity
+                    onPress={() => removeItem(index)}
+                    style={styles.itemRemoveBtn}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.itemRemoveText}>✕</Text>
+                  </TouchableOpacity>
+                </View>
+                <TextInput
+                  style={styles.itemDetalleInput}
+                  placeholder="Detalle opcional (ej: 4 sillas, tela clara)"
+                  placeholderTextColor="#9CA3AF"
+                  value={item.detalle ?? ""}
+                  onChangeText={(text) => updateItemDetalle(index, text)}
+                />
+              </View>
+            );
+          })}
+        </View>
+      )}
 
-      <Input
-        label="Cantidad y/o características"
-        placeholder="Ej: 3 sillones de 2 cuerpos, tela clara"
-        value={formData.serviceDetails}
-        onChangeText={(text) =>
-          setFormData({ ...formData, serviceDetails: text })
-        }
-        multiline
-        numberOfLines={2}
-      />
+      {/* Selector de objeto */}
+      {selectedObjectId === null ? (
+        <>
+          <Text style={styles.label}>
+            {appointmentItems.length === 0
+              ? "¿Qué se va a limpiar? *"
+              : "Agregar otro objeto"}
+          </Text>
+          <View style={styles.objectGrid}>
+            {serviceObjects.map((obj) => {
+              const alreadyAdded = isObjectInItems(obj.id);
+              return (
+                <TouchableOpacity
+                  key={obj.id}
+                  style={[
+                    styles.objectCard,
+                    alreadyAdded && styles.objectCardAdded,
+                  ]}
+                  onPress={() => {
+                    if (obj.combos.length === 0) {
+                      // Sin combos → agregar directo
+                      addItem(obj.id, null);
+                    } else {
+                      setSelectedObjectId(obj.id);
+                    }
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.objectCardIcon}>
+                    {getServiceIcon(obj.objeto)}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.objectCardName,
+                      alreadyAdded && styles.objectCardNameAdded,
+                    ]}
+                  >
+                    {obj.objeto}
+                  </Text>
+                  {alreadyAdded && (
+                    <Text style={styles.objectCardCheck}>✓</Text>
+                  )}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </>
+      ) : (
+        /* Selector de combo */
+        <View>
+          <View style={styles.comboHeader}>
+            <TouchableOpacity
+              onPress={() => setSelectedObjectId(null)}
+              style={styles.comboBack}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.comboBackText}>← Volver</Text>
+            </TouchableOpacity>
+            <Text style={styles.comboTitle}>
+              {selectedObject?.objeto} — elegí una opción
+            </Text>
+          </View>
 
-      <Input
-        label="Monto a cobrar *"
-        placeholder="$0"
-        value={formData.cost}
-        onChangeText={(text) => setFormData({ ...formData, cost: text })}
-        keyboardType="numeric"
-      />
+          <View style={styles.comboList}>
+            {selectedObject?.combos.map((combo) => (
+              <TouchableOpacity
+                key={combo.id}
+                style={styles.comboItem}
+                onPress={() => addItem(selectedObject.id, combo.id)}
+                activeOpacity={0.7}
+              >
+                <View style={styles.comboItemInfo}>
+                  <Text style={styles.comboItemName}>{combo.name}</Text>
+                  {combo.description && (
+                    <Text style={styles.comboItemDesc}>
+                      {combo.description}
+                    </Text>
+                  )}
+                </View>
+                {combo.precio != null && (
+                  <Text style={styles.comboItemPrice}>
+                    ${combo.precio.toLocaleString("es-AR")}
+                  </Text>
+                )}
+              </TouchableOpacity>
+            ))}
+
+            {/* Opción sin combo */}
+            <TouchableOpacity
+              style={[styles.comboItem, styles.comboItemFree]}
+              onPress={() => addItem(selectedObject!.id, null)}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.comboItemName}>Sin combo / precio libre</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
     </View>
   );
 }
 
-function ServiceTypeCard({ service, selected, onSelect }: any) {
-  return (
-    <TouchableOpacity
-      style={[styles.serviceCard, selected && styles. serviceCardSelected]}
-      onPress={onSelect}
-      activeOpacity={0.7}
-    >
-      <Text style={styles.serviceCardIcon}>{service.icon}</Text>
-      <Text
-        style={[
-          styles. serviceCardName,
-          selected && styles.serviceCardNameSelected,
-        ]}
-      >
-        {service. name}
-      </Text>
-    </TouchableOpacity>
-  );
-}
 
 // ============================================================================
 // SECCIÓN:  FECHA Y HORA
@@ -502,12 +576,12 @@ function DateTimeSection({
   setShowDatePicker,
   showTimePicker,
   setShowTimePicker,
-}:  any) {
+}: any) {
   const formatDate = (date: Date) => {
-    return date. toLocaleDateString("es-AR", {
+    return date.toLocaleDateString("es-AR", {
       weekday: "long",
       year: "numeric",
-      month:  "long",
+      month: "long",
       day: "numeric",
     });
   };
@@ -549,7 +623,7 @@ function DateTimeSection({
           value={formData.date}
           mode="date"
           display={Platform.OS === "ios" ? "spinner" : "default"}
-          onChange={(event, selectedDate) => {
+          onChange={(selectedDate) => {
             setShowDatePicker(Platform.OS === "ios");
             if (selectedDate) {
               setFormData({ ...formData, date: selectedDate });
@@ -565,18 +639,18 @@ function DateTimeSection({
         onPress={() => setShowTimePicker(true)}
       >
         <Text style={styles.dateTimeIcon}>🕐</Text>
-        <Text style={styles.dateTimeText}>{formatTime(formData. time)}</Text>
+        <Text style={styles.dateTimeText}>{formatTime(formData.time)}</Text>
       </TouchableOpacity>
 
       {showTimePicker && (
         <DateTimePicker
           value={formData.time}
           mode="time"
-          display={Platform.OS === "ios" ?  "spinner" : "default"}
-          onChange={(event, selectedTime) => {
+          display={Platform.OS === "ios" ? "spinner" : "default"}
+          onChange={(selectedTime) => {
             setShowTimePicker(Platform.OS === "ios");
             if (selectedTime) {
-              setFormData({ ... formData, time: selectedTime });
+              setFormData({ ...formData, time: selectedTime });
             }
           }}
         />
@@ -599,9 +673,9 @@ function DateTimeSection({
           >
             <Text
               style={[
-                styles. durationChipText,
+                styles.durationChipText,
                 formData.estimateTime === duration.value &&
-                  styles. durationChipTextSelected,
+                  styles.durationChipTextSelected,
               ]}
             >
               {duration.label}
@@ -621,7 +695,7 @@ function WorkerAssignmentSection({ formData, setFormData, workers }: any) {
     setFormData({
       ...formData,
       workerId: worker.id,
-      commissionRate: worker.commission_rate. toString(),
+      commissionRate: worker.commission_rate.toString(),
     });
   };
 
@@ -637,7 +711,7 @@ function WorkerAssignmentSection({ formData, setFormData, workers }: any) {
         {workers && workers.length > 0 ? (
           workers.map((worker: any) => (
             <WorkerCard
-              key={worker. id}
+              key={worker.id}
               worker={worker}
               selected={formData.workerId === worker.id}
               onSelect={() => handleSelectWorker(worker)}
@@ -648,7 +722,7 @@ function WorkerAssignmentSection({ formData, setFormData, workers }: any) {
         )}
       </View>
 
-      {! formData.workerId && (
+      {!formData.workerId && (
         <Text style={styles.helperText}>
           💡 Tip: Al seleccionar un trabajador, se aplicará su comisión por
           defecto
@@ -661,7 +735,10 @@ function WorkerAssignmentSection({ formData, setFormData, workers }: any) {
 function WorkerCard({ worker, selected, onSelect }: any) {
   // Determinar avatar según el nombre
   const getAvatar = (name: string) => {
-    if (name.toLowerCase().includes("ana") || name.toLowerCase().includes("maría")) {
+    if (
+      name.toLowerCase().includes("ana") ||
+      name.toLowerCase().includes("maría")
+    ) {
       return "👩";
     }
     return "👨";
@@ -669,18 +746,17 @@ function WorkerCard({ worker, selected, onSelect }: any) {
 
   return (
     <TouchableOpacity
-      style={[
-        styles.workerCard,
-        selected && styles. workerCardSelected,
-      ]}
+      style={[styles.workerCard, selected && styles.workerCardSelected]}
       onPress={onSelect}
       activeOpacity={0.7}
     >
-      <Text style={styles.workerCardAvatar}>{getAvatar(worker.profile.name)}</Text>
+      <Text style={styles.workerCardAvatar}>
+        {getAvatar(worker.profile.name)}
+      </Text>
       <View style={styles.workerCardInfo}>
         <Text
           style={[
-            styles. workerCardName,
+            styles.workerCardName,
             selected && styles.workerCardNameSelected,
           ]}
         >
@@ -702,7 +778,7 @@ function WorkerCard({ worker, selected, onSelect }: any) {
 // ============================================================================
 // INFORMACIÓN FINANCIERA
 // ============================================================================
-function FinancialInfoSection({ formData, setFormData }:  any) {
+function FinancialInfoSection({ formData, setFormData }: any) {
   return (
     <View style={styles.section}>
       <SectionHeader
@@ -738,7 +814,7 @@ function FinancialInfoSection({ formData, setFormData }:  any) {
       {formData.cost && formData.commissionRate && (
         <View style={styles.calculationBox}>
           <View style={styles.calculationRow}>
-            <Text style={styles.calculationLabel}>Monto total:  </Text>
+            <Text style={styles.calculationLabel}>Monto total: </Text>
             <Text style={styles.calculationValue}>
               ${parseFloat(formData.cost || "0").toLocaleString("es-AR")}
             </Text>
@@ -760,7 +836,7 @@ function FinancialInfoSection({ formData, setFormData }:  any) {
         </View>
       )}
 
-      {! formData.commissionRate && formData.workerId && (
+      {!formData.commissionRate && formData.workerId && (
         <Text style={styles.warningText}>
           ⚠️ No olvides configurar la comisión del trabajador
         </Text>
@@ -785,25 +861,27 @@ function calculateBusinessAmount(totalAmount: string, commissionRate: string) {
   const businessAmount = amount - (amount * rate) / 100;
   return businessAmount.toLocaleString("es-AR", {
     minimumFractionDigits: 0,
-    maximumFractionDigits:  0,
+    maximumFractionDigits: 0,
   });
 }
 
 // ============================================================================
 // SECCIÓN: BOTONES DE ACCIÓN
 // ============================================================================
-function ActionButtons({ formData, loading, setLoading, selectedClientId }: any) {
+function ActionButtons({
+  formData,
+  loading,
+  setLoading,
+  selectedClientId,
+  appointmentItems
+}: any) {
   const validateForm = () => {
-    if (!formData.customerName. trim()) {
+    if (!formData.customerName.trim()) {
       Alert.alert("Error", "El nombre del cliente es requerido");
       return false;
     }
     if (!formData.customerPhone.trim()) {
       Alert.alert("Error", "El teléfono del cliente es requerido");
-      return false;
-    }
-    if (!formData. service) {
-      Alert.alert("Error", "Debes seleccionar un tipo de servicio");
       return false;
     }
     if (!formData.cost || parseFloat(formData.cost) <= 0) {
@@ -814,57 +892,27 @@ function ActionButtons({ formData, loading, setLoading, selectedClientId }: any)
       Alert.alert("Error", "Debes asignar un trabajador");
       return false;
     }
+    if (appointmentItems.length === 0) {
+  Alert.alert("Error", "Debes agregar al menos un servicio");
+  return false;
+}
+
     return true;
   };
 
-  const findOrCreateClient = async () => {
+  const resolveClientId = async () => {
     try {
       // Si ya seleccionó un cliente existente, retornar ese ID
       if (selectedClientId) {
-        console.log("📋 Usando cliente existente con ID:", selectedClientId);
         return selectedClientId;
       }
 
-      // Mock:  Buscar cliente por teléfono exacto
-      const mockClients = [
-        {
-          id: 1,
-          name: "Juan Pérez",
-          phone_number: "351 234 5678",
-          last_appointment_at: "2024-01-15T10:00:00Z",
-        },
-        {
-          id:  2,
-          name: "María López",
-          phone_number: "351 456 7890",
-          last_appointment_at: "2024-01-10T14:00:00Z",
-        },
-      ];
-
-      const existingClient = mockClients.find(
-        (c) => c.phone_number === formData.customerPhone
-      );
-
-      if (existingClient) {
-        console.log("📋 Cliente encontrado:", existingClient);
-        return existingClient.id;
-      }
-
-      // Si no existe, crear nuevo cliente
-      const newClientId = mockClients.length + 1;
-      const newClient = {
-        id:  newClientId,
-        name:  formData.customerName,
+      const client = await findOrCreateClientInDb({
+        name: formData.customerName,
         phone_number: formData.customerPhone,
-        last_appointment_at: null,
-      };
+      });
 
-      console. log("📋 Creando nuevo cliente:", newClient);
-      
-      // Aquí se insertaría en la BD: 
-      // const { data, error } = await supabase. from('clients').insert([newClient]).select().single();
-      
-      return newClientId;
+      return client.id;
     } catch (error) {
       console.error("Error in findOrCreateClient:", error);
       throw error;
@@ -877,47 +925,35 @@ function ActionButtons({ formData, loading, setLoading, selectedClientId }: any)
     setLoading(true);
 
     try {
-      // 1. Buscar o crear cliente
-      const clientId = await findOrCreateClient();
+      const clientId = await resolveClientId();
+      const profile = await getCurrentProfile();
 
-      // 2. Combinar fecha y hora
       const combinedDate = new Date(formData.date);
       combinedDate.setHours(formData.time.getHours());
       combinedDate.setMinutes(formData.time.getMinutes());
       combinedDate.setSeconds(0);
 
-      // 3. Estructura de datos que se enviará a la BD
-      const appointmentData = {
-        admin_id: 1, // ID del admin autenticado (mock)
-        worker_id: formData.workerId,
+      await createAppointment({
+        admin_id: profile?.id,
+        worker_id: parseInt(formData.workerId, 10),
         client_id: clientId,
-        service: formData.service,
-        service_details: formData.serviceDetails || null,
         address: formData.customerAddress || null,
         date: combinedDate.toISOString(),
-        estimate_time: parseInt(formData.estimateTime),
+        estimate_time: parseInt(formData.estimateTime, 10),
         cost: parseFloat(formData.cost),
         commission_rate: parseFloat(formData.commissionRate) || 0,
-        status: "pending",
-        has_retouches: false,
-        paid_to_worker: false,
+        observaciones: formData.observaciones || null,
         payment_method: null,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
-
-      console.log("📋 Datos de la turno a guardar:", appointmentData);
-
-      // Simulación de guardado
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+        items: appointmentItems,
+      });
 
       Alert.alert("¡Éxito!", "El turno ha sido creada correctamente", [
         {
-          text:  "Ver turnos",
+          text: "Ver turnos",
           onPress: () => router.replace("/admin/appointments"),
         },
       ]);
-    } catch (error:  any) {
+    } catch (error: any) {
       console.error("Error creating appointment:", error);
       Alert.alert("Error", "No se pudo crear el turno");
       setLoading(false);
@@ -925,7 +961,7 @@ function ActionButtons({ formData, loading, setLoading, selectedClientId }: any)
   };
 
   return (
-    <View style={styles. actionsSection}>
+    <View style={styles.actionsSection}>
       <Button title="Crear Repaso" onPress={handleSave} loading={loading} />
 
       <TouchableOpacity
@@ -948,9 +984,9 @@ function SectionHeader({ icon, title, subtitle }: any) {
       <View style={styles.sectionHeaderLeft}>
         <Text style={styles.sectionHeaderIcon}>{icon}</Text>
         <View>
-          <Text style={styles. sectionHeaderTitle}>{title}</Text>
+          <Text style={styles.sectionHeaderTitle}>{title}</Text>
           {subtitle && (
-            <Text style={styles. sectionHeaderSubtitle}>{subtitle}</Text>
+            <Text style={styles.sectionHeaderSubtitle}>{subtitle}</Text>
           )}
         </View>
       </View>
@@ -973,7 +1009,7 @@ const styles = StyleSheet.create({
   // Header
   header: {
     flexDirection: "row",
-    justifyContent:  "space-between",
+    justifyContent: "space-between",
     alignItems: "center",
     padding: 16,
     paddingTop: 60,
@@ -1005,7 +1041,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   sectionHeader: {
-    flexDirection:  "row",
+    flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 20,
@@ -1019,14 +1055,14 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   sectionHeaderTitle: {
-    fontSize:  18,
+    fontSize: 18,
     fontWeight: "bold",
     color: "#111827",
   },
   sectionHeaderSubtitle: {
     fontSize: 13,
     color: "#6B7280",
-    marginTop:  2,
+    marginTop: 2,
   },
 
   // Existing Client Badge
@@ -1062,12 +1098,12 @@ const styles = StyleSheet.create({
     maxHeight: 300,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity:  0.1,
+    shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 5,
   },
   suggestionsTitle: {
-    fontSize:  13,
+    fontSize: 13,
     fontWeight: "600",
     color: "#3B82F6",
     padding: 12,
@@ -1116,7 +1152,7 @@ const styles = StyleSheet.create({
   closeButtonText: {
     fontSize: 14,
     color: "#6B7280",
-    fontWeight:  "600",
+    fontWeight: "600",
   },
 
   // Label
@@ -1191,8 +1227,8 @@ const styles = StyleSheet.create({
   },
   durationChip: {
     paddingHorizontal: 16,
-    paddingVertical:  8,
-    borderRadius:  20,
+    paddingVertical: 8,
+    borderRadius: 20,
     backgroundColor: "#F3F4F6",
     borderWidth: 1,
     borderColor: "#E5E7EB",
@@ -1233,7 +1269,7 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   workerCardInfo: {
-    flex:  1,
+    flex: 1,
   },
   workerCardName: {
     fontSize: 16,
@@ -1265,8 +1301,8 @@ const styles = StyleSheet.create({
 
   // Commission
   commissionInputContainer: {
-    flexDirection:  "row",
-    alignItems:  "center",
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: "#F9FAFB",
     borderRadius: 12,
     borderWidth: 1,
@@ -1287,7 +1323,7 @@ const styles = StyleSheet.create({
     color: "#10B981",
   },
   calculationBox: {
-    backgroundColor:  "#F0FDF4",
+    backgroundColor: "#F0FDF4",
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
@@ -1313,7 +1349,7 @@ const styles = StyleSheet.create({
     color: "#10B981",
   },
   warningText: {
-    fontSize:  13,
+    fontSize: 13,
     color: "#F59E0B",
     marginTop: 8,
     fontStyle: "italic",
@@ -1333,7 +1369,7 @@ const styles = StyleSheet.create({
   // Actions
   actionsSection: {
     padding: 16,
-    backgroundColor:  "#FFFFFF",
+    backgroundColor: "#FFFFFF",
     marginBottom: 32,
   },
   cancelButton: {
@@ -1345,5 +1381,156 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#6B7280",
     fontWeight: "600",
+  },
+
+  // Items agregados
+  itemsList: {
+    gap: 8,
+    marginBottom: 16,
+  },
+  itemCard: {
+    backgroundColor: "#EFF6FF",
+    borderWidth: 1.5,
+    borderColor: "#3B82F6",
+    borderRadius: 12,
+    padding: 12,
+  },
+  itemCardHeader: {
+    flexDirection: "row" as const,
+    justifyContent: "space-between" as const,
+    alignItems: "flex-start" as const,
+    marginBottom: 8,
+  },
+  itemCardTitles: {
+    flex: 1,
+  },
+  itemCardObject: {
+    fontSize: 15,
+    fontWeight: "600" as const,
+    color: "#1D4ED8",
+  },
+  itemCardCombo: {
+    fontSize: 13,
+    color: "#3B82F6",
+    marginTop: 2,
+  },
+  itemRemoveBtn: {
+    padding: 4,
+    marginLeft: 8,
+  },
+  itemRemoveText: {
+    fontSize: 16,
+    color: "#9CA3AF",
+    fontWeight: "600" as const,
+  },
+  itemDetalleInput: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#BFDBFE",
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    fontSize: 13,
+    color: "#111827",
+  },
+
+  // Grid de objetos
+  objectGrid: {
+    flexDirection: "row" as const,
+    flexWrap: "wrap" as const,
+    gap: 8,
+    marginBottom: 16,
+  },
+  objectCard: {
+    width: "31%",
+    backgroundColor: "#F9FAFB",
+    borderWidth: 2,
+    borderColor: "#E5E7EB",
+    borderRadius: 12,
+    padding: 12,
+    alignItems: "center" as const,
+  },
+  objectCardAdded: {
+    backgroundColor: "#F0FDF4",
+    borderColor: "#10B981",
+  },
+  objectCardIcon: {
+    fontSize: 24,
+    marginBottom: 4,
+  },
+  objectCardName: {
+    fontSize: 13,
+    fontWeight: "600" as const,
+    color: "#6B7280",
+    textAlign: "center" as const,
+  },
+  objectCardNameAdded: {
+    color: "#065F46",
+  },
+  objectCardCheck: {
+    fontSize: 12,
+    color: "#10B981",
+    marginTop: 2,
+    fontWeight: "bold" as const,
+  },
+
+  // Selector de combos
+  comboHeader: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    marginBottom: 12,
+    gap: 12,
+  },
+  comboBack: {
+    padding: 4,
+  },
+  comboBackText: {
+    fontSize: 14,
+    color: "#3B82F6",
+    fontWeight: "600" as const,
+  },
+  comboTitle: {
+    fontSize: 15,
+    fontWeight: "600" as const,
+    color: "#111827",
+    flex: 1,
+  },
+  comboList: {
+    gap: 8,
+    marginBottom: 16,
+  },
+  comboItem: {
+    flexDirection: "row" as const,
+    justifyContent: "space-between" as const,
+    alignItems: "center" as const,
+    backgroundColor: "#F9FAFB",
+    borderWidth: 1.5,
+    borderColor: "#E5E7EB",
+    borderRadius: 12,
+    padding: 14,
+  },
+  comboItemFree: {
+    borderStyle: "dashed" as const,
+    borderColor: "#D1D5DB",
+  },
+  comboItemInfo: {
+    flex: 1,
+    marginRight: 8,
+  },
+  comboItemName: {
+    fontSize: 15,
+    fontWeight: "600" as const,
+    color: "#374151",
+  },
+  comboItemDesc: {
+    fontSize: 12,
+    color: "#6B7280",
+    marginTop: 4,
+    lineHeight: 17,
+  },
+  comboItemPrice: {
+    fontSize: 15,
+    fontWeight: "bold" as const,
+    color: "#10B981",
   },
 });

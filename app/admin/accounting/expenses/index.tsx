@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { router } from "expo-router";
 import { useState, useEffect } from "react";
+import { deleteExpense, getExpenses } from "../../../../utils/adminData";
 
 export default function ExpensesScreen() {
   const [expenses, setExpenses] = useState<any[]>([]);
@@ -23,73 +24,7 @@ export default function ExpensesScreen() {
   const loadExpenses = async () => {
     try {
       if (! refreshing) setLoading(true);
-
-      // Mock data - TODO: Cargar de Supabase
-      const mockExpenses = [
-        {
-          id:  1,
-          category: "fuel",
-          description: "Nafta para camioneta",
-          amount: 15000,
-          date: "2024-01-15T10:00:00Z",
-          createdBy: "Admin",
-        },
-        {
-          id:  2,
-          category: "advertising",
-          description: "Facebook Ads - Enero",
-          amount: 20000,
-          date: "2024-01-10T09:00:00Z",
-          createdBy: "Admin",
-        },
-        {
-          id: 3,
-          category: "supplies",
-          description: "Productos de limpieza",
-          amount: 25000,
-          date: "2024-01-12T14:30:00Z",
-          createdBy: "Admin",
-        },
-        {
-          id:  4,
-          category: "fuel",
-          description: "Nafta",
-          amount: 18000,
-          date: "2024-01-18T11:00:00Z",
-          createdBy: "Admin",
-        },
-        {
-          id:  5,
-          category: "maintenance",
-          description: "Service camioneta",
-          amount: 35000,
-          date: "2024-01-20T16:00:00Z",
-          createdBy: "Admin",
-        },
-        {
-          id: 6,
-          category: "advertising",
-          description: "Instagram Ads",
-          amount: 15000,
-          date: "2024-01-22T10:00:00Z",
-          createdBy: "Admin",
-        },
-        {
-          id: 7,
-          category:  "other",
-          description: "Gastos varios",
-          amount: 12000,
-          date: "2024-01-25T13:00:00Z",
-          createdBy: "Admin",
-        },
-      ];
-
-      // Ordenar por fecha descendente
-      const sorted = mockExpenses.sort((a, b) => 
-        new Date(b.date).getTime() - new Date(a.date).getTime()
-      );
-
-      setExpenses(sorted);
+      setExpenses(await getExpenses(selectedMonth));
       setLoading(false);
       setRefreshing(false);
     } catch (error) {
@@ -114,8 +49,7 @@ export default function ExpensesScreen() {
           text: "Eliminar",
           style: "destructive",
           onPress: async () => {
-            // TODO: Eliminar de Supabase
-            console.log("Eliminando gasto:", expense. id);
+            await deleteExpense(expense.id);
             Alert.alert("Eliminado", "Gasto eliminado correctamente");
             loadExpenses();
           },
