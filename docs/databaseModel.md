@@ -21,12 +21,28 @@ erDiagram
         boolean is_active
     }
 
-    SERVICES {
+    SERVICE_OBJECTS {
         int id PK
         string objeto
-        string combo
-        string description
         boolean is_active
+    }
+
+    SERVICE_COMBOS {
+        int id PK
+        int objeto_id FK
+        string name
+        string description
+        int precio
+        boolean is_active
+    }
+
+    APPOINTMENT_ITEMS{
+        int id PK
+        int appointment_id FK
+        int service_objet_id FK
+        int service_combo_id FK
+        string notes
+        float price
     }
 
     APPOINTMENT_STATUSES {
@@ -56,7 +72,7 @@ erDiagram
         int admin_id FK
         int worker_id FK
         int client_id FK
-        int service_id FK
+        int appointment_items_id FK
         int status_id FK
         int estimate_time
         string notes
@@ -108,16 +124,17 @@ erDiagram
     AUTH.USERS ||--o| PROFILES : is
     PROFILES ||--o| WORKERS : is
     PROFILES ||--o{ SALARIES : receives
-
     WORKERS ||--o{ APPOINTMENTS : attends
     WORKERS ||--o{ WORKER_AVAILABILITY : has
-    WORKERS ||--o{ RETROUCHES : performs
-
+    WORKERS ||--o{ RETOUCHES : performs
     CLIENTS ||--o{ APPOINTMENTS : books
-
-    SERVICES ||--o{ APPOINTMENTS : categorizes
     APPOINTMENT_STATUSES ||--o{ APPOINTMENTS : defines
     APPOINTMENT_STATUSES ||--o{ RETOUCHES : defines
-
-    APPOINTMENTS ||--o{ RETROUCHES : has
+    APPOINTMENTS ||--o{ RETOUCHES : has
+    SERVICE_OBJECTS ||--o{ SERVICE_COMBOS : has
+    SERVICE_OBJECTS ||--o{ APPOINTMENT_ITEMS : includes
+    SERVICE_COMBOS ||--o{ APPOINTMENT_ITEMS : specifies
+    APPOINTMENTS ||--o{ APPOINTMENT_ITEMS : contains
+    PROFILES ||--o{ SALARIES : receives
+    APPOINTMENTS ||--o{ APPOINTMENT_ITEMS : contains
 
