@@ -64,6 +64,18 @@ export default function NewAppointmentScreen() {
     loadServices();
   }, []);
 
+  useEffect(() => {
+    const suggested = calculateSuggestedCost();
+
+    if (suggested > 0) {
+      setFormData((prev) => ({
+        ...prev,
+        cost: suggested.toString(),
+      }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [appointmentItems, serviceObjects]);
+
   const loadWorkers = async () => {
     try {
       setWorkers(await getWorkers());
@@ -123,6 +135,26 @@ export default function NewAppointmentScreen() {
     }
   };
 
+  const calculateSuggestedCost = () => {
+    let total = 0;
+
+    appointmentItems.forEach((item) => {
+      const object = serviceObjects.find(
+        (o) => o.id === item.service_object_id,
+      );
+
+      if (!object) return;
+
+      const combo = object.combos.find((c) => c.id === item.service_combo_id);
+
+      if (combo?.precio) {
+        total += combo.precio;
+      }
+    });
+
+    return total;
+  };
+
   // Seleccionar un cliente de las sugerencias
   const selectClient = (client: any) => {
     setFormData({
@@ -176,7 +208,11 @@ export default function NewAppointmentScreen() {
           setFormData={setFormData}
           workers={workers}
         />
-        <FinancialInfoSection formData={formData} setFormData={setFormData} />
+        <FinancialInfoSection
+          formData={formData}
+          setFormData={setFormData}
+          calculateSuggestedCost={calculateSuggestedCost}
+        />
         <ActionButtons
           formData={formData}
           loading={loading}
@@ -779,7 +815,11 @@ function WorkerCard({ worker, selected, onSelect }: any) {
 // ============================================================================
 // INFORMACIÓN FINANCIERA
 // ============================================================================
-function FinancialInfoSection({ formData, setFormData }: any) {
+function FinancialInfoSection({
+  formData,
+  setFormData,
+  calculateSuggestedCost,
+}: any) {
   return (
     <View style={styles.section}>
       <SectionHeader
@@ -790,7 +830,7 @@ function FinancialInfoSection({ formData, setFormData }: any) {
 
       <Input
         label="Monto a cobrar al cliente *"
-        placeholder="$0" // COPILOT, AQUI¡¡ quiero que este sea la suma de los costps de los combos en el ( en el caso que se hayya alejido en un como)
+        placeholder={`$${calculateSuggestedCost().toLocaleString("es-AR")}`}
         value={formData.cost}
         onChangeText={(text) => setFormData({ ...formData, cost: text })}
         keyboardType="numeric"
