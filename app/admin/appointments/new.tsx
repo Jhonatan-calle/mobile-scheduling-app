@@ -195,7 +195,10 @@ export default function NewAppointmentScreen() {
 function NewAppointmentHeader() {
   return (
     <View style={styles.header}>
-      <TouchableOpacity style={styles.backButton} onPress={() => router.replace("/admin/appointments")}>
+      <TouchableOpacity
+        style={styles.backButton}
+        onPress={() => router.replace("/admin/appointments")}
+      >
         <Text style={styles.backButtonText}>← Volver</Text>
       </TouchableOpacity>
       <Text style={styles.headerTitle}>Nueva Turno</Text>
@@ -564,7 +567,6 @@ function ServiceInfoSection({
   );
 }
 
-
 // ============================================================================
 // SECCIÓN:  FECHA Y HORA
 // ============================================================================
@@ -622,7 +624,7 @@ function DateTimeSection({
           value={formData.date}
           mode="date"
           display={Platform.OS === "ios" ? "spinner" : "default"}
-          onChange={(_event,selectedDate) => {
+          onChange={(_event, selectedDate) => {
             setShowDatePicker(Platform.OS === "ios");
             if (selectedDate) {
               setFormData({ ...formData, date: selectedDate });
@@ -872,7 +874,7 @@ function ActionButtons({
   loading,
   setLoading,
   selectedClientId,
-  appointmentItems
+  appointmentItems,
 }: any) {
   const validateForm = () => {
     if (!formData.customerName.trim()) {
@@ -893,9 +895,9 @@ function ActionButtons({
     //   return false;
     // }
     if (appointmentItems.length === 0) {
-  Alert.alert("Error", "Debes agregar al menos un servicio");
-  return false;
-}
+      Alert.alert("Error", "Debes agregar al menos un servicio");
+      return false;
+    }
 
     return true;
   };
