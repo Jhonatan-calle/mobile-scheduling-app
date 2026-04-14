@@ -1,18 +1,11 @@
 import { supabase } from "../supabase/supabase";
+import { addDays, startOfLocalDay } from "./helpers";
 import {
   APPOINTMENT_STATUS,
   DashboardStats,
   DashboardTodayAppointment,
 } from "./types";
 
-function startOfLocalDay(d = new Date()): Date {
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0);
-}
-function addDays(date: Date, days: number): Date {
-  const d = new Date(date);
-  d.setDate(d.getDate() + days);
-  return d;
-}
 
 export async function getAdminDashboardData(): Promise<{
   stats: DashboardStats;
