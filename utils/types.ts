@@ -13,7 +13,7 @@ export const APPOINTMENT_STATUS = {
 
 export type ServiceObject = {
   id: number;
-  objeto: string;
+  name: string;
   is_active: boolean;
 };
 
@@ -39,7 +39,7 @@ export type AppointmentItem = {
 // Tipo legacy mantenido para compatibilidad con componentes que aún lo usan
 export type ServiceOption = {
   id: number;
-  objeto: string;
+  name: string;
   combo: string | null;
   description: string | null;
   is_active: boolean | null;
