@@ -70,16 +70,26 @@ export const DAY_NAMES = [
 ];
 
 export function getAppointmentStatusConfig(status: number | null | undefined) {
-  return APPOINTMENT_STATUS_CONFIG[(status ?? 1) as keyof typeof APPOINTMENT_STATUS_CONFIG];
+  return APPOINTMENT_STATUS_CONFIG[
+    (status ?? 1) as keyof typeof APPOINTMENT_STATUS_CONFIG
+  ];
 }
 
-export function getAppointmentStatusConfigByKey(statusKey: string | null | undefined) {
-  const entry = Object.values(APPOINTMENT_STATUS_CONFIG).find((item) => item.key === statusKey);
+export function getAppointmentStatusConfigByKey(
+  statusKey: string | null | undefined,
+) {
+  const entry = Object.values(APPOINTMENT_STATUS_CONFIG).find(
+    (item) => item.key === statusKey,
+  );
   return entry ?? APPOINTMENT_STATUS_CONFIG[1];
 }
 
-export function getAppointmentStatusIdByKey(statusKey: string | null | undefined) {
-  const entry = Object.entries(APPOINTMENT_STATUS_CONFIG).find(([, item]) => item.key === statusKey);
+export function getAppointmentStatusIdByKey(
+  statusKey: string | null | undefined,
+) {
+  const entry = Object.entries(APPOINTMENT_STATUS_CONFIG).find(
+    ([, item]) => item.key === statusKey,
+  );
   return entry ? Number(entry[0]) : 1;
 }
 
@@ -88,7 +98,9 @@ export function getAppointmentStatusKey(status: number | null | undefined) {
 }
 
 export function getPaymentMethodConfig(method: string | null | undefined) {
-  return method ? PAYMENT_METHODS[method as keyof typeof PAYMENT_METHODS] : null;
+  return method
+    ? PAYMENT_METHODS[method as keyof typeof PAYMENT_METHODS]
+    : null;
 }
 
 export function getExpenseCategoryConfig(category: string | null | undefined) {
