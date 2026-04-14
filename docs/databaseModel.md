@@ -41,7 +41,7 @@ erDiagram
         int appointment_id FK
         int service_objet_id FK
         int service_combo_id FK
-        string notes
+        string description
     }
 
     APPOINTMENT_STATUSES {

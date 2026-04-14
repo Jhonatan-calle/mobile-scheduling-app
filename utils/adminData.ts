@@ -36,8 +36,7 @@ export type ServiceObjectWithCombos = ServiceObject & {
 export type AppointmentItem = {
   service_object_id: number;
   service_combo_id: number | null;
-  detalle: string | null;
-  price_override: number | null;
+  description: string | null;
 };
 
 // Tipo legacy mantenido para compatibilidad con componentes que aún lo usan
@@ -101,7 +100,7 @@ export type AppointmentDetail = {
   has_retouches: boolean | null;
   paid_to_worker: boolean | null;
   payment_method: string | null;
-  observaciones: string | null;
+  notes: string | null;
   client: ClientOption | null;
   worker: WorkerOption | null;
   items: AppointmentItem[];
@@ -120,7 +119,7 @@ export type RetouchDetail = {
   appointment: {
     id: number;
     client: { name: string; phone_number: string } | null;
-    observaciones: string | null;
+    notes: string | null;
   } | null;
   worker: WorkerOption | null;
 };
@@ -378,11 +377,11 @@ export async function getAppointmentsFeed(): Promise<AppointmentFeedItem[]> {
     supabase
       .from("appointments")
       .select(
-        `id, date, cost, status, observaciones, payment_method,
+        `id, date, cost, status, notes, payment_method,
          client:clients(id, name, phone_number),
          worker:workers(id, commission_rate, profile:profiles(id, name)),
          items:appointment_items(
-           detalle,
+           description,
            service_object:service_objects(id, objeto),
            service_combo:service_combos(id, name)
          )`,
@@ -395,7 +394,7 @@ export async function getAppointmentsFeed(): Promise<AppointmentFeedItem[]> {
       .select(
         `id, time, reason, estimate_time, status, appointment_id,
          appointment:appointments(
-           id, date, observaciones,
+           id, date, notes,
            client:clients(id, name, phone_number),
            items:appointment_items(
              service_object:service_objects(id, objeto),
@@ -468,13 +467,13 @@ export async function getAppointmentById(
   const { data, error } = await supabase
     .from("appointments")
     .select(
-      `id, admin_id, worker_id, client_id, observaciones, address, date,
+      `id, admin_id, worker_id, client_id, notes, address, date,
        estimate_time, cost, commission_rate, status, has_retouches,
        paid_to_worker, payment_method,
        client:clients(id, name, phone_number, last_appointment_at),
        worker:workers(id, commission_rate, profile:profiles(id, name, auth_user_id, user_role)),
        items:appointment_items(
-         service_object_id, service_combo_id, detalle, price_override,
+         service_object_id, service_combo_id, description,
          service_object:service_objects(id, objeto),
          service_combo:service_combos(id, name, description, precio)
        ),
@@ -518,7 +517,7 @@ export async function createAppointment(input: {
   estimate_time: number;
   cost: number;
   commission_rate: number;
-  observaciones?: string | null;
+  notes?: string | null;
   status?: number;
   has_retouches?: boolean;
   paid_to_worker?: boolean;
@@ -537,7 +536,7 @@ export async function createAppointment(input: {
       estimate_time: input.estimate_time,
       cost: input.cost,
       commission_rate: input.commission_rate,
-      observaciones: input.observaciones ?? null,
+      notes: input.notes ?? null,
       status: input.status ?? 1,
       has_retouches: input.has_retouches ?? false,
       paid_to_worker: input.paid_to_worker ?? false,
@@ -554,8 +553,7 @@ export async function createAppointment(input: {
       appointment_id: aptData.id,
       service_object_id: item.service_object_id,
       service_combo_id: item.service_combo_id ?? null,
-      detalle: item.detalle ?? null,
-      price_override: item.price_override ?? null,
+      description: item.description ?? null,
     }));
 
     const { error: itemsError } = await supabase
@@ -588,7 +586,7 @@ export async function getRetouchById(
     .select(
       `id, appointment_id, worker_id, time, address, reason, estimate_time, status,
        appointment:appointments(
-         id, observaciones,
+         id, notes,
          client:clients(name, phone_number)
        ),
        worker:workers(id, commission_rate, profile:profiles(id, name, auth_user_id, user_role))`,
@@ -1159,7 +1157,7 @@ export async function getWorkerHistory(workerId: number) {
     supabase
       .from("appointments")
       .select(
-        `id, date, cost, commission_rate, status, observaciones, address,
+        `id, date, cost, commission_rate, status, notes, address,
          client:clients(id, name, phone_number),
          items:appointment_items(
            service_object:service_objects(id, objeto),
@@ -1174,7 +1172,7 @@ export async function getWorkerHistory(workerId: number) {
       .select(
         `id, time, reason, estimate_time, status, address,
          appointment:appointments(
-           id, address, observaciones,
+           id, address, notes,
            client:clients(id, name, phone_number),
            items:appointment_items(
              service_object:service_objects(id, objeto),

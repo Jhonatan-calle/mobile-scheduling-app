@@ -50,10 +50,12 @@ export const RETOUCH_DURATIONS = [
 export const DEFAULT_SERVICE_ICONS: Record<string, string> = {
   auto: "🚗",
   sillones: "🛋️",
-  sillas: "🪑",
+  silla: "🪑",
   alfombra: "🧶",
   colchon: "🛏️",
   cortinas: "🪟",
+  huevito: "🐣",
+  coche: "👶",
   otro: "📦",
 };
 

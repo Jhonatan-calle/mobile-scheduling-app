@@ -195,7 +195,7 @@ export default function NewAppointmentScreen() {
 function NewAppointmentHeader() {
   return (
     <View style={styles.header}>
-      <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+      <TouchableOpacity style={styles.backButton} onPress={() => router.replace("/admin/appointments")}>
         <Text style={styles.backButtonText}>← Volver</Text>
       </TouchableOpacity>
       <Text style={styles.headerTitle}>Nueva Turno</Text>
@@ -390,8 +390,7 @@ function ServiceInfoSection({
       {
         service_object_id: objectId,
         service_combo_id: comboId,
-        detalle: null,
-        price_override: null,
+        description: null,
       },
     ]);
     setSelectedObjectId(null);
@@ -403,7 +402,7 @@ function ServiceInfoSection({
 
   const updateItemDetalle = (index: number, detalle: string) => {
     const updated = [...appointmentItems];
-    updated[index] = { ...updated[index], detalle: detalle || null };
+    updated[index] = { ...updated[index], description: detalle || null };
     setAppointmentItems(updated);
   };
 
@@ -452,9 +451,9 @@ function ServiceInfoSection({
                 </View>
                 <TextInput
                   style={styles.itemDetalleInput}
-                  placeholder="Detalle opcional (ej: 4 sillas, tela clara)"
+                  placeholder="Detalle opcional "
                   placeholderTextColor="#9CA3AF"
-                  value={item.detalle ?? ""}
+                  value={item.description ?? ""}
                   onChangeText={(text) => updateItemDetalle(index, text)}
                 />
               </View>
@@ -623,7 +622,7 @@ function DateTimeSection({
           value={formData.date}
           mode="date"
           display={Platform.OS === "ios" ? "spinner" : "default"}
-          onChange={(selectedDate) => {
+          onChange={(_event,selectedDate) => {
             setShowDatePicker(Platform.OS === "ios");
             if (selectedDate) {
               setFormData({ ...formData, date: selectedDate });
@@ -647,7 +646,7 @@ function DateTimeSection({
           value={formData.time}
           mode="time"
           display={Platform.OS === "ios" ? "spinner" : "default"}
-          onChange={(selectedTime) => {
+          onChange={(_event, selectedTime) => {
             setShowTimePicker(Platform.OS === "ios");
             if (selectedTime) {
               setFormData({ ...formData, time: selectedTime });
@@ -789,7 +788,7 @@ function FinancialInfoSection({ formData, setFormData }: any) {
 
       <Input
         label="Monto a cobrar al cliente *"
-        placeholder="$0"
+        placeholder="$0" // COPILOT, AQUI¡¡ quiero que este sea la suma de los costps de los combos en el ( en el caso que se hayya alejido en un como)
         value={formData.cost}
         onChangeText={(text) => setFormData({ ...formData, cost: text })}
         keyboardType="numeric"
@@ -888,10 +887,11 @@ function ActionButtons({
       Alert.alert("Error", "El monto debe ser mayor a 0");
       return false;
     }
-    if (!formData.workerId) {
-      Alert.alert("Error", "Debes asignar un trabajador");
-      return false;
-    }
+    //TODO: esto pedirlo al marcar como completado
+    // if (!formData.workerId) {
+    //   Alert.alert("Error", "Debes asignar un trabajador");
+    //   return false;
+    // }
     if (appointmentItems.length === 0) {
   Alert.alert("Error", "Debes agregar al menos un servicio");
   return false;
@@ -942,7 +942,7 @@ function ActionButtons({
         estimate_time: parseInt(formData.estimateTime, 10),
         cost: parseFloat(formData.cost),
         commission_rate: parseFloat(formData.commissionRate) || 0,
-        observaciones: formData.observaciones || null,
+        notes: formData.observaciones || null,
         payment_method: null,
         items: appointmentItems,
       });
@@ -962,7 +962,7 @@ function ActionButtons({
 
   return (
     <View style={styles.actionsSection}>
-      <Button title="Crear Repaso" onPress={handleSave} loading={loading} />
+      <Button title="Crear Turno" onPress={handleSave} loading={loading} />
 
       <TouchableOpacity
         style={styles.cancelButton}
