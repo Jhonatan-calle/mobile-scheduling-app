@@ -1,5 +1,5 @@
 import { supabase } from "../supabase/supabase";
-import { DashboardStats } from "./database";
+import { addDays, endOfLocalMonth, locale, startOfLocalDay, startOfLocalMonth } from "./helpers";
 import {
   getAppointmentStatusKey,
   getPaymentMethodConfig,
@@ -7,149 +7,9 @@ import {
   getServiceIcon,
   DAY_NAMES,
 } from "./lookups";
+import { AppointmentDetail, AppointmentFeedItem, AppointmentItem, ClientOption, DashboardStats, RetouchDetail, ServiceCombo, ServiceObject, ServiceObjectWithCombos, ServiceOption, WorkerOption } from "./types";
 
-const locale = "es-AR";
 
-// ============================================================================
-// TIPOS — Servicios
-// ============================================================================
-
-export type ServiceObject = {
-  id: number;
-  objeto: string;
-  is_active: boolean;
-};
-
-export type ServiceCombo = {
-  id: number;
-  object_id: number;
-  name: string;
-  description: string | null;
-  precio: number | null;
-  is_active: boolean;
-};
-
-export type ServiceObjectWithCombos = ServiceObject & {
-  combos: ServiceCombo[];
-};
-
-export type AppointmentItem = {
-  service_object_id: number;
-  service_combo_id: number | null;
-  description: string | null;
-};
-
-// Tipo legacy mantenido para compatibilidad con componentes que aún lo usan
-export type ServiceOption = {
-  id: number;
-  objeto: string;
-  combo: string | null;
-  description: string | null;
-  is_active: boolean | null;
-};
-
-// ============================================================================
-// TIPOS — Workers, Clients, Appointments
-// ============================================================================
-
-export type WorkerOption = {
-  id: number;
-  commission_rate: number;
-  profile: {
-    id: number;
-    name: string;
-    auth_user_id?: string;
-    user_role?: string | null;
-    phone?: string | null;
-  };
-};
-
-export type ClientOption = {
-  id: number;
-  name: string;
-  phone_number: string;
-  last_appointment_at: string | null;
-};
-
-export type AppointmentFeedItem = {
-  id: string;
-  type: "appointment" | "retouch";
-  time: string;
-  date: string;
-  dateForSearch: string;
-  customer: string;
-  service: string;
-  worker: string;
-  status: string;
-  amount: number;
-  rawDate: Date;
-  reason?: string;
-};
-
-export type AppointmentDetail = {
-  id: number;
-  admin_id: number;
-  worker_id: number;
-  client_id: number | null;
-  address: string | null;
-  date: string;
-  estimate_time: number | null;
-  cost: number | null;
-  commission_rate: number | null;
-  status: number;
-  has_retouches: boolean | null;
-  paid_to_worker: boolean | null;
-  payment_method: string | null;
-  notes: string | null;
-  client: ClientOption | null;
-  worker: WorkerOption | null;
-  items: AppointmentItem[];
-  retouches?: any[];
-};
-
-export type RetouchDetail = {
-  id: number;
-  appointment_id: number;
-  worker_id: number;
-  time: string;
-  address: string | null;
-  reason: string;
-  estimate_time: number | null;
-  status: number | null;
-  appointment: {
-    id: number;
-    client: { name: string; phone_number: string } | null;
-    notes: string | null;
-  } | null;
-  worker: WorkerOption | null;
-};
-
-// ============================================================================
-// HELPERS
-// ============================================================================
-
-function startOfLocalMonth(date = new Date()) {
-  return new Date(date.getFullYear(), date.getMonth(), 1, 0, 0, 0, 0);
-}
-
-function endOfLocalMonth(date = new Date()) {
-  return new Date(date.getFullYear(), date.getMonth() + 1, 1, 0, 0, 0, 0);
-}
-
-function startOfLocalDay(d = new Date()) {
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0);
-}
-
-function addDays(date: Date, days: number) {
-  const d = new Date(date);
-  d.setDate(d.getDate() + days);
-  return d;
-}
-
-function toNumber(value: unknown, fallback = 0) {
-  const n = Number(value);
-  return Number.isFinite(n) ? n : fallback;
-}
 
 // Genera un label legible para un turno a partir de sus items
 function pickItemsLabel(items: any[]): string {
@@ -427,7 +287,7 @@ export async function getAppointmentsFeed(): Promise<AppointmentFeedItem[]> {
     service: pickItemsLabel(apt.items ?? []),
     worker: apt.worker?.profile?.name ?? "Sin asignar",
     status: getAppointmentStatusKey(apt.status),
-    amount: toNumber(apt.cost),
+    amount: Number(apt.cost),
     rawDate: new Date(apt.date),
   }));
 
@@ -719,7 +579,7 @@ export async function getDashboardData(): Promise<{
       todayAppointments: todayAppointments.length,
       pendingAppointments: pendingCount ?? 0,
       completedToday,
-      monthlyRevenue: toNumber(monthSummary?.total_income, 0),
+      monthlyRevenue: Number(monthSummary?.total_income),
     },
     todayAppointments,
   };
@@ -800,7 +660,7 @@ export async function getMonthlySummary(month = new Date()) {
   const expensesByCategory = (expenses ?? []).reduce(
     (acc: Record<string, number>, row: any) => {
       const category = row.category ?? "other";
-      acc[category] = (acc[category] ?? 0) + toNumber(row.amount);
+      acc[category] = (acc[category] ?? 0) + Number(row.amount);
       return acc;
     },
     {},
@@ -818,16 +678,16 @@ export async function getMonthlySummary(month = new Date()) {
   return {
     month: month.getMonth() + 1,
     year: month.getFullYear(),
-    totalIncome: toNumber(summaryRow?.total_income),
-    totalAppointments: toNumber(summaryRow?.total_appointments),
-    totalRetouches: toNumber(summaryRow?.total_retouches),
-    totalExpenses: toNumber(summaryRow?.total_expenses),
+    totalIncome: Number(summaryRow?.total_income),
+    totalAppointments: Number(summaryRow?.total_appointments),
+    totalRetouches: Number(summaryRow?.total_retouches),
+    totalExpenses: Number(summaryRow?.total_expenses),
     expenses: normalizedExpenses,
-    totalSalaries: toNumber(summaryRow?.total_salaries),
+    totalSalaries: Number(summaryRow?.total_salaries),
     workerPayments: [],
-    grossProfit: toNumber(summaryRow?.total_profit),
+    grossProfit: Number(summaryRow?.total_profit),
     netProfit:
-      toNumber(summaryRow?.total_profit) - toNumber(summaryRow?.total_expenses),
+      Number(summaryRow?.total_profit) - Number(summaryRow?.total_expenses),
   };
 }
 
@@ -860,20 +720,20 @@ export async function getDetailedAccountingSummary(month = new Date()) {
   const appointmentRows = (appointments.data ?? []) as any[];
 
   const salariesTotalPaid = salaryRows.reduce(
-    (sum, row) => sum + toNumber(row.amount),
+    (sum, row) => sum + Number(row.amount),
     0,
   );
   const salariesWorkers = salaryRows.map((row) => ({
     name: row.profile?.name ?? "Sin nombre",
-    earned: toNumber(row.amount),
-    paid: toNumber(row.amount),
+    earned: Number(row.amount),
+    paid: Number(row.amount),
     pending: 0,
   }));
 
   const byCategory = expenseRows.reduce(
     (acc: Record<string, number>, row: any) => {
       const category = row.category ?? "other";
-      acc[category] = (acc[category] ?? 0) + toNumber(row.amount);
+      acc[category] = (acc[category] ?? 0) + Number(row.amount);
       return acc;
     },
     {},
@@ -888,7 +748,7 @@ export async function getDetailedAccountingSummary(month = new Date()) {
   };
 
   const income = appointmentRows.reduce(
-    (sum, row) => sum + toNumber(row.cost),
+    (sum, row) => sum + Number(row.cost),
     0,
   );
   const pendingAppointments = appointmentRows.filter((row) =>
@@ -963,7 +823,7 @@ export async function getPaymentsOverview(month = new Date()) {
 
   appointmentRows.forEach((row) => {
     const workerId = Number(row.worker_id);
-    const total = toNumber(row.cost) * (toNumber(row.commission_rate, 0) / 100);
+    const total = Number(row.cost) * (Number(row.commission_rate) / 100);
     const current = mapByWorker.get(workerId) ?? {
       totalEarned: 0,
       totalPaid: 0,
@@ -982,7 +842,7 @@ export async function getPaymentsOverview(month = new Date()) {
     const worker = workers.find((w) => w.profile.id === profileId);
     const key = worker?.id ?? profileId;
     const current = mapByWorker.get(key) ?? { totalEarned: 0, totalPaid: 0 };
-    current.totalPaid = toNumber(row.amount);
+    current.totalPaid = Number(row.amount);
     mapByWorker.set(key, current);
   });
 
@@ -1046,10 +906,10 @@ export async function getWorkerMonthlyStats(
   if (error) throw error;
 
   const rows = (data ?? []) as any[];
-  const totalGenerated = rows.reduce((sum, row) => sum + toNumber(row.cost), 0);
+  const totalGenerated = rows.reduce((sum, row) => sum + Number(row.cost), 0);
   const totalEarned = rows.reduce(
     (sum, row) =>
-      sum + toNumber(row.cost) * (toNumber(row.commission_rate, 0) / 100),
+      sum + Number(row.cost) * (Number(row.commission_rate) / 100),
     0,
   );
 
@@ -1198,9 +1058,9 @@ export async function getWorkerHistory(workerId: number) {
     },
     service: pickItemsLabel(row.items ?? []),
     address: row.address ?? "Sin dirección",
-    cost: toNumber(row.cost),
+    cost: Number(row.cost),
     workerEarned:
-      toNumber(row.cost) * (toNumber(row.commission_rate, 0) / 100),
+      Number(row.cost) * (Number(row.commission_rate) / 100),
     status: getAppointmentStatusKey(row.status),
   }));
 
