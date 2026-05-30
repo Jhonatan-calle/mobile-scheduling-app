@@ -4,8 +4,11 @@ import {
   View,
   Text,
   StyleSheet,
+  KeyboardAvoidingView,
   Alert,
   TouchableOpacity,
+  ScrollView,
+  Platform,
 } from "react-native";
 import { router } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
@@ -54,86 +57,97 @@ export default function LoginScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.content}>
-        {/* Header */}
-        <View style={styles.headerContainer}>
-          <Text style={styles.icon}>🧼</Text>
-          <Text style={styles.title}>
-            Limpieza de Tapizados{"\n"}Río Cuarto
-          </Text>
-          <Text style={styles.subtitle}>
-            Gestiona tus turnos y horarios
-          </Text>
-        </View>
-
-        {/* Formulario */}
-        <FormContainer>
-          <Text style={styles.welcomeText}>Bienvenido</Text>
-          <Text style={styles.instructionText}>
-            Inicia sesión con tu cuenta de Google para continuar
-          </Text>
-
-          {error && (
-            <View style={styles.errorContainer}>
-              <Text style={styles.errorText}>⚠️ {error}</Text>
-            </View>
-          )}
-
-          <Input
-            label="Correo"
-            value={email}
-            onChangeText={setEmail}
-            autoCapitalize="none"
-            keyboardType="email-address"
-            placeholder="tu@correo.com"
-          />
-
-          {/* Campo contraseña con toggle */}
-          <View style={styles.passwordContainer}>
-            <Input
-              label="Contraseña"
-              value={password}
-              onChangeText={(text) => {
-                setPassword(text);
-                if (error) setError(null);
-              }}
-              secureTextEntry={!showPassword}
-              placeholder="••••••••"
-              style={styles.passwordInput}
-            />
-            <TouchableOpacity
-              style={styles.toggleButton}
-              onPress={() => setShowPassword((prev) => !prev)}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.toggleText}>
-                {showPassword ? "Ocultar" : "Mostrar"}
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+    >
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.container}>
+          <View style={styles.content}>
+            {/* Header */}
+            <View style={styles.headerContainer}>
+              <Text style={styles.icon}>🧼</Text>
+              <Text style={styles.title}>
+                Limpieza de Tapizados{"\n"}Río Cuarto
               </Text>
-            </TouchableOpacity>
+              <Text style={styles.subtitle}>
+                Gestiona tus turnos y horarios
+              </Text>
+            </View>
+
+            {/* Formulario */}
+            <FormContainer>
+              <Text style={styles.welcomeText}>Bienvenido</Text>
+              <Text style={styles.instructionText}>
+                Inicia sesión con tu cuenta de Google para continuar
+              </Text>
+
+              {error && (
+                <View style={styles.errorContainer}>
+                  <Text style={styles.errorText}>⚠️ {error}</Text>
+                </View>
+              )}
+
+              <Input
+                label="Correo"
+                value={email}
+                onChangeText={setEmail}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                placeholder="tu@correo.com"
+              />
+
+              {/* Campo contraseña con toggle */}
+              <View style={styles.passwordContainer}>
+                <Input
+                  label="Contraseña"
+                  value={password}
+                  onChangeText={(text) => {
+                    setPassword(text);
+                    if (error) setError(null);
+                  }}
+                  secureTextEntry={!showPassword}
+                  placeholder="••••••••"
+                  style={styles.passwordInput}
+                />
+                <TouchableOpacity
+                  style={styles.toggleButton}
+                  onPress={() => setShowPassword((prev) => !prev)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.toggleText}>
+                    {showPassword ? "Ocultar" : "Mostrar"}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              <Button
+                title="Iniciar sesión"
+                onPress={signInWithEmail}
+                disabled={loading}
+              />
+
+              <View style={styles.infoContainer}>
+                <Text style={styles.infoText}>
+                  💡 Solo empleados autorizados pueden acceder
+                </Text>
+              </View>
+            </FormContainer>
+
+            {/* Footer */}
+            <View style={styles.footer}>
+              <Text style={styles.footerText}>
+                Al continuar, aceptas nuestros términos y condiciones
+              </Text>
+            </View>
           </View>
-
-          <Button
-            title="Iniciar sesión"
-            onPress={signInWithEmail}
-            disabled={loading}
-          />
-
-          <View style={styles.infoContainer}>
-            <Text style={styles.infoText}>
-              💡 Solo empleados autorizados pueden acceder
-            </Text>
-          </View>
-        </FormContainer>
-
-        {/* Footer */}
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>
-            Al continuar, aceptas nuestros términos y condiciones
-          </Text>
         </View>
-      </View>
-    </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -216,7 +230,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 18,
   },
-    toggleButton: {
+  toggleButton: {
     position: "absolute",
     right: 14,
     bottom: 22, // alineado con el input (ajustar si Input tiene padding distinto)
@@ -229,9 +243,15 @@ const styles = StyleSheet.create({
   passwordInput: {
     paddingRight: 80, // espacio para el botón de texto
   },
-    toggleText: {
+  toggleText: {
     fontSize: 13,
     fontWeight: "600",
     color: "#3B82F6",
-},
+  },
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: "center",
+    padding: 24,
+  },
 });
+
