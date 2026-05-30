@@ -1,12 +1,17 @@
 import { useState } from "react";
-import { View, Text, Pressable, StyleSheet, Alert } from "react-native";
+import { getErrorMessage } from "../../utils/helpers";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Alert,
+} from "react-native";
 import { router } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import FormContainer from "../../components/FormContainer";
 import Input from "../../components/Input";
 import Button from "../../components/Button";
 import { supabase } from "../../supabase/supabase";
-
 
 // Necesario para que funcione el OAuth
 WebBrowser.maybeCompleteAuthSession();
@@ -29,18 +34,17 @@ export default function LoginScreen() {
         throw new Error("Completa email y contraseña.");
       }
 
-      const { error: signInError } = 
+      const { error: signInError } =
         await supabase.auth.signInWithPassword({
           email: cleanEmail,
           password,
         });
 
       if (signInError) throw signInError;
-      
+
       router.replace("/admin/dashboard");
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "No se pudo iniciar sesión";
+      const message = getErrorMessage(err);
       setError(message);
       Alert.alert("Error", message);
     } finally {
@@ -57,7 +61,9 @@ export default function LoginScreen() {
           <Text style={styles.title}>
             Limpieza de Tapizados{"\n"}Río Cuarto
           </Text>
-          <Text style={styles.subtitle}>Gestiona tus turnos y horarios</Text>
+          <Text style={styles.subtitle}>
+            Gestiona tus turnos y horarios
+          </Text>
         </View>
 
         {/* Formulario */}
@@ -90,7 +96,11 @@ export default function LoginScreen() {
             placeholder="••••••••"
           />
 
-          <Button title="Iniciar sesión" onPress={signInWithEmail} disabled={loading} />
+          <Button
+            title="Iniciar sesión"
+            onPress={signInWithEmail}
+            disabled={loading}
+          />
 
           <View style={styles.infoContainer}>
             <Text style={styles.infoText}>
