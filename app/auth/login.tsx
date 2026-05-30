@@ -5,6 +5,7 @@ import {
   Text,
   StyleSheet,
   Alert,
+  TouchableOpacity,
 } from "react-native";
 import { router } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
@@ -19,7 +20,7 @@ WebBrowser.maybeCompleteAuthSession();
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -88,13 +89,29 @@ export default function LoginScreen() {
             placeholder="tu@correo.com"
           />
 
-          <Input
-            label="Contraseña"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            placeholder="••••••••"
-          />
+          {/* Campo contraseña con toggle */}
+          <View style={styles.passwordContainer}>
+            <Input
+              label="Contraseña"
+              value={password}
+              onChangeText={(text) => {
+                setPassword(text);
+                if (error) setError(null);
+              }}
+              secureTextEntry={!showPassword}
+              placeholder="••••••••"
+              style={styles.passwordInput}
+            />
+            <TouchableOpacity
+              style={styles.toggleButton}
+              onPress={() => setShowPassword((prev) => !prev)}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.toggleText}>
+                {showPassword ? "Ocultar" : "Mostrar"}
+              </Text>
+            </TouchableOpacity>
+          </View>
 
           <Button
             title="Iniciar sesión"
@@ -199,4 +216,22 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 18,
   },
+    toggleButton: {
+    position: "absolute",
+    right: 14,
+    bottom: 22, // alineado con el input (ajustar si Input tiene padding distinto)
+    paddingVertical: 4,
+    paddingHorizontal: 6,
+  },
+  passwordContainer: {
+    position: "relative",
+  },
+  passwordInput: {
+    paddingRight: 80, // espacio para el botón de texto
+  },
+    toggleText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#3B82F6",
+},
 });
