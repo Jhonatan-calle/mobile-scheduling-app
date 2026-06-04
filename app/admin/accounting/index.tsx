@@ -168,7 +168,8 @@ function AccountingHeader() {
 // RESUMEN DE GANANCIAS
 // ============================================================================
 function ProfitSummarySection({ summary }: any) {
-  const profitColor = summary. netProfit >= 0 ? "#10B981" : "#EF4444";
+  if (!summary) return null;
+  const profitColor = summary.netProfit >= 0 ? "#10B981" : "#EF4444";
 
   return (
     <View style={styles.section}>
@@ -200,7 +201,7 @@ function ProfitSummarySection({ summary }: any) {
         <StatMiniCard
           icon="🔄"
           label="Repasos"
-          value={summary. totalRetouches}
+          value={summary.totalRetouches}
           color="#F59E0B"
         />
       </View>
@@ -276,6 +277,7 @@ function QuickAccessCard({ icon, title, subtitle, color, onPress }: any) {
 // DESGLOSE RÁPIDO
 // ============================================================================
 function BreakdownSection({ summary }: any) {
+  if (!summary) return null;
   return (
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>Desglose de Gastos</Text>

@@ -1,4 +1,97 @@
-export const APPOINTMENT_STATUS = {
+
+//===================================================================
+// TIPOS — Tablas
+// ============================================================================
+
+export interface User {
+  /** UUID de auth.users */
+  id: string;
+
+  email: string | null;
+
+  phone: string | null;
+}
+
+export interface Profile {
+  /** Primary key, not nullable. */
+  id: number;
+  /** UUID referencing auth.users.id, not nullable. */
+  auth_user: User;
+  /** Name, not nullable. */
+  name: string;
+  /** May be null. */
+  user_role: string | null;
+  /** May be null. ISO date (YYYY-MM-DD). */
+  updated_at: string | null;
+}
+
+/**
+ * workers table. The DB had profile_id FK → replaced with nested Profile.
+ */
+export interface Worker {
+  /** Primary key, not nullable. */
+  id: number;
+  /** Foreign key replaced by the referenced Profile object, not nullable. */
+  profile: Profile;
+  /** Commission rate, not nullable. */
+  commission_rate: number;
+  /** May be null. */
+  is_active: boolean | null;
+  /** May be null. ISO date (YYYY-MM-DD). */
+  updated_at: string | null;
+}
+
+/**
+ * worker_availability table. worker_id FK -> nested Worker.
+ */
+export interface WorkerAvailability {
+  /** Primary key, not nullable. */
+  id: number;
+  /** Referenced Worker object, not nullable. */
+  worker: Worker;
+  /** Day of week (0 = Sunday .. 6 = Saturday), not nullable. */
+  day_of_week: number;
+  /** Time string (HH:MM:SS), not nullable. */
+  start_time: string;
+  /** Time string (HH:MM:SS), not nullable. */
+  end_time: string;
+}
+
+/**
+ * service_objects table
+ */
+export interface ServiceObject {
+  /** Primary key (bigint), not nullable. */
+  id: number;
+  /** Name, not nullable. */
+  name: string;
+  /** Not nullable. */
+  is_active: boolean;
+}
+
+/**
+ * service_combos table. object_id FK -> nested ServiceObject.
+ */
+export interface ServiceCombo {
+  /** Primary key (bigint), not nullable. */
+  id: number;
+  /** ISO timestamp with timezone, not nullable. */
+  /** Referenced ServiceObject, not nullable. */
+  service_object: ServiceObject;
+  /** Name, not nullable. */
+  name: string;
+  /** May be null. */
+  description: string | null;
+  /** Not nullable. */
+  is_active: boolean;
+  /** May be null. */
+  precio: number | null;
+}
+
+/**
+ * appointment_statuses table
+ */
+export const AppointmentStatus = {
   PENDIENTE: 1,
   EN_PROCESO: 2,
   COMPLETO: 3,
@@ -7,119 +100,157 @@ export const APPOINTMENT_STATUS = {
   COMPLETO_REPASO: 6,
 } as const;
 
-//===================================================================
-// TIPOS — Servicios
-// ============================================================================
 
-export type ServiceObject = {
+/**
+ * salaries table. profile_id FK -> nested Profile.
+ */
+export interface Salary {
+  /** Primary key, not nullable. */
   id: number;
-  name: string;
-  is_active: boolean;
-};
-
-export type ServiceCombo = {
-  id: number;
-  object_id: number;
-  name: string;
-  description: string | null;
-  precio: number | null;
-  is_active: boolean;
-};
-
-export type ServiceObjectWithCombos = ServiceObject & {
-  combos: ServiceCombo[];
-};
-
-export type AppointmentItem = {
-  service_object_id: number;
-  service_combo_id: number | null;
-  description: string | null;
-};
-
-// Tipo legacy mantenido para compatibilidad con componentes que aún lo usan
-export type ServiceOption = {
-  id: number;
-  name: string;
-  combo: string | null;
-  description: string | null;
-  is_active: boolean | null;
-};
-
-// ============================================================================
-// TIPOS — Workers, Clients, Appointments
-// ============================================================================
-
-export type WorkerOption = {
-  id: number;
-  commission_rate: number;
-  profile: {
-    id: number;
-    name: string;
-    auth_user_id?: string;
-    user_role?: string | null;
-    phone?: string | null;
-  };
-};
-
-export type ClientOption = {
-  id: number;
-  name: string;
-  phone_number: string;
-  last_appointment_at: string | null;
-};
-
-export type AppointmentFeedItem = {
-  id: string;
-  type: "appointment" | "retouch";
-  time: string;
-  date: string;
-  dateForSearch: string;
-  customer: string;
-  service: string;
-  worker: string;
-  status: string;
+  /** Referenced Profile object, not nullable. */
+  profile: Profile;
+  /** Amount, not nullable. */
   amount: number;
-  rawDate: Date;
-  reason?: string;
-};
+  /** Month (1-12), not nullable. */
+  month: number;
+  /** Year, not nullable. */
+  year: number;
+}
 
-export type AppointmentDetail = {
+/**
+ * clients table
+ */
+export interface Client {
+  /** Primary key, not nullable. */
   id: number;
+  /** Name, not nullable. */
+  name: string;
+  /** Phone number, not nullable. */
+  phone_number: string;
+  /** May be null. ISO timestamp (no timezone) represented as string. */
+  last_appointment_at: string | null;
+}
+
+/**
+ * appointments table.
+ *
+ * Note: admin_id in DB had no explicit FK in the provided model, so it is kept as number.
+ * Other FK columns are replaced with nested types.
+ */
+export interface Appointment {
+  /** Primary key, not nullable. */
+  id: number;
+  /** May be null. */
+  address: string | null;
+  /** Admin user/profile id (no FK in model), not nullable. */
   admin_id: number;
-  worker_id: number;
-  client_id: number | null;
-  address: string | null;
-  date: string;
+  /** Referenced Worker object, not nullable. */
+  worker: Worker;
+  /** Referenced Client object, may be null. */
+  client: Client | null;
+  /** Estimate time (minutes?), may be null. */
   estimate_time: number | null;
+  /** Cost, may be null. */
   cost: number | null;
-  commission_rate: number | null;
-  status: number;
+  /** May be null. */
   has_retouches: boolean | null;
-  paid_to_worker: boolean | null;
+  /** May be null. */
+  commission_rate: number | null;
+  /** May be null. */
   payment_method: string | null;
+  /** May be null. */
   notes: string | null;
-  client: ClientOption | null;
-  worker: WorkerOption | null;
-  items: AppointmentItem[];
-  retouches?: any[];
-};
+  /** May be null. */
+  paid_to_worker: boolean | null;
+  /** ISO timestamp (no timezone), not nullable. */
+  date: string;
+  /** Referenced appointment status, not nullable. */
+  status: typeof AppointmentStatus;
+}
 
-export type RetouchDetail = {
+/**
+ * retouches table. appointment_id -> Appointment, worker_id -> Worker, status -> AppointmentStatus.
+ */
+export interface Retouch {
+  /** Primary key, not nullable. */
   id: number;
-  appointment_id: number;
-  worker_id: number;
-  time: string;
-  address: string | null;
+  /** Referenced Appointment object, not nullable. */
+  appointment: Appointment;
+  /** Referenced Worker object, not nullable. */
+  worker: Worker;
+  /** Reason, not nullable. */
   reason: string;
+  /** May be null. ISO timestamp (no timezone) represented as string. */
+  time: string | null;
+  /** May be null. */
+  address: string | null;
+  /** Estimate time (minutes?), may be null. */
   estimate_time: number | null;
-  status: number | null;
-  appointment: {
-    id: number;
-    client: { name: string; phone_number: string } | null;
-    notes: string | null;
-  } | null;
-  worker: WorkerOption | null;
-};
+  /** Referenced appointment status, may be null. */
+  status: typeof AppointmentStatus | null;
+}
+
+/**
+ * appointment_items table. appointment_id -> Appointment, service_object_id -> ServiceObject, service_combo_id -> ServiceCombo.
+ */
+export interface AppointmentItem {
+  /** Primary key (bigint), not nullable. */
+  id: number;
+  /** ISO timestamp with timezone, not nullable. */
+  created_at: string;
+  /** Referenced Appointment object, not nullable. */
+  appointment: Appointment;
+  /** Referenced ServiceObject object, not nullable. */
+  service_object: ServiceObject;
+  /** Referenced ServiceCombo object, may be null. */
+  service_combo: ServiceCombo | null;
+  /** May be null. */
+  description: string | null;
+}
+
+/**
+ * month_summaries table
+ */
+export interface MonthSummary {
+  /** Primary key, not nullable. */
+  id: number;
+  /** Month (1-12), not nullable. */
+  month: number;
+  /** Year, not nullable. */
+  year: number;
+  /** May be null. */
+  total_income: number | null;
+  /** May be null. */
+  total_expenses: number | null;
+  /** May be null. */
+  total_salaries: number | null;
+  /** May be null. */
+  total_profit: number | null;
+  /** May be null. */
+  total_appointments: number | null;
+  /** May be null. */
+  total_retouches: number | null;
+}
+
+/**
+ * expenses table
+ */
+export interface Expense {
+  /** Primary key, not nullable. */
+  id: number;
+  /** Description, not nullable. */
+  description: string;
+  /** Amount, not nullable. */
+  amount: number;
+  /** ISO date (YYYY-MM-DD), not nullable. */
+  date: string;
+}
+
+
+
+//===================================================================
+// Dashboard Types
+// ============================================================================
 
 export type DashboardStats = {
   todayAppointments: number;
@@ -136,4 +267,14 @@ export type DashboardTodayAppointment = {
   status: string; 
   paymentMethod: string | null;
 };
+
+
+export type ServiceObjectWithCombos = ServiceObject & {
+  combos: ServiceCombo[];
+};
+
+export type ServiceOption = {
+
+}
+
 

@@ -12,3 +12,7 @@ estructurabase.txt
 .env
 databaseModel.txt
 client_secret_*.json
+ .obsidian/
+docs/.obsidian/
+.obsidian/
+opencode.sh

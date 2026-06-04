@@ -19,16 +19,17 @@ import {
   findOrCreateClient as findOrCreateClientInDb,
   getCurrentProfile,
   getClients,
-  getServiceObjectsWithCombos, // <-- reemplaza getServices
+  getServiceObjectsWithCombos, 
   getWorkers,
 } from "../../../utils/adminData";
 import type {
-  ServiceObjectWithCombos,
+  ServiceObject,
   AppointmentItem,
-} from "../../../utils/adminData";
+} from "../../../utils/types.ts";
 import { getServiceIcon } from "../../../utils/lookups";
 
 export default function NewAppointmentScreen() {
+
   const [formData, setFormData] = useState({
     customerName: "",
     customerPhone: "",
@@ -42,11 +43,11 @@ export default function NewAppointmentScreen() {
     commissionRate: "",
   });
 
-  const [appointmentItems, setAppointmentItems] = useState<AppointmentItem[]>(
-    [],
-  );
+  const [appointmentItems, setAppointmentItems] = useState<
+    AppointmentItem[]
+  >([]);
   const [serviceObjects, setServiceObjects] = useState<
-    ServiceObjectWithCombos[]
+    ServiceObject[]
   >([]);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
@@ -54,10 +55,16 @@ export default function NewAppointmentScreen() {
   const [workers, setWorkers] = useState<any[]>([]);
 
   // Estados para sugerencias de clientes
-  const [clientSuggestions, setClientSuggestions] = useState<any[]>([]);
-  const [showNameSuggestions, setShowNameSuggestions] = useState(false);
-  const [showPhoneSuggestions, setShowPhoneSuggestions] = useState(false);
-  const [selectedClientId, setSelectedClientId] = useState<number | null>(null);
+  const [clientSuggestions, setClientSuggestions] = useState<any[]>(
+    [],
+  );
+  const [showNameSuggestions, setShowNameSuggestions] =
+    useState(false);
+  const [showPhoneSuggestions, setShowPhoneSuggestions] =
+    useState(false);
+  const [selectedClientId, setSelectedClientId] = useState<
+    number | null
+  >(null);
 
   useEffect(() => {
     loadWorkers();
@@ -145,7 +152,9 @@ export default function NewAppointmentScreen() {
 
       if (!object) return;
 
-      const combo = object.combos.find((c) => c.id === item.service_combo_id);
+      const combo = object.combos.find(
+        (c) => c.id === item.service_combo_id,
+      );
 
       if (combo?.precio) {
         total += combo.precio;
@@ -269,7 +278,9 @@ function CustomerInfoSection({
 
       {selectedClientId && (
         <View style={styles.existingClientBadge}>
-          <Text style={styles.existingClientText}>✓ Cliente existente</Text>
+          <Text style={styles.existingClientText}>
+            ✓ Cliente existente
+          </Text>
         </View>
       )}
 
@@ -362,7 +373,9 @@ function ClientSuggestionsList({
 
   return (
     <View style={styles.suggestionsContainer}>
-      <Text style={styles.suggestionsTitle}>Clientes encontrados:</Text>
+      <Text style={styles.suggestionsTitle}>
+        Clientes encontrados:
+      </Text>
       <FlatList
         data={suggestions}
         keyExtractor={(item) => item.id.toString()}
@@ -374,13 +387,15 @@ function ClientSuggestionsList({
           >
             <View style={styles.suggestionContent}>
               <Text style={styles.suggestionName}>{item.name}</Text>
-              <Text style={styles.suggestionPhone}>{item.phone_number}</Text>
+              <Text style={styles.suggestionPhone}>
+                {item.phone_number}
+              </Text>
               {item.last_appointment_at && (
                 <Text style={styles.suggestionDate}>
                   Última turno:{" "}
-                  {new Date(item.last_appointment_at).toLocaleDateString(
-                    "es-AR",
-                  )}
+                  {new Date(
+                    item.last_appointment_at,
+                  ).toLocaleDateString("es-AR")}
                 </Text>
               )}
             </View>
@@ -408,14 +423,21 @@ function ServiceInfoSection({
   appointmentItems: AppointmentItem[];
   setAppointmentItems: (items: AppointmentItem[]) => void;
 }) {
-  const [selectedObjectId, setSelectedObjectId] = useState<number | null>(null);
+  const [selectedObjectId, setSelectedObjectId] = useState<
+    number | null
+  >(null);
 
-  const selectedObject = serviceObjects.find((o) => o.id === selectedObjectId);
+  const selectedObject = serviceObjects.find(
+    (o) => o.id === selectedObjectId,
+  );
 
   const isObjectInItems = (objectId: number) =>
     appointmentItems.some((i) => i.service_object_id === objectId);
 
-  const addItem = (objectId: number, comboId: number | null = null) => {
+  const addItem = (
+    objectId: number,
+    comboId: number | null = null,
+  ) => {
     // Evitar duplicar el mismo objeto+combo
     const exists = appointmentItems.some(
       (i) =>
@@ -436,19 +458,27 @@ function ServiceInfoSection({
   };
 
   const removeItem = (index: number) => {
-    setAppointmentItems(appointmentItems.filter((_, i) => i !== index));
+    setAppointmentItems(
+      appointmentItems.filter((_, i) => i !== index),
+    );
   };
 
   const updateItemDetalle = (index: number, detalle: string) => {
     const updated = [...appointmentItems];
-    updated[index] = { ...updated[index], description: detalle || null };
+    updated[index] = {
+      ...updated[index],
+      description: detalle || null,
+    };
     setAppointmentItems(updated);
   };
 
   const getObjectLabel = (objectId: number) =>
-    serviceObjects.find((o) => o.id === objectId)?.objeto ?? "Objeto";
+    serviceObjects.find((o) => o.id === objectId)?.name ?? "Objeto";
 
-  const getComboLabel = (objectId: number, comboId: number | null) => {
+  const getComboLabel = (
+    objectId: number,
+    comboId: number | null,
+  ) => {
     if (!comboId) return null;
     const obj = serviceObjects.find((o) => o.id === objectId);
     return obj?.combos.find((c) => c.id === comboId)?.name ?? null;
@@ -466,7 +496,9 @@ function ServiceInfoSection({
       {appointmentItems.length > 0 && (
         <View style={styles.itemsList}>
           {appointmentItems.map((item, index) => {
-            const objectLabel = getObjectLabel(item.service_object_id);
+            const objectLabel = getObjectLabel(
+              item.service_object_id,
+            );
             const comboLabel = getComboLabel(
               item.service_object_id,
               item.service_combo_id,
@@ -475,9 +507,13 @@ function ServiceInfoSection({
               <View key={index} style={styles.itemCard}>
                 <View style={styles.itemCardHeader}>
                   <View style={styles.itemCardTitles}>
-                    <Text style={styles.itemCardObject}>{objectLabel}</Text>
+                    <Text style={styles.itemCardObject}>
+                      {objectLabel}
+                    </Text>
                     {comboLabel && (
-                      <Text style={styles.itemCardCombo}>{comboLabel}</Text>
+                      <Text style={styles.itemCardCombo}>
+                        {comboLabel}
+                      </Text>
                     )}
                   </View>
                   <TouchableOpacity
@@ -493,7 +529,9 @@ function ServiceInfoSection({
                   placeholder="Detalle opcional "
                   placeholderTextColor="#9CA3AF"
                   value={item.description ?? ""}
-                  onChangeText={(text) => updateItemDetalle(index, text)}
+                  onChangeText={(text) =>
+                    updateItemDetalle(index, text)
+                  }
                 />
               </View>
             );
@@ -530,7 +568,7 @@ function ServiceInfoSection({
                   activeOpacity={0.7}
                 >
                   <Text style={styles.objectCardIcon}>
-                    {getServiceIcon(obj.objeto)}
+                    {getServiceIcon(obj.name)}
                   </Text>
                   <Text
                     style={[
@@ -538,7 +576,7 @@ function ServiceInfoSection({
                       alreadyAdded && styles.objectCardNameAdded,
                     ]}
                   >
-                    {obj.objeto}
+                    {obj.name}
                   </Text>
                   {alreadyAdded && (
                     <Text style={styles.objectCardCheck}>✓</Text>
@@ -560,7 +598,7 @@ function ServiceInfoSection({
               <Text style={styles.comboBackText}>← Volver</Text>
             </TouchableOpacity>
             <Text style={styles.comboTitle}>
-              {selectedObject?.objeto} — elegí una opción
+              {selectedObject?.name} — elegí una opción
             </Text>
           </View>
 
@@ -573,7 +611,9 @@ function ServiceInfoSection({
                 activeOpacity={0.7}
               >
                 <View style={styles.comboItemInfo}>
-                  <Text style={styles.comboItemName}>{combo.name}</Text>
+                  <Text style={styles.comboItemName}>
+                    {combo.name}
+                  </Text>
                   {combo.description && (
                     <Text style={styles.comboItemDesc}>
                       {combo.description}
@@ -594,7 +634,9 @@ function ServiceInfoSection({
               onPress={() => addItem(selectedObject!.id, null)}
               activeOpacity={0.7}
             >
-              <Text style={styles.comboItemName}>Sin combo / precio libre</Text>
+              <Text style={styles.comboItemName}>
+                Sin combo / precio libre
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -652,7 +694,9 @@ function DateTimeSection({
         onPress={() => setShowDatePicker(true)}
       >
         <Text style={styles.dateTimeIcon}>📅</Text>
-        <Text style={styles.dateTimeText}>{formatDate(formData.date)}</Text>
+        <Text style={styles.dateTimeText}>
+          {formatDate(formData.date)}
+        </Text>
       </TouchableOpacity>
 
       {showDatePicker && (
@@ -676,7 +720,9 @@ function DateTimeSection({
         onPress={() => setShowTimePicker(true)}
       >
         <Text style={styles.dateTimeIcon}>🕐</Text>
-        <Text style={styles.dateTimeText}>{formatTime(formData.time)}</Text>
+        <Text style={styles.dateTimeText}>
+          {formatTime(formData.time)}
+        </Text>
       </TouchableOpacity>
 
       {showTimePicker && (
@@ -704,7 +750,10 @@ function DateTimeSection({
                 styles.durationChipSelected,
             ]}
             onPress={() =>
-              setFormData({ ...formData, estimateTime: duration.value })
+              setFormData({
+                ...formData,
+                estimateTime: duration.value,
+              })
             }
             activeOpacity={0.7}
           >
@@ -727,7 +776,11 @@ function DateTimeSection({
 // ============================================================================
 // SECCIÓN: ASIGNACIÓN DE TRABAJADOR
 // ============================================================================
-function WorkerAssignmentSection({ formData, setFormData, workers }: any) {
+function WorkerAssignmentSection({
+  formData,
+  setFormData,
+  workers,
+}: any) {
   const handleSelectWorker = (worker: any) => {
     setFormData({
       ...formData,
@@ -755,14 +808,16 @@ function WorkerAssignmentSection({ formData, setFormData, workers }: any) {
             />
           ))
         ) : (
-          <Text style={styles.helperText}>Cargando trabajadores...</Text>
+          <Text style={styles.helperText}>
+            Cargando trabajadores...
+          </Text>
         )}
       </View>
 
       {!formData.workerId && (
         <Text style={styles.helperText}>
-          💡 Tip: Al seleccionar un trabajador, se aplicará su comisión por
-          defecto
+          💡 Tip: Al seleccionar un trabajador, se aplicará su
+          comisión por defecto
         </Text>
       )}
     </View>
@@ -783,7 +838,10 @@ function WorkerCard({ worker, selected, onSelect }: any) {
 
   return (
     <TouchableOpacity
-      style={[styles.workerCard, selected && styles.workerCardSelected]}
+      style={[
+        styles.workerCard,
+        selected && styles.workerCardSelected,
+      ]}
       onPress={onSelect}
       activeOpacity={0.7}
     >
@@ -832,7 +890,9 @@ function FinancialInfoSection({
         label="Monto a cobrar al cliente *"
         placeholder={`$${calculateSuggestedCost().toLocaleString("es-AR")}`}
         value={formData.cost}
-        onChangeText={(text) => setFormData({ ...formData, cost: text })}
+        onChangeText={(text) =>
+          setFormData({ ...formData, cost: text })
+        }
         keyboardType="numeric"
       />
 
@@ -857,7 +917,10 @@ function FinancialInfoSection({
           <View style={styles.calculationRow}>
             <Text style={styles.calculationLabel}>Monto total: </Text>
             <Text style={styles.calculationValue}>
-              ${parseFloat(formData.cost || "0").toLocaleString("es-AR")}
+              $
+              {parseFloat(formData.cost || "0").toLocaleString(
+                "es-AR",
+              )}
             </Text>
           </View>
           <View style={styles.calculationRow}>
@@ -865,13 +928,23 @@ function FinancialInfoSection({
               Trabajador recibe ({formData.commissionRate}%):
             </Text>
             <Text style={styles.calculationValueHighlight}>
-              ${calculateWorkerAmount(formData.cost, formData.commissionRate)}
+              $
+              {calculateWorkerAmount(
+                formData.cost,
+                formData.commissionRate,
+              )}
             </Text>
           </View>
           <View style={styles.calculationRow}>
-            <Text style={styles.calculationLabel}>Negocio recibe:</Text>
+            <Text style={styles.calculationLabel}>
+              Negocio recibe:
+            </Text>
             <Text style={styles.calculationValue}>
-              ${calculateBusinessAmount(formData.cost, formData.commissionRate)}
+              $
+              {calculateBusinessAmount(
+                formData.cost,
+                formData.commissionRate,
+              )}
             </Text>
           </View>
         </View>
@@ -886,7 +959,10 @@ function FinancialInfoSection({
   );
 }
 
-function calculateWorkerAmount(totalAmount: string, commissionRate: string) {
+function calculateWorkerAmount(
+  totalAmount: string,
+  commissionRate: string,
+) {
   const amount = parseFloat(totalAmount) || 0;
   const rate = parseFloat(commissionRate) || 0;
   const workerAmount = (amount * rate) / 100;
@@ -896,7 +972,10 @@ function calculateWorkerAmount(totalAmount: string, commissionRate: string) {
   });
 }
 
-function calculateBusinessAmount(totalAmount: string, commissionRate: string) {
+function calculateBusinessAmount(
+  totalAmount: string,
+  commissionRate: string,
+) {
   const amount = parseFloat(totalAmount) || 0;
   const rate = parseFloat(commissionRate) || 0;
   const businessAmount = amount - (amount * rate) / 100;
@@ -929,11 +1008,7 @@ function ActionButtons({
       Alert.alert("Error", "El monto debe ser mayor a 0");
       return false;
     }
-    //TODO: esto pedirlo al marcar como completado
-    // if (!formData.workerId) {
-    //   Alert.alert("Error", "Debes asignar un trabajador");
-    //   return false;
-    // }
+    // Opcional: se puede asignar un trabajador más tarde
     if (appointmentItems.length === 0) {
       Alert.alert("Error", "Debes agregar al menos un servicio");
       return false;
@@ -977,7 +1052,7 @@ function ActionButtons({
 
       await createAppointment({
         admin_id: profile?.id,
-        worker_id: parseInt(formData.workerId, 10),
+        worker_id: formData.workerId ? parseInt(formData.workerId, 10) : null,
         client_id: clientId,
         address: formData.customerAddress || null,
         date: combinedDate.toISOString(),
@@ -989,12 +1064,16 @@ function ActionButtons({
         items: appointmentItems,
       });
 
-      Alert.alert("¡Éxito!", "El turno ha sido creada correctamente", [
-        {
-          text: "Ver turnos",
-          onPress: () => router.replace("/admin/appointments"),
-        },
-      ]);
+      Alert.alert(
+        "¡Éxito!",
+        "El turno ha sido creada correctamente",
+        [
+          {
+            text: "Ver turnos",
+            onPress: () => router.replace("/admin/appointments"),
+          },
+        ],
+      );
     } catch (error: any) {
       console.error("Error creating appointment:", error);
       Alert.alert("Error", "No se pudo crear el turno");
@@ -1004,7 +1083,11 @@ function ActionButtons({
 
   return (
     <View style={styles.actionsSection}>
-      <Button title="Crear Turno" onPress={handleSave} loading={loading} />
+      <Button
+        title="Crear Turno"
+        onPress={handleSave}
+        loading={loading}
+      />
 
       <TouchableOpacity
         style={styles.cancelButton}
@@ -1028,7 +1111,9 @@ function SectionHeader({ icon, title, subtitle }: any) {
         <View>
           <Text style={styles.sectionHeaderTitle}>{title}</Text>
           {subtitle && (
-            <Text style={styles.sectionHeaderSubtitle}>{subtitle}</Text>
+            <Text style={styles.sectionHeaderSubtitle}>
+              {subtitle}
+            </Text>
           )}
         </View>
       </View>

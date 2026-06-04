@@ -14,7 +14,8 @@ import {
   QuickActionButton,
   AppointmentPreviewCard,
 } from "../../../components/admin/dashboard";
-import { getAdminDashboardData, DashboardStats } from "../../../utils/database";
+import {  DashboardStats } from "../../../utils/types";
+import { getAdminDashboardData  } from "../../../utils/dashboardData";
 
 export default function AdminHome() {
   const [stats, setStats] = useState<DashboardStats>({

@@ -29,6 +29,7 @@ export default function Index() {
       return;
     }
 
+    //TODO: deberia guardar la informacion del admin? 
     if (profile?.user_role === "Admin") {
       router.replace("/admin/dashboard");
     } else {

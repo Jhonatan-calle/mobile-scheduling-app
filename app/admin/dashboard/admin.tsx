@@ -1,4 +1,10 @@
-import { View, StyleSheet, Text, TouchableOpacity } from "react-native";
+//TODO: vista para administrar los perfiles de los usuarios, aun no implementada
+import {
+  View,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+} from "react-native";
 import { router } from "expo-router";
 export default function Index() {
   return (

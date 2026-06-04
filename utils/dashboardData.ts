@@ -1,11 +1,10 @@
 import { supabase } from "../supabase/supabase";
 import { addDays, startOfLocalDay } from "./helpers";
 import {
-  APPOINTMENT_STATUS,
+  AppointmentStatus,
   DashboardStats,
   DashboardTodayAppointment,
 } from "./types";
-
 
 export async function getAdminDashboardData(): Promise<{
   stats: DashboardStats;
@@ -32,15 +31,16 @@ export async function getAdminDashboardData(): Promise<{
 
   const pendingToday = todayAppointmentsRaw.filter((apt: any) =>
     [
-      APPOINTMENT_STATUS.PENDIENTE,
-      APPOINTMENT_STATUS.PENDIENTE_REPASO,
+      AppointmentStatus.PENDIENTE,
+      AppointmentStatus.PENDIENTE_REPASO,
     ].includes(apt.status),
   ).length;
   // 3) Completadas hoy => status 3 o 5
   const completedToday = todayAppointmentsRaw.filter((apt: any) =>
-    [APPOINTMENT_STATUS.COMPLETO, APPOINTMENT_STATUS.COMPLETO_REPASO].includes(
-      apt.status,
-    ),
+    [
+      AppointmentStatus.COMPLETO,
+      AppointmentStatus.COMPLETO_REPASO,
+    ].includes(apt.status),
   ).length;
 
   // 4) Ingresos del mes: desde month_summaries (si querés, esto luego lo filtramos por admin si tu tabla lo soporta)
@@ -76,7 +76,7 @@ export async function getAdminDashboardData(): Promise<{
   const stats: DashboardStats = {
     todayAppointments: todayAppointmentsRaw.length,
     pendingAppointments: pendingToday ?? 0,
-    completedToday:  completedToday ?? 0,
+    completedToday: completedToday ?? 0,
     monthlyRevenue: monthlyRevenue ?? 0,
   };
 

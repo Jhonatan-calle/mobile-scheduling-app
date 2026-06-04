@@ -187,7 +187,7 @@ function ProfitOverviewSection({ summary }:  any) {
 
       <View style={styles.profitGrid}>
         <ProfitCard
-          label="Ganancia Neta Real"
+          label="Ganancia Neta Real" 
           value={summary.netProfit}
           sublabel={`Ingresos - Salarios Pagados - Gastos`}
           isPrimary

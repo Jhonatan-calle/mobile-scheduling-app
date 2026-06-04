@@ -16,14 +16,8 @@ import {
   getCurrentProfile,
   updateCurrentProfileName,
 } from "../../../utils/adminData";
+import { Profile } from "@/utils/types"; 
 
-interface Profile {
-  id: string;
-  name: string;
-  email: string;
-  role: "Admin" | "Worker";
-  hasWorkerProfile?: boolean;
-}
 
 export default function ProfileScreen() {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -163,16 +157,22 @@ export default function ProfileScreen() {
 function ProfileHeader({ profile }: { profile: Profile }) {
   return (
     <View style={styles.header}>
+      <TouchableOpacity
+        style={styles.backButton}
+        onPress={() => router.back()}
+      >
+        <Text style={styles.backButtonText}>← Volver</Text>
+      </TouchableOpacity>
       <View style={styles.avatarContainer}>
         <Text style={styles.avatar}>
-          {profile.role === "Admin" ? "👨‍💼" : "👷"}
+          {profile.user_role === "Admin" ? "👨‍💼" : "👷"}
         </Text>
       </View>
       <Text style={styles.headerName}>{profile.name}</Text>
-      <Text style={styles.headerEmail}>{profile.email}</Text>
+      <Text style={styles.headerEmail}>{profile.auth_user.email}</Text>
       <View style={styles.roleBadge}>
         <Text style={styles.roleBadgeText}>
-          {profile.role === "Admin" ? "Administrador" : "Trabajador"}
+          {profile.user_role === "Admin" ? "Administrador" : "Trabajador"}
         </Text>
       </View>
     </View>
@@ -197,7 +197,7 @@ function ProfileInfoSection({
 
       <ProfileMenuItem icon="✏️" label="Editar nombre" onPress={onEditName} />
 
-      {profile.hasWorkerProfile && profile.role === "Admin" && (
+      { profile.user_role === "Admin" && (
         <ProfileMenuItem
           icon="🔄"
           label="Cambiar a vista de trabajador"
@@ -581,6 +581,18 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#E5E7EB",
     alignItems: "center",
+  },
+  backButton: {
+    position: "absolute",
+    top: 60,
+    left: 16,
+    padding: 8,
+    zIndex: 1,
+  },
+  backButtonText: {
+    fontSize: 16,
+    color: "#3B82F6",
+    fontWeight: "600",
   },
   avatarContainer: {
     width: 80,

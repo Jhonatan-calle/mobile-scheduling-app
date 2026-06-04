@@ -1,5 +1,11 @@
 import { supabase } from "../supabase/supabase";
-import { addDays, endOfLocalMonth, locale, startOfLocalDay, startOfLocalMonth } from "./helpers";
+import {
+  addDays,
+  endOfLocalMonth,
+  locale,
+  startOfLocalDay,
+  startOfLocalMonth,
+} from "./helpers";
 import {
   getAppointmentStatusKey,
   getPaymentMethodConfig,
@@ -7,17 +13,22 @@ import {
   getServiceIcon,
   DAY_NAMES,
 } from "./lookups";
-import { AppointmentDetail, AppointmentFeedItem, AppointmentItem, ClientOption, DashboardStats, RetouchDetail, ServiceCombo, ServiceObject, ServiceObjectWithCombos, ServiceOption, WorkerOption } from "./types";
-
-
+import {
+  AppointmentItem,
+  DashboardStats,
+  ServiceCombo,
+  ServiceObject,
+  ServiceObjectWithCombos,
+  Client,
+} from "./types";
 
 // Genera un label legible para un turno a partir de sus items
 function pickItemsLabel(items: any[]): string {
   if (!items || items.length === 0) return "Servicio";
   return items
     .map((item: any) => {
-      const objeto = item.service_object?.nombre ?? "Objeto";
-      const combo = item.service_combo?.nombre;
+      const objeto = item.service_object?.name ?? "Objeto";
+      const combo = item.service_combo?.name;
       return combo ? `${objeto} (${combo})` : objeto;
     })
     .join(", ");
@@ -30,9 +41,9 @@ function pickItemsLabel(items: any[]): string {
 export async function getServiceObjects(): Promise<ServiceObject[]> {
   const { data, error } = await supabase
     .from("service_objects")
-    .select("id, objeto, is_active")
+    .select("id, name, is_active")
     .eq("is_active", true)
-    .order("objeto", { ascending: true });
+    .order("name", { ascending: true });
 
   if (error) throw error;
   return (data ?? []) as ServiceObject[];
@@ -43,7 +54,21 @@ export async function getServiceCombos(
 ): Promise<ServiceCombo[]> {
   let query = supabase
     .from("service_combos")
-    .select("id, object_id, name, description, precio, is_active")
+    .select(
+      `
+      id,
+      name,
+      description,
+      is_active,
+      precio,
+      service_object:service_objects (
+        id,
+        created_at,
+        name,
+        is_active
+      )
+    `,
+    )
     .eq("is_active", true)
     .order("name", { ascending: true });
 
@@ -52,8 +77,17 @@ export async function getServiceCombos(
   }
 
   const { data, error } = await query;
+
   if (error) throw error;
-  return (data ?? []) as ServiceCombo[];
+
+  return (data ?? []).map((combo) => ({
+    id: combo.id,
+    name: combo.name,
+    description: combo.description,
+    is_active: combo.is_active,
+    precio: combo.precio,
+    service_object: combo.service_object,
+  }));
 }
 
 export async function getServiceObjectsWithCombos(): Promise<
@@ -66,21 +100,21 @@ export async function getServiceObjectsWithCombos(): Promise<
 
   return objects.map((obj) => ({
     ...obj,
-    combos: combos.filter((c) => c.object_id === obj.id),
+    combos: combos.filter((c) => c.service_object.id === obj.id),
   }));
 }
 
 // Mantenido por compatibilidad — devuelve datos de la nueva estructura
 // con el mismo shape que antes para no romper componentes que usen ServiceOption
-export async function getServices(): Promise<ServiceOption[]> {
+export async function getServices(): Promise<ServiceObjectWithCombos[]> {
   const withCombos = await getServiceObjectsWithCombos();
-  const result: ServiceOption[] = [];
+  const result: ServiceObjectWithCombos[] = [];
 
   withCombos.forEach((obj) => {
     if (obj.combos.length === 0) {
       result.push({
         id: obj.id,
-        objeto: obj.objeto,
+        objeto: obj.name,
         combo: null,
         description: null,
         is_active: obj.is_active,
@@ -89,7 +123,7 @@ export async function getServices(): Promise<ServiceOption[]> {
       obj.combos.forEach((combo) => {
         result.push({
           id: combo.id,
-          objeto: obj.objeto,
+          objeto: obj.name,
           combo: combo.name,
           description: combo.description,
           is_active: combo.is_active,
@@ -105,7 +139,9 @@ export async function getServices(): Promise<ServiceOption[]> {
 // CLIENTES
 // ============================================================================
 
-export async function getClients(searchText?: string): Promise<ClientOption[]> {
+export async function getClients(
+  searchText?: string,
+): Promise<Client[]> {
   let query = supabase
     .from("clients")
     .select("id, name, phone_number, last_appointment_at")
@@ -114,13 +150,15 @@ export async function getClients(searchText?: string): Promise<ClientOption[]> {
   if (searchText) {
     const clean = searchText.trim();
     if (clean) {
-      query = query.or(`name.ilike.%${clean}%,phone_number.ilike.%${clean}%`);
+      query = query.or(
+        `name.ilike.%${clean}%,phone_number.ilike.%${clean}%`,
+      );
     }
   }
 
   const { data, error } = await query;
   if (error) throw error;
-  return (data ?? []) as ClientOption[];
+  return (data ?? []) as Client[];
 }
 
 export async function findOrCreateClient(input: {
@@ -175,7 +213,9 @@ export async function getWorkers(): Promise<WorkerOption[]> {
 
   if (workersError) throw workersError;
 
-  const profileIds = (workers ?? []).map((worker: any) => worker.profile_id);
+  const profileIds = (workers ?? []).map(
+    (worker: any) => worker.profile_id,
+  );
   const { data: profiles, error: profileError } = await supabase
     .from("profiles")
     .select("id, name, auth_user_id, user_role")
@@ -225,7 +265,9 @@ export async function getWorkerById(workerId: number) {
 // TURNOS — Feed
 // ============================================================================
 
-export async function getAppointmentsFeed(): Promise<AppointmentFeedItem[]> {
+export async function getAppointmentsFeed(): Promise<
+  AppointmentFeedItem[]
+> {
   const todayStart = startOfLocalDay(new Date());
   const pastRange = addDays(todayStart, -120);
   const futureRange = addDays(todayStart, 30);
@@ -242,7 +284,7 @@ export async function getAppointmentsFeed(): Promise<AppointmentFeedItem[]> {
          worker:workers(id, commission_rate, profile:profiles(id, name)),
          items:appointment_items(
            description,
-           service_object:service_objects(id, objeto),
+           service_object:service_objects(id, name),
            service_combo:service_combos(id, name)
          )`,
       )
@@ -257,7 +299,7 @@ export async function getAppointmentsFeed(): Promise<AppointmentFeedItem[]> {
            id, date, notes,
            client:clients(id, name, phone_number),
            items:appointment_items(
-             service_object:service_objects(id, objeto),
+             service_object:service_objects(id, name),
              service_combo:service_combos(id, name)
            )
          ),
@@ -271,46 +313,52 @@ export async function getAppointmentsFeed(): Promise<AppointmentFeedItem[]> {
   if (appointmentsError) throw appointmentsError;
   if (retouchesError) throw retouchesError;
 
-  const transformedAppointments = (appointments ?? []).map((apt: any) => ({
-    id: String(apt.id),
-    type: "appointment" as const,
-    time: new Date(apt.date).toLocaleTimeString(locale, {
-      hour: "2-digit",
-      minute: "2-digit",
+  const transformedAppointments = (appointments ?? []).map(
+    (apt: any) => ({
+      id: String(apt.id),
+      type: "appointment" as const,
+      time: new Date(apt.date).toLocaleTimeString(locale, {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+      date: new Date(apt.date).toLocaleDateString(locale, {
+        day: "numeric",
+        month: "short",
+      }),
+      dateForSearch: new Date(apt.date).toLocaleDateString(locale),
+      customer: apt.client?.name ?? "Sin cliente",
+      service: pickItemsLabel(apt.items ?? []),
+      worker: apt.worker?.profile?.name ?? "Sin asignar",
+      status: getAppointmentStatusKey(apt.status),
+      amount: Number(apt.cost),
+      rawDate: new Date(apt.date),
     }),
-    date: new Date(apt.date).toLocaleDateString(locale, {
-      day: "numeric",
-      month: "short",
-    }),
-    dateForSearch: new Date(apt.date).toLocaleDateString(locale),
-    customer: apt.client?.name ?? "Sin cliente",
-    service: pickItemsLabel(apt.items ?? []),
-    worker: apt.worker?.profile?.name ?? "Sin asignar",
-    status: getAppointmentStatusKey(apt.status),
-    amount: Number(apt.cost),
-    rawDate: new Date(apt.date),
-  }));
+  );
 
-  const transformedRetouches = (retouches ?? []).map((retouch: any) => ({
-    id: String(retouch.id),
-    type: "retouch" as const,
-    time: new Date(retouch.time).toLocaleTimeString(locale, {
-      hour: "2-digit",
-      minute: "2-digit",
+  const transformedRetouches = (retouches ?? []).map(
+    (retouch: any) => ({
+      id: String(retouch.id),
+      type: "retouch" as const,
+      time: new Date(retouch.time).toLocaleTimeString(locale, {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+      date: new Date(retouch.time).toLocaleDateString(locale, {
+        day: "numeric",
+        month: "short",
+      }),
+      dateForSearch: new Date(retouch.time).toLocaleDateString(
+        locale,
+      ),
+      customer: retouch.appointment?.client?.name ?? "Sin cliente",
+      service: `🔄 Repaso: ${pickItemsLabel(retouch.appointment?.items ?? [])}`,
+      worker: retouch.worker?.profile?.name ?? "Sin asignar",
+      status: getAppointmentStatusKey(retouch.status),
+      amount: 0,
+      rawDate: new Date(retouch.time),
+      reason: retouch.reason,
     }),
-    date: new Date(retouch.time).toLocaleDateString(locale, {
-      day: "numeric",
-      month: "short",
-    }),
-    dateForSearch: new Date(retouch.time).toLocaleDateString(locale),
-    customer: retouch.appointment?.client?.name ?? "Sin cliente",
-    service: `🔄 Repaso: ${pickItemsLabel(retouch.appointment?.items ?? [])}`,
-    worker: retouch.worker?.profile?.name ?? "Sin asignar",
-    status: getAppointmentStatusKey(retouch.status),
-    amount: 0,
-    rawDate: new Date(retouch.time),
-    reason: retouch.reason,
-  }));
+  );
 
   return [...transformedAppointments, ...transformedRetouches].sort(
     (a, b) => a.rawDate.getTime() - b.rawDate.getTime(),
@@ -334,7 +382,7 @@ export async function getAppointmentById(
        worker:workers(id, commission_rate, profile:profiles(id, name, auth_user_id, user_role)),
        items:appointment_items(
          service_object_id, service_combo_id, description,
-         service_object:service_objects(id, objeto),
+         service_object:service_objects(id, name),
          service_combo:service_combos(id, name, description, precio)
        ),
        retouches:retouches(
@@ -370,7 +418,7 @@ export async function updateAppointment(
 
 export async function createAppointment(input: {
   admin_id: number;
-  worker_id: number;
+  worker_id: number | null;
   client_id: number;
   address?: string | null;
   date: string;
@@ -382,7 +430,7 @@ export async function createAppointment(input: {
   has_retouches?: boolean;
   paid_to_worker?: boolean;
   payment_method?: string | null;
-  items: AppointmentItem[];
+  items: { service_object_id: number; service_combo_id: number | null; description: string | null }[];
 }) {
   // 1) Crear el turno
   const { error: aptError, data: aptData } = await supabase
@@ -412,8 +460,8 @@ export async function createAppointment(input: {
     const itemRows = input.items.map((item) => ({
       appointment_id: aptData.id,
       service_object_id: item.service_object_id,
-      service_combo_id: item.service_combo_id ?? null,
-      description: item.description ?? null,
+      service_combo_id: item.service_combo_id,
+      description: item.description,
     }));
 
     const { error: itemsError } = await supabase
@@ -530,7 +578,7 @@ export async function getDashboardData(): Promise<{
        client:clients(id, name, phone_number),
        worker:workers(id, profile:profiles(id, name)),
        items:appointment_items(
-         service_object:service_objects(id, objeto),
+         service_object:service_objects(id, name),
          service_combo:service_combos(id, name)
        )`,
     )
@@ -608,13 +656,12 @@ export async function getExpenses(month = new Date()) {
 }
 
 export async function createExpense(input: {
-  category: string;
+  category?: string;
   description: string;
   amount: number;
   date?: string;
 }) {
   const payload = {
-    category: input.category,
     description: input.description,
     amount: input.amount,
     date: input.date
@@ -651,7 +698,7 @@ export async function getMonthlySummary(month = new Date()) {
 
   const { data: expenses, error: expensesErr } = await supabase
     .from("expenses")
-    .select("category, amount")
+    .select("description, amount")
     .gte("date", startOfLocalMonth(month).toISOString().slice(0, 10))
     .lt("date", endOfLocalMonth(month).toISOString().slice(0, 10));
 
@@ -678,38 +725,51 @@ export async function getMonthlySummary(month = new Date()) {
   return {
     month: month.getMonth() + 1,
     year: month.getFullYear(),
-    totalIncome: Number(summaryRow?.total_income),
-    totalAppointments: Number(summaryRow?.total_appointments),
-    totalRetouches: Number(summaryRow?.total_retouches),
-    totalExpenses: Number(summaryRow?.total_expenses),
+    totalIncome: Number(summaryRow?.total_income ?? 0),
+    totalAppointments: Number(summaryRow?.total_appointments ?? 0),
+    totalRetouches: Number(summaryRow?.total_retouches ?? 0),
+    totalExpenses: Number(summaryRow?.total_expenses ?? 0),
     expenses: normalizedExpenses,
-    totalSalaries: Number(summaryRow?.total_salaries),
+    totalSalaries: Number(summaryRow?.total_salaries ?? 0),
     workerPayments: [],
-    grossProfit: Number(summaryRow?.total_profit),
+    grossProfit: Number(summaryRow?.total_profit ?? 0),
     netProfit:
-      Number(summaryRow?.total_profit) - Number(summaryRow?.total_expenses),
+      Number(summaryRow?.total_profit ?? 0) -
+      Number(summaryRow?.total_expenses ?? 0),
+    theoreticalProfit:
+      Number(summaryRow?.total_profit ?? 0) -
+      Number(summaryRow?.total_expenses ?? 0),
   };
 }
 
-export async function getDetailedAccountingSummary(month = new Date()) {
-  const [summary, salaries, expenses, appointments] = await Promise.all([
-    getMonthlySummary(month),
-    supabase
-      .from("salaries")
-      .select("profile_id, amount, profile:profiles(id, name)")
-      .eq("month", month.getMonth() + 1)
-      .eq("year", month.getFullYear()),
-    supabase
-      .from("expenses")
-      .select("category, amount")
-      .gte("date", startOfLocalMonth(month).toISOString().slice(0, 10))
-      .lt("date", endOfLocalMonth(month).toISOString().slice(0, 10)),
-    supabase
-      .from("appointments")
-      .select("id, status, cost, commission_rate")
-      .gte("date", startOfLocalMonth(month).toISOString())
-      .lt("date", endOfLocalMonth(month).toISOString()),
-  ]);
+export async function getDetailedAccountingSummary(
+  month = new Date(),
+) {
+  const [summary, salaries, expenses, appointments] =
+    await Promise.all([
+      getMonthlySummary(month),
+      supabase
+        .from("salaries")
+        .select("profile_id, amount, profile:profiles(id, name)")
+        .eq("month", month.getMonth() + 1)
+        .eq("year", month.getFullYear()),
+      supabase
+        .from("expenses")
+    .select("description, amount")
+        .gte(
+          "date",
+          startOfLocalMonth(month).toISOString().slice(0, 10),
+        )
+        .lt(
+          "date",
+          endOfLocalMonth(month).toISOString().slice(0, 10),
+        ),
+      supabase
+        .from("appointments")
+        .select("id, status, cost, commission_rate")
+        .gte("date", startOfLocalMonth(month).toISOString())
+        .lt("date", endOfLocalMonth(month).toISOString()),
+    ]);
 
   if (salaries.error) throw salaries.error;
   if (expenses.error) throw expenses.error;
@@ -747,16 +807,17 @@ export async function getDetailedAccountingSummary(month = new Date()) {
     ...byCategory,
   };
 
-  const income = appointmentRows.reduce(
+  const completedAppointmentRows = appointmentRows.filter((row) =>
+    [3, 5].includes(Number(row.status)),
+  );
+  const income = completedAppointmentRows.reduce(
     (sum, row) => sum + Number(row.cost),
     0,
   );
   const pendingAppointments = appointmentRows.filter((row) =>
     [1, 4].includes(Number(row.status)),
   ).length;
-  const completedAppointments = appointmentRows.filter((row) =>
-    [3, 5].includes(Number(row.status)),
-  ).length;
+  const completedAppointments = completedAppointmentRows.length;
 
   const theoreticalProfit = income - salariesTotalPaid;
   const netProfit =
@@ -772,13 +833,17 @@ export async function getDetailedAccountingSummary(month = new Date()) {
       total: appointmentRows.length,
       completed: completedAppointments,
       pending: pendingAppointments,
-      cancelled: appointmentRows.filter((row) => Number(row.status) === 0)
-        .length,
+      cancelled: appointmentRows.filter(
+        (row) => Number(row.status) === 0,
+      ).length,
     },
     retouchDetails: { total: 0, completed: 0, pending: 0 },
     salaries: {
       workers: salariesWorkers,
-      totalEarned: salariesWorkers.reduce((sum, row) => sum + row.earned, 0),
+      totalEarned: salariesWorkers.reduce(
+        (sum, row) => sum + row.earned,
+        0,
+      ),
       totalPaid: salariesTotalPaid,
       totalPending: 0,
     },
@@ -823,7 +888,8 @@ export async function getPaymentsOverview(month = new Date()) {
 
   appointmentRows.forEach((row) => {
     const workerId = Number(row.worker_id);
-    const total = Number(row.cost) * (Number(row.commission_rate) / 100);
+    const total =
+      Number(row.cost) * (Number(row.commission_rate) / 100);
     const current = mapByWorker.get(workerId) ?? {
       totalEarned: 0,
       totalPaid: 0,
@@ -841,13 +907,19 @@ export async function getPaymentsOverview(month = new Date()) {
     const profileId = Number(row.profile_id);
     const worker = workers.find((w) => w.profile.id === profileId);
     const key = worker?.id ?? profileId;
-    const current = mapByWorker.get(key) ?? { totalEarned: 0, totalPaid: 0 };
+    const current = mapByWorker.get(key) ?? {
+      totalEarned: 0,
+      totalPaid: 0,
+    };
     current.totalPaid = Number(row.amount);
     mapByWorker.set(key, current);
   });
 
   return workers.map((worker) => {
-    const data = mapByWorker.get(worker.id) ?? { totalEarned: 0, totalPaid: 0 };
+    const data = mapByWorker.get(worker.id) ?? {
+      totalEarned: 0,
+      totalPaid: 0,
+    };
     const pending = Math.max(0, data.totalEarned - data.totalPaid);
     const workerAppointments = appointmentRows.filter(
       (row) => Number(row.worker_id) === worker.id,
@@ -896,7 +968,7 @@ export async function getWorkerMonthlyStats(
     .select(
       `id, date, status, cost, commission_rate,
        items:appointment_items(
-         service_object:service_objects(id, objeto)
+         service_object:service_objects(id, name)
        )`,
     )
     .eq("worker_id", workerId)
@@ -906,7 +978,10 @@ export async function getWorkerMonthlyStats(
   if (error) throw error;
 
   const rows = (data ?? []) as any[];
-  const totalGenerated = rows.reduce((sum, row) => sum + Number(row.cost), 0);
+  const totalGenerated = rows.reduce(
+    (sum, row) => sum + Number(row.cost),
+    0,
+  );
   const totalEarned = rows.reduce(
     (sum, row) =>
       sum + Number(row.cost) * (Number(row.commission_rate) / 100),
@@ -929,14 +1004,19 @@ export async function getWorkerMonthlyStats(
     averagePerAppointment: rows.length
       ? Math.round(totalGenerated / rows.length)
       : 0,
-    appointmentsByService: rows.reduce((acc: Record<string, number>, row) => {
-      const items: any[] = row.items ?? [];
-      const key =
-        items.map((i: any) => i.service_object?.nombre).filter(Boolean).join(", ") ||
-        "Otro";
-      acc[key] = (acc[key] ?? 0) + 1;
-      return acc;
-    }, {}),
+    appointmentsByService: rows.reduce(
+      (acc: Record<string, number>, row) => {
+        const items: any[] = row.items ?? [];
+        const key =
+          items
+            .map((i: any) => i.service_object?.nombre)
+            .filter(Boolean)
+            .join(", ") || "Otro";
+        acc[key] = (acc[key] ?? 0) + 1;
+        return acc;
+      },
+      {},
+    ),
   };
 }
 
@@ -949,13 +1029,13 @@ export async function getWorkersOverview() {
     supabase
       .from("appointments")
       .select(
-        `id, date, status, cost, commission_rate, worker_id,
-         client:clients(name),
-         items:appointment_items(
-           service_object:service_objects(id, objeto),
-           service_combo:service_combos(id, name)
-      u
-         worker:workers(id, profile:profiles(id, name))`,
+         `id, date, status, cost, commission_rate, worker_id,
+          client:clients(name),
+          items:appointment_items(
+            service_object:service_objects(id, name),
+            service_combo:service_combos(id, name)
+          ),
+          worker:workers(id, profile:profiles(id, name))`,
       )
       .gte("date", todayStart.toISOString())
       .lt("date", tomorrowStart.toISOString())
@@ -991,8 +1071,11 @@ export async function getWorkersOverview() {
       ).length,
       currentAppointment: currentAppointmentRow
         ? {
-            client: currentAppointmentRow.client?.name ?? "Sin cliente",
-            service: pickItemsLabel(currentAppointmentRow.items ?? []),
+            client:
+              currentAppointmentRow.client?.name ?? "Sin cliente",
+            service: pickItemsLabel(
+              currentAppointmentRow.items ?? [],
+            ),
           }
         : null,
     };
@@ -1020,7 +1103,7 @@ export async function getWorkerHistory(workerId: number) {
         `id, date, cost, commission_rate, status, notes, address,
          client:clients(id, name, phone_number),
          items:appointment_items(
-           service_object:service_objects(id, objeto),
+           service_object:service_objects(id, name),
            service_combo:service_combos(id, name)
          ),
          worker:workers(id, profile:profiles(id, name))`,
@@ -1035,7 +1118,7 @@ export async function getWorkerHistory(workerId: number) {
            id, address, notes,
            client:clients(id, name, phone_number),
            items:appointment_items(
-             service_object:service_objects(id, objeto),
+             service_object:service_objects(id, name),
              service_combo:service_combos(id, name)
         
          ),
@@ -1048,21 +1131,23 @@ export async function getWorkerHistory(workerId: number) {
   if (appointmentsQuery.error) throw appointmentsQuery.error;
   if (retouchesQuery.error) throw retouchesQuery.error;
 
-  const appointments = (appointmentsQuery.data ?? []).map((row: any) => ({
-    id: String(row.id),
-    type: "appointment",
-    date: row.date,
-    client: {
-      name: row.client?.name ?? "Sin cliente",
-      phone: row.client?.phone_number ?? "",
-    },
-    service: pickItemsLabel(row.items ?? []),
-    address: row.address ?? "Sin dirección",
-    cost: Number(row.cost),
-    workerEarned:
-      Number(row.cost) * (Number(row.commission_rate) / 100),
-    status: getAppointmentStatusKey(row.status),
-  }));
+  const appointments = (appointmentsQuery.data ?? []).map(
+    (row: any) => ({
+      id: String(row.id),
+      type: "appointment",
+      date: row.date,
+      client: {
+        name: row.client?.name ?? "Sin cliente",
+        phone: row.client?.phone_number ?? "",
+      },
+      service: pickItemsLabel(row.items ?? []),
+      address: row.address ?? "Sin dirección",
+      cost: Number(row.cost),
+      workerEarned:
+        Number(row.cost) * (Number(row.commission_rate) / 100),
+      status: getAppointmentStatusKey(row.status),
+    }),
+  );
 
   const retouches = (retouchesQuery.data ?? []).map((row: any) => ({
     id: String(row.id),
@@ -1073,7 +1158,8 @@ export async function getWorkerHistory(workerId: number) {
       phone: row.appointment?.client?.phone_number ?? "",
     },
     service: `Repaso: ${pickItemsLabel(row.appointment?.items ?? [])}`,
-    address: row.address ?? row.appointment?.address ?? "Sin dirección",
+    address:
+      row.address ?? row.appointment?.address ?? "Sin dirección",
     reason: row.reason,
     status: getAppointmentStatusKey(row.status),
   }));
@@ -1088,7 +1174,8 @@ export async function getWorkerHistory(workerId: number) {
 // ============================================================================
 
 export async function getCurrentProfile() {
-  const { data: userData, error: userError } = await supabase.auth.getUser();
+  const { data: userData, error: userError } =
+    await supabase.auth.getUser();
   if (userError) throw userError;
 
   const user = userData.user;
@@ -1106,12 +1193,19 @@ export async function getCurrentProfile() {
   return {
     id: profile.id,
     name: profile.name,
-    email: user.email ?? "",
+    user_role: profile.user_role,
+    auth_user: {
+      id: user.id,
+      email: user.email ?? "",
+      phone: user.phone ?? "",
+    },
+    updated_at: null,
   };
 }
 
 export async function updateCurrentProfileName(name: string) {
-  const { data: userData, error: userError } = await supabase.auth.getUser();
+  const { data: userData, error: userError } =
+    await supabase.auth.getUser();
   if (userError) throw userError;
   if (!userData.user) throw new Error("No authenticated user");
 
