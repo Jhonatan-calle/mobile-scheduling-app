@@ -20,6 +20,7 @@ import {
   ServiceObject,
   ServiceObjectWithCombos,
   Client,
+  MonthSummary,
 } from "./types";
 
 // Genera un label legible para un turno a partir de sus items
@@ -106,7 +107,9 @@ export async function getServiceObjectsWithCombos(): Promise<
 
 // Mantenido por compatibilidad — devuelve datos de la nueva estructura
 // con el mismo shape que antes para no romper componentes que usen ServiceOption
-export async function getServices(): Promise<ServiceObjectWithCombos[]> {
+export async function getServices(): Promise<
+  ServiceObjectWithCombos[]
+> {
   const withCombos = await getServiceObjectsWithCombos();
   const result: ServiceObjectWithCombos[] = [];
 
@@ -430,7 +433,11 @@ export async function createAppointment(input: {
   has_retouches?: boolean;
   paid_to_worker?: boolean;
   payment_method?: string | null;
-  items: { service_object_id: number; service_combo_id: number | null; description: string | null }[];
+  items: {
+    service_object_id: number;
+    service_combo_id: number | null;
+    description: string | null;
+  }[];
 }) {
   // 1) Crear el turno
   const { error: aptError, data: aptData } = await supabase
@@ -692,53 +699,46 @@ export async function getMonthlySummary(month = new Date()) {
     .select("*")
     .eq("month", month.getMonth() + 1)
     .eq("year", month.getFullYear())
-    .maybeSingle();
+    .maybeSingle<MonthSummary>();
 
-  if (summaryErr) throw summaryErr;
+  if (summaryErr) {
+    throw summaryErr;
+  }
 
   const { data: expenses, error: expensesErr } = await supabase
     .from("expenses")
-    .select("description, amount")
+    .select("amount")
     .gte("date", startOfLocalMonth(month).toISOString().slice(0, 10))
-    .lt("date", endOfLocalMonth(month).toISOString().slice(0, 10));
-
+    .lt("date", endOfLocalMonth(month).toISOString().slice(0, 10))
   if (expensesErr) throw expensesErr;
 
-  const expensesByCategory = (expenses ?? []).reduce(
-    (acc: Record<string, number>, row: any) => {
-      const category = row.category ?? "other";
-      acc[category] = (acc[category] ?? 0) + Number(row.amount);
-      return acc;
-    },
-    {},
+  const totalExpenses = (expenses ?? []).reduce(
+    (sum, row) => sum + Number(row.amount),
+    0,
   );
-
-  const normalizedExpenses = {
-    fuel: 0,
-    advertising: 0,
-    supplies: 0,
-    maintenance: 0,
-    other: 0,
-    ...expensesByCategory,
-  };
+  const totalIncome = Number(summaryRow?.total_income ?? 0);
+  const totalSalaries = Number(summaryRow?.total_salaries ?? 0);
+  const grossProfit = Number(summaryRow?.total_profit ?? 0);
 
   return {
     month: month.getMonth() + 1,
     year: month.getFullYear(),
-    totalIncome: Number(summaryRow?.total_income ?? 0),
+    totalIncome,
     totalAppointments: Number(summaryRow?.total_appointments ?? 0),
     totalRetouches: Number(summaryRow?.total_retouches ?? 0),
-    totalExpenses: Number(summaryRow?.total_expenses ?? 0),
-    expenses: normalizedExpenses,
-    totalSalaries: Number(summaryRow?.total_salaries ?? 0),
+    totalExpenses,
+    expenses: {
+      fuel: 0,
+      advertising: 0,
+      supplies: 0,
+      maintenance: 0,
+      other: totalExpenses,
+    },
+    totalSalaries,
     workerPayments: [],
-    grossProfit: Number(summaryRow?.total_profit ?? 0),
-    netProfit:
-      Number(summaryRow?.total_profit ?? 0) -
-      Number(summaryRow?.total_expenses ?? 0),
-    theoreticalProfit:
-      Number(summaryRow?.total_profit ?? 0) -
-      Number(summaryRow?.total_expenses ?? 0),
+    grossProfit,
+    netProfit: grossProfit - totalExpenses,
+    theoreticalProfit: grossProfit,
   };
 }
 
@@ -755,7 +755,7 @@ export async function getDetailedAccountingSummary(
         .eq("year", month.getFullYear()),
       supabase
         .from("expenses")
-    .select("description, amount")
+        .select("description, amount")
         .gte(
           "date",
           startOfLocalMonth(month).toISOString().slice(0, 10),
@@ -1029,7 +1029,7 @@ export async function getWorkersOverview() {
     supabase
       .from("appointments")
       .select(
-         `id, date, status, cost, commission_rate, worker_id,
+        `id, date, status, cost, commission_rate, worker_id,
           client:clients(name),
           items:appointment_items(
             service_object:service_objects(id, name),

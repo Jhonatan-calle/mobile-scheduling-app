@@ -19,6 +19,7 @@ import {
   updateClient,
 } from "../../../../utils/adminData";
 import { getServiceIcon } from "../../../../utils/lookups";
+import { SectionHeader } from "@/components/SectionHeader";
 
 export default function EditAppointmentScreen() {
   const { id } = useLocalSearchParams();
@@ -294,7 +295,7 @@ function ServiceInfoSection({ formData, setFormData, services }: any) {
       <View style={styles.servicesGrid}>
         {services.map((service: any) => (
           <ServiceTypeCard
-            key={service.id}
+            key={service.combo ? `combo-${service.id}` : `obj-${service.id}`}
             service={service}
             selected={formData.service === String(service.id)}
             onSelect={() => setFormData({ ...formData, service: String(service.id) })}
@@ -658,21 +659,6 @@ function ActionButtons({ onSave, loading, onCancel }: any) {
 }
 
 // ============================================================================
-// COMPONENTES AUXILIARES
-// ============================================================================
-function SectionHeader({ icon, title, subtitle }: any) {
-  return (
-    <View style={styles.sectionHeader}>
-      <Text style={styles.sectionIcon}>{icon}</Text>
-      <View style={styles.sectionHeaderText}>
-        <Text style={styles.sectionTitle}>{title}</Text>
-        <Text style={styles.sectionSubtitle}>{subtitle}</Text>
-      </View>
-    </View>
-  );
-}
-
-// ============================================================================
 // ESTILOS
 // ============================================================================
 const styles = StyleSheet.create({
@@ -739,29 +725,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     marginBottom: 8,
   },
-  sectionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  sectionIcon: {
-    fontSize: 24,
-    marginRight: 12,
-  },
-  sectionHeaderText: {
-    flex: 1,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#111827",
-  },
-  sectionSubtitle:  {
-    fontSize: 13,
-    color: "#6B7280",
-    marginTop:  2,
-  },
-
   // Inputs
   inputGroup: {
     marginBottom: 16,

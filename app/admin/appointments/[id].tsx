@@ -125,6 +125,22 @@ function StatusSection({ appointment, onUpdate }: any) {
   };
 
   const handleStatusChange = async (newStatus: string) => {
+    if (newStatus === "completed" && !appointment.worker_id) {
+      Alert.alert(
+        "Trabajador requerido",
+        "Debes asignar un trabajador al turno antes de marcarlo como completado",
+        [
+          { text: "Cancelar", style: "cancel" },
+          {
+            text: "Asignar trabajador",
+            onPress: () =>
+              router.push(`/admin/appointments/edit/${appointment.id}`),
+          },
+        ],
+      );
+      return;
+    }
+
     Alert.alert(
       "Cambiar estado",
       `¿Cambiar estado a "${getAppointmentStatusConfigByKey(newStatus).label}"?`,
@@ -589,10 +605,10 @@ function ActionButtonsSection({ appointment, onUpdate }: any) {
 function RetouchesSection({ appointment, onUpdate }: any) {
   const retouches = appointment.retouches ?? [];
   const loading = false;
-  const currentStatusKey = getAppointmentStatusKey(appointment.status) as string;
+  const canRetouch = Number(appointment.status) >= 3;
 
   const handleCreateRetouch = () => {
-    if (appointment.status !== "completed") {
+    if (!canRetouch) {
       Alert.alert(
         "No disponible",
         "Solo puedes crear repasos para turnos completados",
@@ -610,7 +626,7 @@ function RetouchesSection({ appointment, onUpdate }: any) {
     <View style={styles.section}>
       <View style={styles.sectionHeaderRow}>
         <SectionTitle icon="🔄" title="Retoques" />
-      {currentStatusKey === "completed" && (
+      {canRetouch && (
           <TouchableOpacity
             style={styles.addRetouchButton}
             onPress={handleCreateRetouch}
@@ -636,9 +652,9 @@ function RetouchesSection({ appointment, onUpdate }: any) {
         <View style={styles.noRetouchesContainer}>
           <Text style={styles.noRetouchesIcon}>✨</Text>
           <Text style={styles.noRetouchesText}>
-            {currentStatusKey === "completed"
+            {canRetouch
               ? "No hay repasos registrados"
-              : "Los repasos estarán disponibles al completar los turno"}
+              : "Los repasos estarán disponibles al completar el turno"}
           </Text>
         </View>
       )}

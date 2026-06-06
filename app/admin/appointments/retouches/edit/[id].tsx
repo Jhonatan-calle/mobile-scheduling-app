@@ -457,20 +457,6 @@ function ActionButtons({ onSave, loading, onCancel }:  any) {
   );
 }
 
-// ============================================================================
-// COMPONENTES AUXILIARES
-// ============================================================================
-function SectionHeader({ icon, title, subtitle }: any) {
-  return (
-    <View style={styles.sectionHeader}>
-      <Text style={styles.sectionIcon}>{icon}</Text>
-      <View style={styles.sectionHeaderText}>
-        <Text style={styles.sectionTitle}>{title}</Text>
-        <Text style={styles.sectionSubtitle}>{subtitle}</Text>
-      </View>
-    </View>
-  );
-}
 
 // ============================================================================
 // ESTILOS

@@ -107,6 +107,11 @@ function RetouchHeader({ retouchId }: { retouchId: string }) {
 // ESTADO
 // ============================================================================
 function StatusSection({ retouch, onStatusChange }: any) {
+  const retouchStatusMap: Record<number, string> = {
+    1: "pending",
+    2: "in_progress",
+    3: "completed",
+  };
   const statusConfig: any = {
     pending: { label: "Pendiente", color: "#F59E0B", icon: "⏳" },
     in_progress: { label: "En curso", color: "#3B82F6", icon: "🔄" },
@@ -114,7 +119,7 @@ function StatusSection({ retouch, onStatusChange }: any) {
     cancelled: { label: "Cancelado", color: "#EF4444", icon: "❌" },
   };
 
-  const config = statusConfig[retouch.status];
+  const config = statusConfig[retouchStatusMap[Number(retouch.status)] ?? "pending"];
 
   return (
     <View style={styles.section}>

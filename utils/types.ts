@@ -177,7 +177,7 @@ export interface Retouch {
   /** Referenced Appointment object, not nullable. */
   appointment: Appointment;
   /** Referenced Worker object, not nullable. */
-  worker: Worker;
+  worker: Worker | null;
   /** Reason, not nullable. */
   reason: string;
   /** May be null. ISO timestamp (no timezone) represented as string. */

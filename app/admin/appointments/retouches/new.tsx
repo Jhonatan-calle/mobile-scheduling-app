@@ -13,6 +13,7 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import Input from "../../../../components/Input";
 import Button from "../../../../components/Button";
 import { createRetouch, getAppointmentById, getWorkers } from "../../../../utils/adminData";
+import { SectionHeader } from "@/components/SectionHeader";
 
 export default function NewRetouchScreen() {
   const { appointmentId } = useLocalSearchParams();
@@ -43,7 +44,7 @@ export default function NewRetouchScreen() {
       // Pre-llenar datos
       setFormData({
         ... formData,
-        workerId: String(appointmentData.worker_id),
+        workerId: appointmentData.worker_id != null ? String(appointmentData.worker_id) : "",
         address: appointmentData.address || "",
       });
     } catch (error) {
@@ -63,10 +64,6 @@ export default function NewRetouchScreen() {
   const validateForm = () => {
     if (!formData.reason. trim()) {
       Alert.alert("Error", "Debes especificar el motivo del repaso");
-      return false;
-    }
-    if (!formData.workerId) {
-      Alert.alert("Error", "Debes asignar un trabajador");
       return false;
     }
     return true;
@@ -95,7 +92,6 @@ export default function NewRetouchScreen() {
         created_at: new Date().toISOString(),
       };
 
-      console.log("📋 Datos del repaso a guardar:", retouchData);
 
       await createRetouch({
         appointment_id: parseInt(appointmentId as string),
@@ -187,16 +183,16 @@ function AppointmentInfoSection({ appointment }:  any) {
         <Text style={styles.infoCardTitle}>Turno Original</Text>
         <View style={styles.infoRow}>
           <Text style={styles.infoLabel}>Cliente:</Text>
-          <Text style={styles.infoValue}>{appointment.client.name}</Text>
+          <Text style={styles.infoValue}>{appointment.client?.name ?? "Sin cliente"}</Text>
         </View>
         <View style={styles.infoRow}>
           <Text style={styles.infoLabel}>Servicio:</Text>
-          <Text style={styles.infoValue}>{appointment.service_details}</Text>
+          <Text style={styles.infoValue}>{appointment.service_details ?? "—"}</Text>
         </View>
         <View style={styles.infoRow}>
           <Text style={styles.infoLabel}>Trabajador original:</Text>
           <Text style={styles.infoValue}>
-            {appointment.worker.profile.name}
+            {appointment.worker?.profile?.name ?? "Sin asignar"}
           </Text>
         </View>
       </View>
@@ -437,7 +433,7 @@ function AddressSection({ formData, setFormData }: any) {
 function ActionButtons({ onSave, loading, onCancel }:  any) {
   return (
     <View style={styles.actionsSection}>
-      <Button title="Crear Retoque" onPress={onSave} loading={loading} />
+      <Button title="Crear Repaso" onPress={onSave} loading={loading} />
 
       <TouchableOpacity
         style={styles.cancelButton}
@@ -450,24 +446,6 @@ function ActionButtons({ onSave, loading, onCancel }:  any) {
   );
 }
 
-// ============================================================================
-// COMPONENTE AUXILIAR
-// ============================================================================
-function SectionHeader({ icon, title, subtitle }: any) {
-  return (
-    <View style={styles. sectionHeader}>
-      <View style={styles.sectionHeaderLeft}>
-        <Text style={styles.sectionHeaderIcon}>{icon}</Text>
-        <View>
-          <Text style={styles. sectionHeaderTitle}>{title}</Text>
-          {subtitle && (
-            <Text style={styles. sectionHeaderSubtitle}>{subtitle}</Text>
-          )}
-        </View>
-      </View>
-    </View>
-  );
-}
 
 // ============================================================================
 // ESTILOS
@@ -526,30 +504,6 @@ const styles = StyleSheet.create({
     padding: 16,
     backgroundColor: "#FFFFFF",
     marginBottom: 8,
-  },
-  sectionHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  sectionHeaderLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  sectionHeaderIcon:  {
-    fontSize: 24,
-    marginRight: 12,
-  },
-  sectionHeaderTitle: {
-    fontSize:  18,
-    fontWeight: "bold",
-    color: "#111827",
-  },
-  sectionHeaderSubtitle: {
-    fontSize: 13,
-    color: "#6B7280",
-    marginTop:  2,
   },
 
   // Info Card
