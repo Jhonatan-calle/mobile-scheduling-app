@@ -251,6 +251,8 @@ function ServiceInfoSection({ appointment }: any) {
     });
   };
 
+  const items = appointment.items ?? [];
+
   return (
     <View style={globalStyles.section}>
       <SectionTitle icon="🧼" title="Servicio" />
@@ -259,6 +261,28 @@ function ServiceInfoSection({ appointment }: any) {
         label="Tipo"
         value={appointment.serviceData?.description || appointment.serviceData?.objeto || "Servicio"}
       />
+
+      {items.length > 0 && (
+        <View style={styles.detailItemsList}>
+          {items.map((item: any, index: number) => (
+            <View key={index} style={styles.detailItemCard}>
+              <View style={styles.detailItemHeader}>
+                <Text style={styles.detailItemObject}>
+                  {item.service_combo?.service_object?.name ?? "Objeto"}
+                </Text>
+                <Text style={styles.detailItemCombo}>
+                  {item.service_combo?.name}
+                  {(item.cantidad ?? 1) > 1 ? ` x${item.cantidad}` : ""}
+                </Text>
+              </View>
+              {item.description ? (
+                <Text style={styles.detailItemDesc}>{item.description}</Text>
+              ) : null}
+            </View>
+          ))}
+        </View>
+      )}
+
       <InfoRow
         label="Detalles"
         value={appointment.service_details || appointment.notes || "Sin detalles"}
@@ -789,6 +813,38 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 16,
+  },
+
+  // Detail Items
+  detailItemsList: {
+    gap: 8,
+    marginBottom: 16,
+  },
+  detailItemCard: {
+    backgroundColor: "#F0FDF4",
+    borderWidth: 1.5,
+    borderColor: "#86EFAC",
+    borderRadius: 12,
+    padding: 12,
+  },
+  detailItemHeader: {
+    gap: 4,
+  },
+  detailItemObject: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#065F46",
+  },
+  detailItemCombo: {
+    fontSize: 13,
+    color: "#10B981",
+    fontWeight: "500",
+  },
+  detailItemDesc: {
+    fontSize: 13,
+    color: "#374151",
+    marginTop: 8,
+    lineHeight: 18,
   },
   sectionTitleIcon: {
     fontSize: 20,

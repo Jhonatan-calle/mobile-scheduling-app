@@ -191,7 +191,8 @@ export interface Retouch {
 }
 
 /**
- * appointment_items table. appointment_id -> Appointment, service_object_id -> ServiceObject, service_combo_id -> ServiceCombo.
+ * appointment_items table. appointment_id -> Appointment, service_combo_id -> ServiceCombo.
+ * Service object is accessed transitively via service_combo.service_object.
  */
 export interface AppointmentItem {
   /** Primary key (bigint), not nullable. */
@@ -200,12 +201,14 @@ export interface AppointmentItem {
   created_at: string;
   /** Referenced Appointment object, not nullable. */
   appointment: Appointment;
-  /** Referenced ServiceObject object, not nullable. */
-  service_object: ServiceObject;
-  /** Referenced ServiceCombo object, may be null. */
-  service_combo: ServiceCombo | null;
+  /** Referenced ServiceCombo object, not nullable. */
+  service_combo: ServiceCombo;
   /** May be null. */
   description: string | null;
+  /** Quantity (default 1). */
+  cantidad: number | null;
+  /** Per-item cost, may be null. */
+  cost: number | null;
 }
 
 /**

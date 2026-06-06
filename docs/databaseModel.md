@@ -2,16 +2,17 @@
 erDiagram
     
     AUTH.USERS {
-        int id PK
-        string role
+        uuid id PK
         string email
         string phone
     }
 
     PROFILES {
         int id PK
-        int user_id FK
+        uuid auth_user_id FK
         string name
+        string user_role
+        date updated_at
     }
 
     WORKERS {
@@ -19,16 +20,19 @@ erDiagram
         int profile_id FK
         decimal commission_rate
         boolean is_active
+        date updated_at
     }
 
     SERVICE_OBJECTS {
-        int id PK
-        string objeto
+        bigint id PK
+        timestamp created_at
+        string name
         boolean is_active
     }
 
     SERVICE_COMBOS {
-        int id PK
+        bigint id PK
+        timestamp created_at
         int object_id FK
         string name
         string description
@@ -37,11 +41,13 @@ erDiagram
     }
 
     APPOINTMENT_ITEMS{
-        int id PK
+        bigint id PK
+        timestamp created_at
         int appointment_id FK
-        int service_objet_id FK
-        int service_combo_id FK
+        bigint service_combo_id FK
         string description
+        smallint cantidad
+        real cost
     }
 
     APPOINTMENT_STATUSES {
@@ -71,8 +77,7 @@ erDiagram
         int admin_id FK
         int worker_id FK
         int client_id FK
-        int appointment_items_id FK
-        int status_id FK
+        int status FK
         int estimate_time
         string notes
         boolean paid_to_worker
@@ -83,14 +88,15 @@ erDiagram
     }
 
     RETOUCHES {
-        datetime time
-        string address
         int id PK
+        timestamp created_at
         int appointment_id FK
         int worker_id FK
         string reason
+        datetime time
+        string address
         int estimate_time
-        int status_id FK
+        int status
     }
 
     MONTH_SUMMARIES {
@@ -114,25 +120,23 @@ erDiagram
 
     SALARIES {
         int id PK
-        int user_id FK
+        int profile_id FK
         decimal amount
         int month
         int year
     }
 
-    AUTH.USERS ||--o| PROFILES : is
-    PROFILES ||--o| WORKERS : is
-    PROFILES ||--o{ SALARIES : receives
+    AUTH.USERS ||--o| PROFILES : auth_user_id
+    PROFILES ||--o| WORKERS : profile_id
     WORKERS ||--o{ APPOINTMENTS : attends
     WORKERS ||--o{ WORKER_AVAILABILITY : has
     WORKERS ||--o{ RETOUCHES : performs
     CLIENTS ||--o{ APPOINTMENTS : books
-    APPOINTMENT_STATUSES ||--o{ APPOINTMENTS : defines
-    APPOINTMENT_STATUSES ||--o{ RETOUCHES : defines
+    APPOINTMENT_STATUSES ||--o{ APPOINTMENTS : status
     APPOINTMENTS ||--o{ RETOUCHES : has
-    SERVICE_OBJECTS ||--o{ SERVICE_COMBOS : has
-    SERVICE_OBJECTS ||--o{ APPOINTMENT_ITEMS : includes
-    SERVICE_COMBOS ||--o{ APPOINTMENT_ITEMS : specifies
-    PROFILES ||--o{ SALARIES : receives
+    SERVICE_OBJECTS ||--o{ SERVICE_COMBOS : object_id
+    SERVICE_COMBOS ||--o{ APPOINTMENT_ITEMS : service_combo_id
+    PROFILES ||--o{ SALARIES : profile_id
     APPOINTMENTS ||--o{ APPOINTMENT_ITEMS : contains
-
+    PROFILES ||--o{ APPOINTMENTS : admin_id
+```

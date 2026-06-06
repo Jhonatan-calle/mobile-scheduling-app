@@ -14,7 +14,6 @@ import {
   DAY_NAMES,
 } from "./lookups";
 import {
-  AppointmentItem,
   DashboardStats,
   ServiceCombo,
   ServiceObject,
@@ -28,7 +27,7 @@ function pickItemsLabel(items: any[]): string {
   if (!items || items.length === 0) return "Servicio";
   return items
     .map((item: any) => {
-      const objeto = item.service_object?.name ?? "Objeto";
+      const objeto = item.service_combo?.service_object?.name ?? "Objeto";
       const combo = item.service_combo?.name;
       return combo ? `${objeto} (${combo})` : objeto;
     })
@@ -287,23 +286,21 @@ export async function getAppointmentsFeed(): Promise<
          worker:workers(id, commission_rate, profile:profiles(id, name)),
          items:appointment_items(
            description,
-           service_object:service_objects(id, name),
-           service_combo:service_combos(id, name)
+           service_combo:service_combos(id, name, service_object:service_objects(id, name))
          )`,
-      )
-      .gte("date", pastRange.toISOString())
-      .lte("date", futureRange.toISOString())
-      .order("date", { ascending: true }),
-    supabase
-      .from("retouches")
-      .select(
-        `id, time, reason, estimate_time, status, appointment_id,
-         appointment:appointments(
-           id, date, notes,
-           client:clients(id, name, phone_number),
-           items:appointment_items(
-             service_object:service_objects(id, name),
-             service_combo:service_combos(id, name)
+       )
+       .gte("date", pastRange.toISOString())
+       .lte("date", futureRange.toISOString())
+       .order("date", { ascending: true }),
+     supabase
+       .from("retouches")
+       .select(
+         `id, time, reason, estimate_time, status, appointment_id,
+          appointment:appointments(
+            id, date, notes,
+            client:clients(id, name, phone_number),
+            items:appointment_items(
+              service_combo:service_combos(id, name, service_object:service_objects(id, name))
            )
          ),
          worker:workers(id, commission_rate, profile:profiles(id, name))`,
@@ -384,9 +381,9 @@ export async function getAppointmentById(
        client:clients(id, name, phone_number, last_appointment_at),
        worker:workers(id, commission_rate, profile:profiles(id, name, auth_user_id, user_role)),
        items:appointment_items(
-         service_object_id, service_combo_id, description,
-         service_object:service_objects(id, name),
-         service_combo:service_combos(id, name, description, precio)
+         service_combo_id, description,
+         service_combo:service_combos(id, name, description, precio,
+           service_object:service_objects(id, name))
        ),
        retouches:retouches(
          id, appointment_id, worker_id, time, address, reason,
@@ -434,9 +431,10 @@ export async function createAppointment(input: {
   paid_to_worker?: boolean;
   payment_method?: string | null;
   items: {
-    service_object_id: number;
-    service_combo_id: number | null;
+    service_combo_id: number;
     description: string | null;
+    cantidad?: number | null;
+    cost?: number | null;
   }[];
 }) {
   // 1) Crear el turno
@@ -466,9 +464,10 @@ export async function createAppointment(input: {
   if (input.items.length > 0) {
     const itemRows = input.items.map((item) => ({
       appointment_id: aptData.id,
-      service_object_id: item.service_object_id,
       service_combo_id: item.service_combo_id,
       description: item.description,
+      cantidad: item.cantidad ?? 1,
+      cost: item.cost ?? null,
     }));
 
     const { error: itemsError } = await supabase
@@ -585,15 +584,15 @@ export async function getDashboardData(): Promise<{
        client:clients(id, name, phone_number),
        worker:workers(id, profile:profiles(id, name)),
        items:appointment_items(
-         service_object:service_objects(id, name),
-         service_combo:service_combos(id, name)
+         service_combo:service_combos(id, name,
+           service_object:service_objects(id, name))
        )`,
-    )
-    .gte("date", todayStart.toISOString())
-    .lt("date", tomorrowStart.toISOString())
-    .order("date", { ascending: true });
+     )
+     .gte("date", todayStart.toISOString())
+     .lt("date", tomorrowStart.toISOString())
+     .order("date", { ascending: true });
 
-  if (todayErr) throw todayErr;
+   if (todayErr) throw todayErr;
 
   const { count: pendingCount, error: pendingErr } = await supabase
     .from("appointments")
@@ -968,7 +967,8 @@ export async function getWorkerMonthlyStats(
     .select(
       `id, date, status, cost, commission_rate,
        items:appointment_items(
-         service_object:service_objects(id, name)
+         service_combo:service_combos(id, name,
+           service_object:service_objects(id, name))
        )`,
     )
     .eq("worker_id", workerId)
@@ -1032,8 +1032,8 @@ export async function getWorkersOverview() {
         `id, date, status, cost, commission_rate, worker_id,
           client:clients(name),
           items:appointment_items(
-            service_object:service_objects(id, name),
-            service_combo:service_combos(id, name)
+            service_combo:service_combos(id, name,
+              service_object:service_objects(id, name))
           ),
           worker:workers(id, profile:profiles(id, name))`,
       )
@@ -1095,80 +1095,96 @@ export async function getWorkerDetailData(
   return { worker, availability, monthStats };
 }
 
-export async function getWorkerHistory(workerId: number) {
-  const [appointmentsQuery, retouchesQuery] = await Promise.all([
-    supabase
-      .from("appointments")
-      .select(
-        `id, date, cost, commission_rate, status, notes, address,
-         client:clients(id, name, phone_number),
-         items:appointment_items(
-           service_object:service_objects(id, name),
-           service_combo:service_combos(id, name)
-         ),
-         worker:workers(id, profile:profiles(id, name))`,
-      )
-      .eq("worker_id", workerId)
-      .order("date", { ascending: false }),
-    supabase
-      .from("retouches")
-      .select(
-        `id, time, reason, estimate_time, status, address,
-         appointment:appointments(
-           id, address, notes,
-           client:clients(id, name, phone_number),
-           items:appointment_items(
-             service_object:service_objects(id, name),
-             service_combo:service_combos(id, name)
-        
-         ),
-         worker:workers(id, profile:profiles(id, name))`,
-      )
-      .eq("worker_id", workerId)
-      .order("time", { ascending: false }),
-  ]);
-
-  if (appointmentsQuery.error) throw appointmentsQuery.error;
-  if (retouchesQuery.error) throw retouchesQuery.error;
-
-  const appointments = (appointmentsQuery.data ?? []).map(
-    (row: any) => ({
-      id: String(row.id),
-      type: "appointment",
-      date: row.date,
-      client: {
-        name: row.client?.name ?? "Sin cliente",
-        phone: row.client?.phone_number ?? "",
-      },
-      service: pickItemsLabel(row.items ?? []),
-      address: row.address ?? "Sin dirección",
-      cost: Number(row.cost),
-      workerEarned:
-        Number(row.cost) * (Number(row.commission_rate) / 100),
-      status: getAppointmentStatusKey(row.status),
-    }),
-  );
-
-  const retouches = (retouchesQuery.data ?? []).map((row: any) => ({
-    id: String(row.id),
-    type: "retouch",
-    date: row.time,
-    client: {
-      name: row.appointment?.client?.name ?? "Sin cliente",
-      phone: row.appointment?.client?.phone_number ?? "",
-    },
-    service: `Repaso: ${pickItemsLabel(row.appointment?.items ?? [])}`,
-    address:
-      row.address ?? row.appointment?.address ?? "Sin dirección",
-    reason: row.reason,
-    status: getAppointmentStatusKey(row.status),
-  }));
-
-  return [...appointments, ...retouches].sort(
-    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
-  );
-}
-
+// export async function getWorkerHistory(workerId: number) {
+//   const [appointmentsQuery, retouchesQuery] = await Promise.all([
+//     supabase
+//       .from("appointments")
+//       .select(
+//         `id, date, cost, commission_rate, status, notes, address,
+//          client:clients(id, name, phone_number),
+//          items:appointment_items(
+//            service_combo:service_combos(id, name,
+//              service_object:service_objects(id, name))
+//          ),
+//          worker:workers(id, profile:profiles(id, name))`,
+//        )
+//        .eq("worker_id", workerId)
+//        .order("date", { ascending: false }),
+//      supabase
+//        .from("retouches")
+//        .select(
+//          `id, time, reason, estimate_time, status, address,
+//           appointment:appointments(
+//             id, address, notes,
+//             client:clients(id, name, phone_number),
+//             items:appointment_items(
+//               service_combo:service_combos(id, name,
+//                 service_object:service_objects(id, name))
+//             )
+//          ),
+//          worker:workers(id, profile:profiles(id, name))`,
+//       )
+//       .eq("worker_id", workerId)
+//       .order("date", { ascending: false }),
+//     supabase
+//       .from("retouches")
+//       .select(
+//         `id, time, reason, estimate_time, status, address,
+//          appointment:appointments(
+//            id, address, notes,
+//            client:clients(id, name, phone_number),
+//            items:appointment_items(
+//              service_object:service_objects(id, name),
+//              service_combo:service_combos(id, name)
+//
+//          ),
+//          worker:workers(id, profile:profiles(id, name))`,
+//       )
+//       .eq("worker_id", workerId)
+//       .order("time", { ascending: false }),
+//   ]);
+//
+//   if (appointmentsQuery.error) throw appointmentsQuery.error;
+//   if (retouchesQuery.error) throw retouchesQuery.error;
+//
+//   const appointments = (appointmentsQuery.data ?? []).map(
+//     (row: any) => ({
+//       id: String(row.id),
+//       type: "appointment",
+//       date: row.date,
+//       client: {
+//         name: row.client?.name ?? "Sin cliente",
+//         phone: row.client?.phone_number ?? "",
+//       },
+//       service: pickItemsLabel(row.items ?? []),
+//       address: row.address ?? "Sin dirección",
+//       cost: Number(row.cost),
+//       workerEarned:
+//         Number(row.cost) * (Number(row.commission_rate) / 100),
+//       status: getAppointmentStatusKey(row.status),
+//     }),
+//   );
+//
+//   const retouches = (retouchesQuery.data ?? []).map((row: any) => ({
+//     id: String(row.id),
+//     type: "retouch",
+//     date: row.time,
+//     client: {
+//       name: row.appointment?.client?.name ?? "Sin cliente",
+//       phone: row.appointment?.client?.phone_number ?? "",
+//     },
+//     service: `Repaso: ${pickItemsLabel(row.appointment?.items ?? [])}`,
+//     address:
+//       row.address ?? row.appointment?.address ?? "Sin dirección",
+//     reason: row.reason,
+//     status: getAppointmentStatusKey(row.status),
+//   }));
+//
+//   return [...appointments, ...retouches].sort(
+//     (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+//   );
+// }
+//
 // ============================================================================
 // PERFIL
 // ============================================================================

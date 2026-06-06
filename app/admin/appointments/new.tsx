@@ -22,11 +22,7 @@ import {
   getServiceObjectsWithCombos, 
   getWorkers,
 } from "../../../utils/adminData";
-import type {
-  ServiceObject,
-  AppointmentItem,
-  ServiceObjectWithCombos,
-} from "../../../utils/types.ts";
+import type { ServiceObjectWithCombos } from "../../../utils/types.ts";
 import { ServiceInfoSection } from "@/components/serviceSection";
 import { SectionHeader } from "@/components/SectionHeader";
 
@@ -46,9 +42,7 @@ export default function NewAppointmentScreen() {
     commissionRate: "",
   });
 
-  const [appointmentItems, setAppointmentItems] = useState<
-    AppointmentItem[]
-  >([]);
+  const [appointmentItems, setAppointmentItems] = useState<any[]>([]);
   const [serviceObjects, setServiceObjects] = useState<
     ServiceObjectWithCombos[]
   >([]);
@@ -148,21 +142,17 @@ export default function NewAppointmentScreen() {
   const calculateSuggestedCost = () => {
     let total = 0;
 
-    appointmentItems.forEach((item) => {
-      const object = serviceObjects.find(
-        (o) => o.id === item.service_object_id,
-      );
-
-      if (!object) return;
-
-      const combo = object.combos.find(
-        (c) => c.id === item.service_combo_id,
-      );
-
-      if (combo?.precio) {
-        total += combo.precio;
+    for (const item of appointmentItems) {
+      const comboId = item.service_combo_id ?? item.service_combo?.id;
+      const cantidad = item.cantidad ?? 1;
+      for (const obj of serviceObjects) {
+        const combo = obj.combos.find((c) => c.id === comboId);
+        if (combo?.precio) {
+          total += combo.precio * cantidad;
+          break;
+        }
       }
-    });
+    }
 
     return total;
   };

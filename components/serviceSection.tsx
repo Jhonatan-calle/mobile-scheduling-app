@@ -8,10 +8,14 @@ import {
 } from "react-native";
 import { SectionHeader } from "./SectionHeader";
 import { getServiceIcon } from "../utils/lookups";
-import type {
-  ServiceObjectWithCombos,
-  AppointmentItem,
-} from "../utils/types";
+import type { ServiceObjectWithCombos } from "../utils/types";
+
+type ItemInput = {
+  service_combo_id: number;
+  description: string | null;
+  cantidad: number;
+  cost: number | null;
+};
 
 export function ServiceInfoSection({
   serviceObjects,
@@ -20,9 +24,9 @@ export function ServiceInfoSection({
   initialItems,
 }: {
   serviceObjects: ServiceObjectWithCombos[];
-  appointmentItems: AppointmentItem[];
-  setAppointmentItems: (items: AppointmentItem[]) => void;
-  initialItems?: AppointmentItem[];
+  appointmentItems: any[];
+  setAppointmentItems: (items: any[]) => void;
+  initialItems?: any[];
 }) {
   const [selectedObjectId, setSelectedObjectId] = useState<
     number | null
@@ -41,26 +45,26 @@ export function ServiceInfoSection({
   );
 
   const isObjectInItems = (objectId: number) =>
-    appointmentItems.some((i) => i.service_object_id === objectId);
+    appointmentItems.some((i) => {
+      const obj = serviceObjects.find((o) =>
+        o.combos.some((c) => c.id === i.service_combo_id),
+      );
+      return obj?.id === objectId;
+    });
 
-  const addItem = (
-    objectId: number,
-    comboId: number | null = null,
-  ) => {
-    // Evitar duplicar el mismo objeto+combo
+  const addItem = (comboId: number) => {
     const exists = appointmentItems.some(
-      (i) =>
-        i.service_object_id === objectId &&
-        (i.service_combo_id ?? null) === comboId,
+      (i) => i.service_combo_id === comboId,
     );
     if (exists) return;
 
     setAppointmentItems([
       ...appointmentItems,
       {
-        service_object_id: objectId,
         service_combo_id: comboId,
         description: null,
+        cantidad: 1,
+        cost: null,
       },
     ]);
     setSelectedObjectId(null);
@@ -81,16 +85,17 @@ export function ServiceInfoSection({
     setAppointmentItems(updated);
   };
 
-  const getObjectLabel = (objectId: number) =>
-    serviceObjects.find((o) => o.id === objectId)?.name ?? "Objeto";
+  const getItemObjectName = (comboId: number) =>
+    serviceObjects
+      .find((o) => o.combos.some((c) => c.id === comboId))
+      ?.name ?? "Objeto";
 
-  const getComboLabel = (
-    objectId: number,
-    comboId: number | null,
-  ) => {
-    if (!comboId) return null;
-    const obj = serviceObjects.find((o) => o.id === objectId);
-    return obj?.combos.find((c) => c.id === comboId)?.name ?? null;
+  const getItemComboName = (comboId: number) => {
+    for (const obj of serviceObjects) {
+      const combo = obj.combos.find((c) => c.id === comboId);
+      if (combo) return combo.name;
+    }
+    return null;
   };
 
   return (
@@ -105,23 +110,22 @@ export function ServiceInfoSection({
       {appointmentItems.length > 0 && (
         <View style={styles.itemsList}>
           {appointmentItems.map((item, index) => {
-            const objectLabel = getObjectLabel(
-              item.service_object_id,
-            );
-            const comboLabel = getComboLabel(
-              item.service_object_id,
-              item.service_combo_id,
-            );
+            const comboId = item.service_combo_id ?? item.service_combo?.id;
+            const objectName = item.service_combo?.service_object?.name
+              ?? getItemObjectName(comboId);
+            const comboName = item.service_combo?.name
+              ?? getItemComboName(comboId);
+            const cantidad = item.cantidad ?? 1;
             return (
               <View key={index} style={styles.itemCard}>
                 <View style={styles.itemCardHeader}>
                   <View style={styles.itemCardTitles}>
                     <Text style={styles.itemCardObject}>
-                      {objectLabel}
+                      {objectName}
                     </Text>
-                    {comboLabel && (
+                    {comboName && (
                       <Text style={styles.itemCardCombo}>
-                        {comboLabel}
+                        {comboName}{cantidad > 1 ? ` x${cantidad}` : ""}
                       </Text>
                     )}
                   </View>
@@ -167,12 +171,8 @@ export function ServiceInfoSection({
                     alreadyAdded && styles.objectCardAdded,
                   ]}
                   onPress={() => {
-                    if (obj.combos.length === 0) {
-                      // Sin combos → agregar directo
-                      addItem(obj.id, null);
-                    } else {
-                      setSelectedObjectId(obj.id);
-                    }
+                    if (obj.combos.length === 0) return;
+                    setSelectedObjectId(obj.id);
                   }}
                   activeOpacity={0.7}
                 >
@@ -216,7 +216,7 @@ export function ServiceInfoSection({
               <TouchableOpacity
                 key={combo.id}
                 style={styles.comboItem}
-                onPress={() => addItem(selectedObject.id, combo.id)}
+                onPress={() => addItem(combo.id)}
                 activeOpacity={0.7}
               >
                 <View style={styles.comboItemInfo}>
@@ -237,16 +237,7 @@ export function ServiceInfoSection({
               </TouchableOpacity>
             ))}
 
-            {/* Opción sin combo */}
-            <TouchableOpacity
-              style={[styles.comboItem, styles.comboItemFree]}
-              onPress={() => addItem(selectedObject!.id, null)}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.comboItemName}>
-                Sin combo / precio libre
-              </Text>
-            </TouchableOpacity>
+
           </View>
         </View>
       )}
@@ -387,10 +378,6 @@ const styles = StyleSheet.create({
     borderColor: "#E5E7EB",
     borderRadius: 12,
     padding: 14,
-  },
-  comboItemFree: {
-    borderStyle: "dashed",
-    borderColor: "#D1D5DB",
   },
   comboItemInfo: {
     flex: 1,
