@@ -22,6 +22,7 @@ import {
   getAppointmentStatusKey,
   getPaymentMethodConfig,
 } from "../../../utils/lookups";
+import { globalStyles } from "@/utils/styles";
 
 export default function AppointmentDetailScreen() {
   const { id } = useLocalSearchParams();
@@ -161,7 +162,7 @@ function StatusSection({ appointment, onUpdate }: any) {
   };
 
   return (
-    <View style={styles.section}>
+    <View style={globalStyles.section}>
       <View style={[styles.statusBadge, { backgroundColor: statusBgColors[currentStatusKey] || "#F3F4F6" }]}> 
         <Text style={styles.statusIcon}>{config.icon}</Text>
         <Text style={[styles.statusText, { color: config.color }]}> 
@@ -784,11 +785,6 @@ const styles = StyleSheet.create({
   },
 
   // Section
-  section: {
-    padding: 16,
-    backgroundColor: "#FFFFFF",
-    marginBottom: 8,
-  },
   sectionTitleContainer: {
     flexDirection: "row",
     alignItems: "center",

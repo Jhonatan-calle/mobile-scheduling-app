@@ -25,6 +25,7 @@ import {
 import type {
   ServiceObject,
   AppointmentItem,
+  ServiceObjectWithCombos,
 } from "../../../utils/types.ts";
 import { ServiceInfoSection } from "@/components/serviceSection";
 import { SectionHeader } from "@/components/SectionHeader";
@@ -49,7 +50,7 @@ export default function NewAppointmentScreen() {
     AppointmentItem[]
   >([]);
   const [serviceObjects, setServiceObjects] = useState<
-    ServiceObject[]
+    ServiceObjectWithCombos[]
   >([]);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
@@ -1232,57 +1233,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#6B7280",
     fontWeight: "600",
-  },
-
-  // Items agregados
-  itemsList: {
-    gap: 8,
-    marginBottom: 16,
-  },
-  itemCard: {
-    backgroundColor: "#EFF6FF",
-    borderWidth: 1.5,
-    borderColor: "#3B82F6",
-    borderRadius: 12,
-    padding: 12,
-  },
-  itemCardHeader: {
-    flexDirection: "row" as const,
-    justifyContent: "space-between" as const,
-    alignItems: "flex-start" as const,
-    marginBottom: 8,
-  },
-  itemCardTitles: {
-    flex: 1,
-  },
-  itemCardObject: {
-    fontSize: 15,
-    fontWeight: "600" as const,
-    color: "#1D4ED8",
-  },
-  itemCardCombo: {
-    fontSize: 13,
-    color: "#3B82F6",
-    marginTop: 2,
-  },
-  itemRemoveBtn: {
-    padding: 4,
-    marginLeft: 8,
-  },
-  itemRemoveText: {
-    fontSize: 16,
-    color: "#9CA3AF",
-    fontWeight: "600" as const,
-  },
-  itemDetalleInput: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#BFDBFE",
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    fontSize: 13,
-    color: "#111827",
   },
 
   // Grid de objetos

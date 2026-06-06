@@ -13,13 +13,14 @@ import { useState, useEffect } from "react";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import {
   getAppointmentById,
-  getServices,
+  getServiceObjectsWithCombos,
   getWorkers,
   updateAppointment,
   updateClient,
 } from "../../../../utils/adminData";
-import { getServiceIcon } from "../../../../utils/lookups";
 import { SectionHeader } from "@/components/SectionHeader";
+import { globalStyles } from "@/utils/styles";
+import { ServiceInfoSection } from "@/components/serviceSection";
 
 export default function EditAppointmentScreen() {
   const { id } = useLocalSearchParams();
@@ -27,7 +28,9 @@ export default function EditAppointmentScreen() {
   const [saving, setSaving] = useState(false);
   const [appointment, setAppointment] = useState<any>(null);
   const [workers, setWorkers] = useState<any[]>([]);
-  const [services, setServices] = useState<any[]>([]);
+  const [serviceObjects, setServiceObjects] = useState<any[]>([]);
+  const [appointmentItems, setAppointmentItems] = useState<any[]>([]);
+  const [initialItems, setInitialItems] = useState<any[] | undefined>(undefined);
 
   const [formData, setFormData] = useState({
     clientName: "",
@@ -50,7 +53,7 @@ export default function EditAppointmentScreen() {
   useEffect(() => {
     loadAppointmentData();
     loadWorkers();
-    loadServices();
+    loadServiceObjects();
   }, []);
 
   const loadAppointmentData = async () => {
@@ -75,6 +78,10 @@ export default function EditAppointmentScreen() {
         paymentMethod: appointmentData.payment_method,
       });
 
+      if (appointmentData.items?.length > 0) {
+        setInitialItems(appointmentData.items);
+      }
+
       setLoading(false);
     } catch (error) {
       console.error("Error loading appointment:", error);
@@ -91,11 +98,11 @@ export default function EditAppointmentScreen() {
     }
   };
 
-  const loadServices = async () => {
+  const loadServiceObjects = async () => {
     try {
-      setServices(await getServices());
+      setServiceObjects(await getServiceObjectsWithCombos());
     } catch (error) {
-      console.error("Error loading services:", error);
+      console.error("Error loading service objects:", error);
     }
   };
 
@@ -141,7 +148,6 @@ export default function EditAppointmentScreen() {
     setSaving(true);
 
     try {
-      // Combinar fecha y hora
       const combinedDateTime = new Date(formData.date);
       combinedDateTime.setHours(formData.time.getHours());
       combinedDateTime.setMinutes(formData.time.getMinutes());
@@ -149,13 +155,14 @@ export default function EditAppointmentScreen() {
       const updateData = {
         service: parseInt(formData.service, 10),
         service_details: formData.serviceDetails,
-        worker_id:  formData.workerId,
+        worker_id: formData.workerId,
         date: combinedDateTime.toISOString(),
-        estimate_time:  parseInt(formData.estimateTime),
+        estimate_time: parseInt(formData.estimateTime),
         address: formData.address,
-        cost: parseFloat(formData. cost),
-        commission_rate:  parseFloat(formData.commissionRate),
-        payment_method:  formData.paymentMethod,
+        cost: parseFloat(formData.cost),
+        commission_rate: parseFloat(formData.commissionRate),
+        payment_method: formData.paymentMethod,
+        items: appointmentItems,
       };
 
       await updateAppointment(id as string, updateData as any);
@@ -195,9 +202,10 @@ export default function EditAppointmentScreen() {
       <ScrollView style={styles. content} showsVerticalScrollIndicator={false}>
         <CustomerInfoSection formData={formData} setFormData={setFormData} />
         <ServiceInfoSection
-          formData={formData}
-          setFormData={setFormData}
-          services={services}
+          serviceObjects={serviceObjects}
+          appointmentItems={appointmentItems}
+          setAppointmentItems={setAppointmentItems}
+          initialItems={initialItems}
         />
         <DateTimeSection
           formData={formData}
@@ -249,7 +257,7 @@ function EditAppointmentHeader() {
 // ============================================================================
 function CustomerInfoSection({ formData, setFormData }: any) {
   return (
-    <View style={styles.section}>
+    <View style={globalStyles.section}>
       <SectionHeader
         icon="👤"
         title="Información del Cliente"
@@ -277,71 +285,6 @@ function CustomerInfoSection({ formData, setFormData }: any) {
         />
       </View>
     </View>
-  );
-}
-
-// ============================================================================
-// INFORMACIÓN DEL SERVICIO
-// ============================================================================
-function ServiceInfoSection({ formData, setFormData, services }: any) {
-  return (
-    <View style={styles.section}>
-      <SectionHeader
-        icon="🧹"
-        title="Tipo de Servicio"
-        subtitle="Selecciona el servicio a realizar"
-      />
-
-      <View style={styles.servicesGrid}>
-        {services.map((service: any) => (
-          <ServiceTypeCard
-            key={service.combo ? `combo-${service.id}` : `obj-${service.id}`}
-            service={service}
-            selected={formData.service === String(service.id)}
-            onSelect={() => setFormData({ ...formData, service: String(service.id) })}
-          />
-        ))}
-      </View>
-
-      <View style={styles. inputGroup}>
-        <Text style={styles.inputLabel}>Detalles del servicio</Text>
-        <TextInput
-          style={styles.textArea}
-          placeholder="Ej: Limpieza de sillón 3 cuerpos..."
-          value={formData.serviceDetails}
-          onChangeText={(text) =>
-            setFormData({ ...formData, serviceDetails: text })
-          }
-          multiline
-          numberOfLines={3}
-          textAlignVertical="top"
-        />
-      </View>
-
-      <View style={styles.inputGroup}>
-        <Text style={styles.inputLabel}>📍 Dirección</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Av. Colón 123"
-          value={formData.address}
-          onChangeText={(text) => setFormData({ ...formData, address: text })}
-        />
-      </View>
-    </View>
-  );
-}
-
-function ServiceTypeCard({ service, selected, onSelect }: any) {
-  return (
-    <TouchableOpacity
-      style={[styles.serviceCard, selected && styles. serviceCardSelected]}
-      onPress={onSelect}
-      activeOpacity={0.7}
-    >
-      <Text style={styles.serviceIcon}>{getServiceIcon(service.objeto || service.description)}</Text>
-      <Text style={styles. serviceLabel}>{service.description || service.objeto}</Text>
-      {selected && <Text style={styles. serviceCheck}>✓</Text>}
-    </TouchableOpacity>
   );
 }
 
@@ -707,6 +650,13 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
 
+  // Section
+  section: {
+    padding: 16,
+    backgroundColor: "#FFFFFF",
+    marginBottom: 8,
+  },
+
   // Loading
   loadingContainer: {
     flex: 1,
@@ -719,12 +669,25 @@ const styles = StyleSheet.create({
     color: "#6B7280",
   },
 
-  // Section
-  section: {
-    padding: 16,
-    backgroundColor: "#FFFFFF",
-    marginBottom: 8,
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 16,
   },
+  sectionHeaderText: {
+    flex: 1,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#111827",
+  },
+  sectionSubtitle:  {
+    fontSize: 13,
+    color: "#6B7280",
+    marginTop:  2,
+  },
+
   // Inputs
   inputGroup: {
     marginBottom: 16,
@@ -743,56 +706,6 @@ const styles = StyleSheet.create({
     padding: 14,
     fontSize: 16,
     color: "#111827",
-  },
-  textArea: {
-    backgroundColor: "#F9FAFB",
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    borderRadius:  12,
-    padding: 14,
-    fontSize: 16,
-    color: "#111827",
-    minHeight: 80,
-  },
-
-  // Services Grid
-  servicesGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 12,
-    marginBottom: 16,
-  },
-  serviceCard: {
-    width: "31%",
-    aspectRatio: 1,
-    backgroundColor: "#F9FAFB",
-    borderWidth: 2,
-    borderColor: "#E5E7EB",
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
-    position: "relative",
-  },
-  serviceCardSelected: {
-    backgroundColor: "#DBEAFE",
-    borderColor:  "#3B82F6",
-  },
-  serviceIcon: {
-    fontSize: 32,
-    marginBottom: 4,
-  },
-  serviceLabel: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#111827",
-    textAlign: "center",
-  },
-  serviceCheck: {
-    position: "absolute",
-    top:  4,
-    right: 4,
-    fontSize: 16,
-    color: "#3B82F6",
   },
 
   // Date Time
