@@ -207,7 +207,7 @@ function CustomerInfoSection({ appointment }: any) {
   // Nueva función para WhatsApp (alternativa útil)
 
   return (
-    <View style={styles.section}>
+    <View style={globalStyles.section}>
       <SectionTitle icon="👤" title="Cliente" />
 
       <InfoRow label="Nombre" value={appointment.client.name} />
@@ -252,7 +252,7 @@ function ServiceInfoSection({ appointment }: any) {
   };
 
   return (
-    <View style={styles.section}>
+    <View style={globalStyles.section}>
       <SectionTitle icon="🧼" title="Servicio" />
 
       <InfoRow
@@ -296,7 +296,7 @@ function WorkerInfoSection({ appointment }: any) {
   };
 
   return (
-    <View style={styles.section}>
+    <View style={globalStyles.section}>
       <SectionTitle icon="👥" title="Trabajador Asignado" />
 
       {appointment.worker && appointment.worker.profile ? (
@@ -352,7 +352,7 @@ function FinancialInfoSection({ appointment }: any) {
     : null;
 
   return (
-    <View style={styles.section}>
+    <View style={globalStyles.section}>
       <SectionTitle icon="💰" title="Información Financiera" />
 
       <View style={styles.financialCard}>
@@ -449,7 +449,7 @@ function PaymentStatusSection({ appointment, onUpdate }: any) {
   };
 
   return (
-    <View style={styles.section}>
+    <View style={globalStyles.section}>
       <SectionTitle icon="���" title="Estado de Pagos" />
 
       {/* Método de pago */}
@@ -573,7 +573,7 @@ function ActionButtonsSection({ appointment, onUpdate }: any) {
   };
 
   return (
-    <View style={styles.section}>
+    <View style={globalStyles.section}>
       {/* Botón de repasos */}
       <TouchableOpacity
         style={[
@@ -624,7 +624,7 @@ function RetouchesSection({ appointment, onUpdate }: any) {
   };
 
   return (
-    <View style={styles.section}>
+    <View style={globalStyles.section}>
       <View style={styles.sectionHeaderRow}>
         <SectionTitle icon="🔄" title="Retoques" />
       {canRetouch && (
