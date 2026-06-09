@@ -268,7 +268,7 @@ function ServiceInfoSection({ appointment }: any) {
             <View key={index} style={styles.detailItemCard}>
               <View style={styles.detailItemHeader}>
                 <Text style={styles.detailItemObject}>
-                  {item.service_combo?.service_object?.name ?? "Objeto"}
+                  {item.service_combo?.service_object?.name ?? item.service_combo?.object_combos?.[0]?.service_object?.name ?? "Objeto"}
                 </Text>
                 <Text style={styles.detailItemCombo}>
                   {item.service_combo?.name}
@@ -301,13 +301,6 @@ function ServiceInfoSection({ appointment }: any) {
 // SECCIÓN: TRABAJADOR ASIGNADO
 // ============================================================================
 function WorkerInfoSection({ appointment }: any) {
-  const handleReassign = () => {
-    Alert.alert(
-      "Reasignar trabajador",
-      "Esta funcionalidad estará disponible próximamente",
-    );
-  };
-
   // Determinar avatar según el nombre
   const getAvatar = (name: string) => {
     if (
@@ -339,17 +332,9 @@ function WorkerInfoSection({ appointment }: any) {
             </View>
           </View>
 
-          <TouchableOpacity style={styles.actionLink} onPress={handleReassign}>
-            <Text style={styles.actionLinkText}>🔄 Reasignar trabajador</Text>
-          </TouchableOpacity>
         </>
       ) : (
-        <>
-          <Text style={styles.noDataText}>No hay trabajador asignado</Text>
-          <TouchableOpacity style={styles.actionLink} onPress={handleReassign}>
-            <Text style={styles.actionLinkText}>➕ Asignar trabajador</Text>
-          </TouchableOpacity>
-        </>
+        <Text style={styles.noDataText}>No hay trabajador asignado</Text>
       )}
     </View>
   );

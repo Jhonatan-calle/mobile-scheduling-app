@@ -141,11 +141,10 @@ function QuickActionsSection() {
       <QuickActionButton
         icon="👥"
         title="Gestionar Trabajadores"
-        subtitle="Ver disponibilidad y asignaciones"
+        subtitle="Estadísticas e historial"
         onPress={() => router.push("/admin/availability")}
         color="#F59E0B"
       />
-
       <QuickActionButton
         icon="📊"
         title="Contabilidad"

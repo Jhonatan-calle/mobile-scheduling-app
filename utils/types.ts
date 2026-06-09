@@ -70,13 +70,14 @@ export interface ServiceObject {
 }
 
 /**
- * service_combos table. object_id FK -> nested ServiceObject.
+ * combos table. service_object accessed via object_combos junction.
+ * getServiceCombos() flattens object_combos[0].service_object → service_object.
+ * Raw DB queries return object_combos[{ service_object }] instead.
  */
 export interface ServiceCombo {
   /** Primary key (bigint), not nullable. */
   id: number;
-  /** ISO timestamp with timezone, not nullable. */
-  /** Referenced ServiceObject, not nullable. */
+  /** Referenced ServiceObject (flattened from junction), not nullable. */
   service_object: ServiceObject;
   /** Name, not nullable. */
   name: string;
@@ -191,8 +192,9 @@ export interface Retouch {
 }
 
 /**
- * appointment_items table. appointment_id -> Appointment, service_combo_id -> ServiceCombo.
- * Service object is accessed transitively via service_combo.service_object.
+ * appointment_items table. appointment_id -> Appointment, service_combo_id -> combos.
+ * Service object accessed transitively via service_combo.object_combos[0].service_object (DB)
+ * or flattened service_combo.service_object (from getServiceCombos).
  */
 export interface AppointmentItem {
   /** Primary key (bigint), not nullable. */

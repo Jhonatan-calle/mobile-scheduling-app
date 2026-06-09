@@ -5,14 +5,13 @@ import {
   ScrollView,
   TouchableOpacity,
   RefreshControl,
-  ActivityIndicator
 } from "react-native";
 import { router } from "expo-router";
 import { useState, useEffect, useCallback } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { getWorkersOverview } from "../../../utils/adminData";
+import { getWorkers } from "../../../utils/adminData";
 
-export default function WorkersScreen() {
+export default function WorkersListScreen() {
   const [workers, setWorkers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -20,7 +19,8 @@ export default function WorkersScreen() {
   const loadWorkers = useCallback(async () => {
     try {
       if (!refreshing) setLoading(true);
-      setWorkers(await getWorkersOverview());
+      const data = await getWorkers();
+      setWorkers(data);
       setLoading(false);
       setRefreshing(false);
     } catch (error) {
@@ -34,79 +34,6 @@ export default function WorkersScreen() {
     loadWorkers();
   }, [loadWorkers]);
 
-  return (
-    <SafeAreaView style={styles.container} edges={["top"]}>
-      <WorkersHeader />
-
-      <ScrollView
-        style={styles.content}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={() => {
-              setRefreshing(true);
-            }}
-            colors={["#3B82F6"]}
-            tintColor="#3B82F6"
-          />
-        }
-      >
-        <WorkersListSection workers={workers} loading={loading} />
-      </ScrollView>
-    </SafeAreaView>
-  );
-}
-
-// ============================================================================
-// HEADER
-// ============================================================================
-function WorkersHeader() {
-  return (
-    <View style={styles.header}>
-      <View>
-        <Text style={styles.headerTitle}>Trabajadores</Text>
-        <Text style={styles.headerSubtitle}>Gestiona tu equipo</Text>
-      </View>
-    </View>
-  );
-}
-
-// ============================================================================
-// LISTA DE TRABAJADORES
-// ============================================================================
-function WorkersListSection({ workers, loading }: any) {
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#3B82F6" />
-      </View>
-    );
-  }
-
-  if (workers.length === 0) {
-    return (
-      <View style={styles.emptyContainer}>
-        <Text style={styles.emptyIcon}>👥</Text>
-        <Text style={styles.emptyTitle}>No hay trabajadores</Text>
-        <Text style={styles.emptyText}>
-          Agrega trabajadores para comenzar a gestionar tu equipo
-        </Text>
-      </View>
-    );
-  }
-
-  return (
-    <View style={styles.workersSection}>
-      <Text style={styles.sectionTitle}>Equipo de Trabajo</Text>
-      {workers.map((worker: any) => (
-        <WorkerCard key={worker.id} worker={worker} />
-      ))}
-    </View>
-  );
-}
-
-function WorkerCard({ worker }: any) {
   const getAvatar = (name: string) => {
     if (
       name.toLowerCase().includes("ana") ||
@@ -117,92 +44,87 @@ function WorkerCard({ worker }: any) {
     return "👨";
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "available":
-        return "#10B981";
-      case "busy":
-        return "#F59E0B";
-      default:
-        return "#6B7280";
-    }
-  };
-
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case "available":
-        return "Disponible";
-      case "busy":
-        return "Ocupado";
-      default:
-        return "Inactivo";
-    }
-  };
-
   return (
-    <TouchableOpacity
-      style={styles.workerCard}
-      onPress={() => {
-        router.push(`/admin/availability/${worker.id}`);
-      }}
-      activeOpacity={0.7}
-    >
-      <View style={styles.workerCardHeader}>
-        <Text style={styles.workerAvatar}>
-          {getAvatar(worker.profile.name)}
-        </Text>
-        <View style={styles.workerInfo}>
-          <Text style={styles.workerName}>{worker.profile.name}</Text>
-          <Text style={styles.workerCommission}>
-            Comisión: {worker.commission_rate}%
-          </Text>
+    <SafeAreaView style={styles.container} edges={["top"]}>
+      <View style={styles.header}>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.headerTitle}>Trabajadores</Text>
+          <Text style={styles.headerSubtitle}>Estadísticas e historial</Text>
         </View>
-        <View
-          style={[
-            styles.statusBadge,
-            { backgroundColor: getStatusColor(worker.status) + "20" },
-          ]}
+        <TouchableOpacity
+          style={styles.addButton}
+          onPress={() => router.push("/admin/availability/new")}
+          activeOpacity={0.7}
         >
-          <Text
-            style={[
-              styles.statusText,
-              { color: getStatusColor(worker.status) },
-            ]}
-          >
-            {getStatusLabel(worker.status)}
-          </Text>
-        </View>
+          <Text style={styles.addButtonText}>+</Text>
+        </TouchableOpacity>
       </View>
 
-      <View style={styles.workerCardBody}>
-        <View style={styles.workerStat}>
-          <Text style={styles.workerStatLabel}>Hoy</Text>
-          <Text style={styles.workerStatValue}>
-            {worker.completedToday}/{worker.todayAppointments} Turnos
-          </Text>
-        </View>
-
-        {worker.currentAppointment && (
-          <View style={styles.currentAppointment}>
-            <Text style={styles.currentAppointmentLabel}>🔄 En curso: </Text>
-            <Text style={styles.currentAppointmentText}>
-              {worker.currentAppointment.client} -{" "}
-              {worker.currentAppointment.service}
+      <ScrollView
+        style={styles.content}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => setRefreshing(true)}
+            colors={["#3B82F6"]}
+            tintColor="#3B82F6"
+          />
+        }
+      >
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <Text style={styles.loadingText}>Cargando trabajadores...</Text>
+          </View>
+        ) : workers.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyIcon}>👥</Text>
+            <Text style={styles.emptyTitle}>Sin trabajadores</Text>
+            <Text style={styles.emptyText}>
+              No hay trabajadores registrados
             </Text>
           </View>
+        ) : (
+          <View style={styles.list}>
+            {workers.map((worker) => (
+              <TouchableOpacity
+                key={worker.id}
+                style={styles.workerCard}
+                onPress={() =>
+                  router.push(`/admin/availability/${worker.id}`)
+                }
+                activeOpacity={0.7}
+              >
+                <Text style={styles.workerAvatar}>
+                  {getAvatar(worker.profile.name)}
+                </Text>
+                <View style={styles.workerInfo}>
+                  <Text style={styles.workerName}>
+                    {worker.profile.name}
+                  </Text>
+                  <Text style={styles.workerCommission}>
+                    Comisión: {worker.commission_rate}%
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.editIconButton}
+                  onPress={() =>
+                    router.push(`/admin/availability/${worker.id}/edit`)
+                  }
+                  activeOpacity={0.6}
+                >
+                  <Text style={styles.editIcon}>✏️</Text>
+                </TouchableOpacity>
+                <Text style={styles.arrow}>›</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
         )}
-      </View>
-
-      <View style={styles.workerCardFooter}>
-        <Text style={styles.viewDetailsText}>Ver detalles →</Text>
-      </View>
-    </TouchableOpacity>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
-// ============================================================================
-// ESTILOS
-// ============================================================================
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -211,11 +133,9 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
   },
-
-  // Header
   header: {
     padding: 24,
-    paddingTop: 60,
+    paddingTop: 16,
     backgroundColor: "#FFFFFF",
     borderBottomWidth: 1,
     borderBottomColor: "#E5E7EB",
@@ -230,98 +150,21 @@ const styles = StyleSheet.create({
     color: "#6B7280",
     marginTop: 4,
   },
-
-  // Stats Section
-  statsSection: {
-    flexDirection: "row",
+  list: {
     padding: 16,
     gap: 12,
   },
-  statCard: {
-    flex: 1,
+  workerCard: {
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: "#FFFFFF",
     borderRadius: 12,
     padding: 16,
-    borderLeftWidth: 4,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 1,
-  },
-  statIcon: {
-    fontSize: 24,
-    marginBottom: 8,
-  },
-  statValue: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#111827",
-    marginBottom: 4,
-  },
-  statLabel: {
-    fontSize: 12,
-    color: "#6B7280",
-  },
-
-  // Loading
-  loadingContainer: {
-    padding: 32,
-    alignItems: "center",
-  },
-  loadingText: {
-    fontSize: 16,
-    color: "#6B7280",
-  },
-
-  // Empty State
-  emptyContainer: {
-    padding: 64,
-    alignItems: "center",
-  },
-  emptyIcon: {
-    fontSize: 64,
-    marginBottom: 16,
-  },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#111827",
-    marginBottom: 8,
-  },
-  emptyText: {
-    fontSize: 14,
-    color: "#6B7280",
-    textAlign: "center",
-  },
-
-  // Workers Section
-  workersSection: {
-    padding: 16,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#111827",
-    marginBottom: 16,
-  },
-
-  // Worker Card
-  workerCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  workerCardHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 12,
   },
   workerAvatar: {
     fontSize: 40,
@@ -340,63 +183,63 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#6B7280",
   },
-  statusBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
+  arrow: {
+    fontSize: 24,
+    color: "#D1D5DB",
+    marginLeft: 4,
   },
-  statusText: {
-    fontSize: 12,
-    fontWeight: "600",
+  addButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#3B82F6",
+    justifyContent: "center",
+    alignItems: "center",
   },
-
-  // Worker Card Body
-  workerCardBody: {
-    borderTopWidth: 1,
-    borderTopColor: "#F3F4F6",
-    paddingTop: 12,
+  addButtonText: {
+    fontSize: 22,
+    fontWeight: "bold",
+    color: "#FFFFFF",
+    lineHeight: 24,
   },
-  workerStat: {
+  editIconButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#F3F4F6",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 4,
+  },
+  editIcon: {
+    fontSize: 14,
+  },
+  loadingContainer: {
+    padding: 32,
+    alignItems: "center",
+  },
+  loadingText: {
+    fontSize: 16,
+    color: "#6B7280",
+  },
+  emptyState: {
+    alignItems: "center",
+    paddingVertical: 64,
+  },
+  emptyIcon: {
+    fontSize: 64,
+    marginBottom: 16,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#111827",
     marginBottom: 8,
   },
-  workerStatLabel: {
-    fontSize: 12,
+  emptyText: {
+    fontSize: 14,
     color: "#6B7280",
-    marginBottom: 4,
-  },
-  workerStatValue: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#111827",
-  },
-  currentAppointment: {
-    backgroundColor: "#FEF3C7",
-    padding: 12,
-    borderRadius: 8,
-    marginTop: 4,
-  },
-  currentAppointmentLabel: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#92400E",
-    marginBottom: 4,
-  },
-  currentAppointmentText: {
-    fontSize: 13,
-    color: "#78350F",
-  },
-
-  // Worker Card Footer
-  workerCardFooter: {
-    borderTopWidth: 1,
-    borderTopColor: "#F3F4F6",
-    paddingTop: 12,
-    marginTop: 12,
-    alignItems: "flex-end",
-  },
-  viewDetailsText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#3B82F6",
+    textAlign: "center",
+    paddingHorizontal: 32,
   },
 });

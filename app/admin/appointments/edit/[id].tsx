@@ -35,8 +35,6 @@ export default function EditAppointmentScreen() {
   const [formData, setFormData] = useState({
     clientName: "",
     clientPhone: "",
-    service: "",
-    serviceDetails: "",
     workerId: 0,
     date: new Date(),
     time: new Date(),
@@ -66,8 +64,6 @@ export default function EditAppointmentScreen() {
       setFormData({
         clientName: appointmentData.client?.name ?? "",
         clientPhone: appointmentData.client?.phone_number ?? "",
-        service: String(appointmentData.service ?? ""),
-        serviceDetails: appointmentData.service_details ?? "",
         workerId: appointmentData.worker_id,
         date: appointmentDate,
         time: appointmentDate,
@@ -115,14 +111,6 @@ export default function EditAppointmentScreen() {
       Alert.alert("Error", "Debes ingresar el teléfono del cliente");
       return false;
     }
-    if (!formData.service) {
-      Alert.alert("Error", "Debes seleccionar un tipo de servicio");
-      return false;
-    }
-    if (! formData.serviceDetails.trim()) {
-      Alert.alert("Error", "Debes ingresar los detalles del servicio");
-      return false;
-    }
     if (!formData.workerId) {
       Alert.alert("Error", "Debes seleccionar un trabajador");
       return false;
@@ -153,8 +141,6 @@ export default function EditAppointmentScreen() {
       combinedDateTime.setMinutes(formData.time.getMinutes());
 
       const updateData = {
-        service: parseInt(formData.service, 10),
-        service_details: formData.serviceDetails,
         worker_id: formData.workerId,
         date: combinedDateTime.toISOString(),
         estimate_time: parseInt(formData.estimateTime),

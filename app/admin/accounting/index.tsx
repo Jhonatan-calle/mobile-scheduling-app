@@ -225,6 +225,7 @@ function StatMiniCard({ icon, label, value, color }: any) {
 // ACCESO RÁPIDO
 // ============================================================================
 function QuickAccessSection() {
+
   return (
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>Gestión</Text>
@@ -330,7 +331,7 @@ const styles = StyleSheet. create({
   // Header
   header: {
     padding: 24,
-    paddingTop: 60,
+    paddingTop: 16,
     backgroundColor: "#FFFFFF",
     borderBottomWidth: 1,
     borderBottomColor: "#E5E7EB",

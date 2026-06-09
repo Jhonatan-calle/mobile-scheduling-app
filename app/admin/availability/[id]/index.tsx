@@ -4,7 +4,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Switch,
   Alert,
   RefreshControl,
 } from "react-native";
@@ -30,7 +29,6 @@ export default function WorkerDetailScreen() {
           ...data.worker.profile,
           phone: "",
         },
-        availability: data.availability,
         monthStats: data.monthStats,
       });
       setLoading(false);
@@ -47,61 +45,6 @@ export default function WorkerDetailScreen() {
     loadWorkerData();
   }, [loadWorkerData]);
 
-  const toggleDayAvailability = async (dayIndex: number) => {
-    const updatedAvailability = worker.availability.map((avail: any) => {
-      if (avail.day === dayIndex) {
-        return { ...avail, enabled: !avail.enabled };
-      }
-      return avail;
-    });
-
-    setWorker({ ...worker, availability: updatedAvailability });
-  };
-
-  const editTimeSlot = (dayIndex: number) => {
-    const dayAvail = worker.availability.find((a: any) => a.day === dayIndex);
-
-    Alert.alert(
-      `Editar ${getDayName(dayIndex)}`,
-      `Horario actual: ${dayAvail.start} - ${dayAvail.end}`,
-      [
-        {
-          text: "08:00 - 20:00",
-          onPress: () => updateTimeSlot(dayIndex, "08:00", "20:00"),
-        },
-        {
-          text: "09:00 - 18:00",
-          onPress: () => updateTimeSlot(dayIndex, "09:00", "18:00"),
-        },
-        {
-          text: "10:00 - 19:00",
-          onPress: () => updateTimeSlot(dayIndex, "10:00", "19:00"),
-        },
-        {
-          text: "09:00 - 14:00 (Medio día)",
-          onPress: () => updateTimeSlot(dayIndex, "09:00", "14:00"),
-        },
-        { text: "Cancelar", style: "cancel" },
-      ],
-    );
-  };
-
-  const updateTimeSlot = async (
-    dayIndex: number,
-    start: string,
-    end: string,
-  ) => {
-    const updatedAvailability = worker.availability.map((avail: any) => {
-      if (avail.day === dayIndex) {
-        return { ...avail, start, end };
-      }
-      return avail;
-    });
-
-    setWorker({ ...worker, availability: updatedAvailability });
-    Alert.alert("Actualizado", `Horario cambiado a ${start} - ${end}`);
-  };
-
   const changeMonth = (direction: "prev" | "next") => {
     const newDate = new Date(selectedMonth);
     if (direction === "prev") {
@@ -110,19 +53,6 @@ export default function WorkerDetailScreen() {
       newDate.setMonth(newDate.getMonth() + 1);
     }
     setSelectedMonth(newDate);
-  };
-
-  const getDayName = (day: number) => {
-    const days = [
-      "Domingo",
-      "Lunes",
-      "Martes",
-      "Miércoles",
-      "Jueves",
-      "Viernes",
-      "Sábado",
-    ];
-    return days[day];
   };
 
   const getAvatar = (name: string) => {
@@ -173,13 +103,6 @@ export default function WorkerDetailScreen() {
       >
       <WorkerInfoSection worker={worker} getAvatar={getAvatar} />
 
-        <AvailabilitySection
-          availability={worker.availability}
-          onToggleDay={toggleDayAvailability}
-          onEditTimeSlot={editTimeSlot}
-          getDayName={getDayName}
-        />
-
         <MonthSelectorSection
           selectedMonth={selectedMonth}
           onChangeMonth={changeMonth}
@@ -209,7 +132,7 @@ function WorkerDetailHeader({ workerId }: { workerId: string }) {
       </TouchableOpacity>
       <View style={styles.headerContent}>
         <Text style={styles.headerTitle}>Detalles del Trabajador</Text>
-        <Text style={styles.headerSubtitle}>Estadísticas y disponibilidad</Text>
+        <Text style={styles.headerSubtitle}>Estadísticas mensuales</Text>
       </View>
     </View>
   );
@@ -401,48 +324,6 @@ function WorkHistoryPreviewSection({ workerId, stats }: any) {
 // ============================================================================
 // DISPONIBILIDAD
 // ============================================================================
-function AvailabilitySection({
-  availability,
-  onToggleDay,
-  onEditTimeSlot,
-  getDayName,
-}: any) {
-  return (
-    <View style={styles.section}>
-      <Text style={styles.sectionTitle}>📅 Disponibilidad Semanal</Text>
-
-      <View style={styles.availabilityList}>
-        {availability
-          .sort((a: any, b: any) => a.day - b.day)
-          .map((dayAvail: any) => (
-            <View key={dayAvail.day} style={styles.dayRow}>
-              <View style={styles.dayInfo}>
-                <Text style={styles.dayLabel}>{getDayName(dayAvail.day)}</Text>
-                {dayAvail.enabled && (
-                  <TouchableOpacity
-                    onPress={() => onEditTimeSlot(dayAvail.day)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.timeRange}>
-                      {dayAvail.start} - {dayAvail.end} ✏️
-                    </Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-
-              <Switch
-                value={dayAvail.enabled}
-                onValueChange={() => onToggleDay(dayAvail.day)}
-                trackColor={{ false: "#D1D5DB", true: "#86EFAC" }}
-                thumbColor={dayAvail.enabled ? "#10B981" : "#F3F4F6"}
-              />
-            </View>
-          ))}
-      </View>
-    </View>
-  );
-}
-
 // ============================================================================
 // ESTILOS
 // ============================================================================
@@ -703,41 +584,6 @@ const styles = StyleSheet.create({
     color: "#6B7280",
   },
 
-  // Availability
-  availabilityList: {
-    gap: 12,
-  },
-  dayRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 8,
-  },
-  dayInfo: {
-    flex: 1,
-  },
-  dayLabel: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#111827",
-    marginBottom: 4,
-  },
-  timeRange: {
-    fontSize: 13,
-    color: "#3B82F6",
-    fontWeight: "500",
-  },
-  sectionTitleContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  seeAllText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#3B82F6",
-  },
   historyPreview: {
     flexDirection: "row",
     justifyContent: "space-between",

@@ -19,6 +19,13 @@ export function addDays(date: Date, days: number) {
   return d;
 }
 
+export function formatDateNumeric(date: Date): string {
+  const d = date.getDate();
+  const m = date.getMonth() + 1;
+  const y = date.getFullYear();
+  return `${d}/${m}/${y}`;
+}
+
 export function getErrorMessage(error: unknown): string {
   if (!(error instanceof Error)) return "No se pudo iniciar sesión. Intentá de nuevo.";
 

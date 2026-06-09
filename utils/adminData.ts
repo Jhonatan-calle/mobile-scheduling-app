@@ -2,6 +2,7 @@ import { supabase } from "../supabase/supabase";
 import {
   addDays,
   endOfLocalMonth,
+  formatDateNumeric,
   locale,
   startOfLocalDay,
   startOfLocalMonth,
@@ -27,7 +28,10 @@ function pickItemsLabel(items: any[]): string {
   if (!items || items.length === 0) return "Servicio";
   return items
     .map((item: any) => {
-      const objeto = item.service_combo?.service_object?.name ?? "Objeto";
+      const objeto =
+        item.service_combo?.service_object?.name ??
+        item.service_combo?.object_combos?.[0]?.service_object?.name ??
+        "Objeto";
       const combo = item.service_combo?.name;
       return combo ? `${objeto} (${combo})` : objeto;
     })
@@ -49,11 +53,9 @@ export async function getServiceObjects(): Promise<ServiceObject[]> {
   return (data ?? []) as ServiceObject[];
 }
 
-export async function getServiceCombos(
-  serviceObjectId?: number,
-): Promise<ServiceCombo[]> {
-  let query = supabase
-    .from("service_combos")
+export async function getServiceCombos(): Promise<ServiceCombo[]> {
+  const { data, error } = await supabase
+    .from("combos")
     .select(
       `
       id,
@@ -61,32 +63,23 @@ export async function getServiceCombos(
       description,
       is_active,
       precio,
-      service_object:service_objects (
-        id,
-        created_at,
-        name,
-        is_active
+      object_combos(
+        service_object:service_objects(id, name)
       )
     `,
     )
     .eq("is_active", true)
     .order("name", { ascending: true });
 
-  if (serviceObjectId !== undefined) {
-    query = query.eq("service_object_id", serviceObjectId);
-  }
-
-  const { data, error } = await query;
-
   if (error) throw error;
 
-  return (data ?? []).map((combo) => ({
+  return (data ?? []).map((combo: any) => ({
     id: combo.id,
     name: combo.name,
     description: combo.description,
     is_active: combo.is_active,
     precio: combo.precio,
-    service_object: combo.service_object,
+    service_object: combo.object_combos?.[0]?.service_object ?? null,
   }));
 }
 
@@ -263,6 +256,150 @@ export async function getWorkerById(workerId: number) {
   } as WorkerOption;
 }
 
+export async function getAllWorkers(): Promise<WorkerOption[]> {
+  const { data: workers, error: workersError } = await supabase
+    .from("workers")
+    .select("id, profile_id, commission_rate, is_active")
+    .order("id", { ascending: true });
+
+  if (workersError) throw workersError;
+
+  const profileIds = (workers ?? []).map(
+    (worker: any) => worker.profile_id,
+  );
+  const { data: profiles, error: profileError } = await supabase
+    .from("profiles")
+    .select("id, name, auth_user_id, user_role")
+    .in("id", profileIds.length ? profileIds : [-1]);
+
+  if (profileError) throw profileError;
+
+  const profileMap = new Map<number, any>(
+    (profiles ?? []).map((profile: any) => [profile.id, profile]),
+  );
+
+  return (workers ?? []).map((worker: any) => ({
+    id: Number(worker.id),
+    commission_rate: Number(worker.commission_rate ?? 0),
+    is_active: worker.is_active ?? true,
+    profile: profileMap.get(worker.profile_id) ?? {
+      id: worker.profile_id,
+      name: "Sin nombre",
+    },
+  }));
+}
+
+export async function createWorker(input: {
+  name: string;
+  commission_rate: number;
+}) {
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles")
+    .insert({ name: input.name, user_role: "worker" })
+    .select("id")
+    .single();
+
+  if (profileError) throw profileError;
+
+  const { data: worker, error: workerError } = await supabase
+    .from("workers")
+    .insert({
+      profile_id: profile.id,
+      commission_rate: input.commission_rate,
+    })
+    .select("id, profile_id, commission_rate, is_active")
+    .single();
+
+  if (workerError) {
+    await supabase.from("profiles").delete().eq("id", profile.id);
+    throw workerError;
+  }
+
+  return {
+    id: Number(worker.id),
+    commission_rate: Number(worker.commission_rate ?? 0),
+    is_active: worker.is_active ?? true,
+    profile: { id: profile.id, name: input.name },
+  };
+}
+
+export async function updateWorker(
+  id: number,
+  input: { name?: string; commission_rate?: number; is_active?: boolean },
+) {
+  if (input.commission_rate !== undefined || input.is_active !== undefined) {
+    const updateData: Record<string, any> = {};
+    if (input.commission_rate !== undefined) updateData.commission_rate = input.commission_rate;
+    if (input.is_active !== undefined) updateData.is_active = input.is_active;
+
+    const { error: workerError } = await supabase
+      .from("workers")
+      .update(updateData)
+      .eq("id", id);
+
+    if (workerError) throw workerError;
+  }
+
+  if (input.name !== undefined) {
+    const { data: worker } = await supabase
+      .from("workers")
+      .select("profile_id")
+      .eq("id", id)
+      .single();
+
+    if (worker) {
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .update({ name: input.name })
+        .eq("id", worker.profile_id);
+
+      if (profileError) throw profileError;
+    }
+  }
+
+  return getWorkerById(id);
+}
+
+export async function archiveWorker(id: number) {
+  const { error } = await supabase
+    .from("workers")
+    .update({ is_active: false })
+    .eq("id", id);
+
+  if (error) throw error;
+}
+
+export async function deleteWorker(id: number) {
+  const { count: apptCount, error: apptError } = await supabase
+    .from("appointments")
+    .select("id", { count: "exact", head: true })
+    .eq("worker_id", id);
+
+  if (apptError) throw apptError;
+
+  const { count: retouchCount, error: retouchError } = await supabase
+    .from("retouches")
+    .select("id", { count: "exact", head: true })
+    .eq("worker_id", id);
+
+  if (retouchError) throw retouchError;
+
+  const total = (apptCount ?? 0) + (retouchCount ?? 0);
+
+  if (total > 0) {
+    return { deleted: false, reason: `Tiene ${total} turno(s) asignado(s), solo puede archivarse` };
+  }
+
+  const { error: deleteError } = await supabase
+    .from("workers")
+    .delete()
+    .eq("id", id);
+
+  if (deleteError) throw deleteError;
+
+  return { deleted: true };
+}
+
 // ============================================================================
 // TURNOS — Feed
 // ============================================================================
@@ -281,26 +418,26 @@ export async function getAppointmentsFeed(): Promise<
     supabase
       .from("appointments")
       .select(
-        `id, date, cost, status, notes, payment_method,
+        `id, date, cost, status, notes, address, payment_method,
          client:clients(id, name, phone_number),
          worker:workers(id, commission_rate, profile:profiles(id, name)),
-         items:appointment_items(
-           description,
-           service_combo:service_combos(id, name, service_object:service_objects(id, name))
-         )`,
-       )
-       .gte("date", pastRange.toISOString())
-       .lte("date", futureRange.toISOString())
-       .order("date", { ascending: true }),
-     supabase
-       .from("retouches")
-       .select(
-         `id, time, reason, estimate_time, status, appointment_id,
-          appointment:appointments(
-            id, date, notes,
-            client:clients(id, name, phone_number),
-            items:appointment_items(
-              service_combo:service_combos(id, name, service_object:service_objects(id, name))
+          items:appointment_items(
+            description,
+            service_combo:combos(id, name, object_combos(service_object:service_objects(id, name)))
+          )`,
+        )
+        .gte("date", pastRange.toISOString())
+        .lte("date", futureRange.toISOString())
+        .order("date", { ascending: true }),
+      supabase
+        .from("retouches")
+        .select(
+          `id, time, reason, estimate_time, status, appointment_id, address,
+           appointment:appointments(
+             id, date, notes,
+             client:clients(id, name, phone_number),
+             items:appointment_items(
+               service_combo:combos(id, name, object_combos(service_object:service_objects(id, name)))
            )
          ),
          worker:workers(id, commission_rate, profile:profiles(id, name))`,
@@ -325,8 +462,10 @@ export async function getAppointmentsFeed(): Promise<
         day: "numeric",
         month: "short",
       }),
-      dateForSearch: new Date(apt.date).toLocaleDateString(locale),
+      dateForSearch: formatDateNumeric(new Date(apt.date)),
       customer: apt.client?.name ?? "Sin cliente",
+      customerPhone: apt.client?.phone_number ?? "",
+      address: apt.address ?? "",
       service: pickItemsLabel(apt.items ?? []),
       worker: apt.worker?.profile?.name ?? "Sin asignar",
       status: getAppointmentStatusKey(apt.status),
@@ -347,11 +486,11 @@ export async function getAppointmentsFeed(): Promise<
         day: "numeric",
         month: "short",
       }),
-      dateForSearch: new Date(retouch.time).toLocaleDateString(
-        locale,
-      ),
+      dateForSearch: formatDateNumeric(new Date(retouch.time)),
       customer: retouch.appointment?.client?.name ?? "Sin cliente",
+      customerPhone: retouch.appointment?.client?.phone_number ?? "",
       service: `🔄 Repaso: ${pickItemsLabel(retouch.appointment?.items ?? [])}`,
+      address: retouch.address ?? retouch.appointment?.address ?? "",
       worker: retouch.worker?.profile?.name ?? "Sin asignar",
       status: getAppointmentStatusKey(retouch.status),
       amount: 0,
@@ -381,10 +520,10 @@ export async function getAppointmentById(
        client:clients(id, name, phone_number, last_appointment_at),
        worker:workers(id, commission_rate, profile:profiles(id, name, auth_user_id, user_role)),
        items:appointment_items(
-         service_combo_id, description,
-         service_combo:service_combos(id, name, description, precio,
-           service_object:service_objects(id, name))
-       ),
+          service_combo_id, description,
+          service_combo:combos(id, name, description, precio,
+            object_combos(service_object:service_objects(id, name)))
+        ),
        retouches:retouches(
          id, appointment_id, worker_id, time, address, reason,
          estimate_time, status,
@@ -583,16 +722,16 @@ export async function getDashboardData(): Promise<{
       `id, date, cost, payment_method, status,
        client:clients(id, name, phone_number),
        worker:workers(id, profile:profiles(id, name)),
-       items:appointment_items(
-         service_combo:service_combos(id, name,
-           service_object:service_objects(id, name))
-       )`,
-     )
-     .gte("date", todayStart.toISOString())
-     .lt("date", tomorrowStart.toISOString())
-     .order("date", { ascending: true });
+        items:appointment_items(
+          service_combo:combos(id, name,
+            object_combos(service_object:service_objects(id, name)))
+        )`,
+      )
+      .gte("date", todayStart.toISOString())
+      .lt("date", tomorrowStart.toISOString())
+      .order("date", { ascending: true });
 
-   if (todayErr) throw todayErr;
+    if (todayErr) throw todayErr;
 
   const { count: pendingCount, error: pendingErr } = await supabase
     .from("appointments")
@@ -966,14 +1105,14 @@ export async function getWorkerMonthlyStats(
     .from("appointments")
     .select(
       `id, date, status, cost, commission_rate,
-       items:appointment_items(
-         service_combo:service_combos(id, name,
-           service_object:service_objects(id, name))
-       )`,
-    )
-    .eq("worker_id", workerId)
-    .gte("date", startOfLocalMonth(month).toISOString())
-    .lt("date", endOfLocalMonth(month).toISOString());
+        items:appointment_items(
+          service_combo:combos(id, name,
+            object_combos(service_object:service_objects(id, name)))
+        )`,
+      )
+      .eq("worker_id", workerId)
+      .gte("date", startOfLocalMonth(month).toISOString())
+      .lt("date", endOfLocalMonth(month).toISOString());
 
   if (error) throw error;
 
@@ -1032,8 +1171,8 @@ export async function getWorkersOverview() {
         `id, date, status, cost, commission_rate, worker_id,
           client:clients(name),
           items:appointment_items(
-            service_combo:service_combos(id, name,
-              service_object:service_objects(id, name))
+            service_combo:combos(id, name,
+              object_combos(service_object:service_objects(id, name)))
           ),
           worker:workers(id, profile:profiles(id, name))`,
       )
@@ -1095,96 +1234,81 @@ export async function getWorkerDetailData(
   return { worker, availability, monthStats };
 }
 
-// export async function getWorkerHistory(workerId: number) {
-//   const [appointmentsQuery, retouchesQuery] = await Promise.all([
-//     supabase
-//       .from("appointments")
-//       .select(
-//         `id, date, cost, commission_rate, status, notes, address,
-//          client:clients(id, name, phone_number),
-//          items:appointment_items(
-//            service_combo:service_combos(id, name,
-//              service_object:service_objects(id, name))
-//          ),
-//          worker:workers(id, profile:profiles(id, name))`,
-//        )
-//        .eq("worker_id", workerId)
-//        .order("date", { ascending: false }),
-//      supabase
-//        .from("retouches")
-//        .select(
-//          `id, time, reason, estimate_time, status, address,
-//           appointment:appointments(
-//             id, address, notes,
-//             client:clients(id, name, phone_number),
-//             items:appointment_items(
-//               service_combo:service_combos(id, name,
-//                 service_object:service_objects(id, name))
-//             )
-//          ),
-//          worker:workers(id, profile:profiles(id, name))`,
-//       )
-//       .eq("worker_id", workerId)
-//       .order("date", { ascending: false }),
-//     supabase
-//       .from("retouches")
-//       .select(
-//         `id, time, reason, estimate_time, status, address,
-//          appointment:appointments(
-//            id, address, notes,
-//            client:clients(id, name, phone_number),
-//            items:appointment_items(
-//              service_object:service_objects(id, name),
-//              service_combo:service_combos(id, name)
-//
-//          ),
-//          worker:workers(id, profile:profiles(id, name))`,
-//       )
-//       .eq("worker_id", workerId)
-//       .order("time", { ascending: false }),
-//   ]);
-//
-//   if (appointmentsQuery.error) throw appointmentsQuery.error;
-//   if (retouchesQuery.error) throw retouchesQuery.error;
-//
-//   const appointments = (appointmentsQuery.data ?? []).map(
-//     (row: any) => ({
-//       id: String(row.id),
-//       type: "appointment",
-//       date: row.date,
-//       client: {
-//         name: row.client?.name ?? "Sin cliente",
-//         phone: row.client?.phone_number ?? "",
-//       },
-//       service: pickItemsLabel(row.items ?? []),
-//       address: row.address ?? "Sin dirección",
-//       cost: Number(row.cost),
-//       workerEarned:
-//         Number(row.cost) * (Number(row.commission_rate) / 100),
-//       status: getAppointmentStatusKey(row.status),
-//     }),
-//   );
-//
-//   const retouches = (retouchesQuery.data ?? []).map((row: any) => ({
-//     id: String(row.id),
-//     type: "retouch",
-//     date: row.time,
-//     client: {
-//       name: row.appointment?.client?.name ?? "Sin cliente",
-//       phone: row.appointment?.client?.phone_number ?? "",
-//     },
-//     service: `Repaso: ${pickItemsLabel(row.appointment?.items ?? [])}`,
-//     address:
-//       row.address ?? row.appointment?.address ?? "Sin dirección",
-//     reason: row.reason,
-//     status: getAppointmentStatusKey(row.status),
-//   }));
-//
-//   return [...appointments, ...retouches].sort(
-//     (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
-//   );
-// }
-//
+export async function getWorkerHistory(workerId: number) {
+  const [appointmentsQuery, retouchesQuery] = await Promise.all([
+    supabase
+      .from("appointments")
+      .select(
+        `id, date, cost, commission_rate, status, notes, address,
+         client:clients(id, name, phone_number),
+         items:appointment_items(
+           service_combo:combos(id, name,
+             object_combos(service_object:service_objects(id, name)))
+         ),
+         worker:workers(id, profile:profiles(id, name))`,
+       )
+       .eq("worker_id", workerId)
+       .order("date", { ascending: false }),
+     supabase
+       .from("retouches")
+       .select(
+         `id, time, reason, estimate_time, status, address,
+          appointment:appointments(
+            id, address, notes,
+            client:clients(id, name, phone_number),
+            items:appointment_items(
+              service_combo:combos(id, name,
+                object_combos(service_object:service_objects(id, name)))
+            )
+         ),
+         worker:workers(id, profile:profiles(id, name))`,
+      )
+      .eq("worker_id", workerId)
+      .order("time", { ascending: false }),
+  ]);
+
+  if (appointmentsQuery.error) throw appointmentsQuery.error;
+  if (retouchesQuery.error) throw retouchesQuery.error;
+
+  const appointments = (appointmentsQuery.data ?? []).map(
+    (row: any) => ({
+      id: String(row.id),
+      type: "appointment",
+      date: row.date,
+      client: {
+        name: row.client?.name ?? "Sin cliente",
+        phone: row.client?.phone_number ?? "",
+      },
+      service: pickItemsLabel(row.items ?? []),
+      address: row.address ?? "Sin dirección",
+      cost: Number(row.cost),
+      workerEarned:
+        Number(row.cost) * (Number(row.commission_rate) / 100),
+      status: getAppointmentStatusKey(row.status),
+    }),
+  );
+
+  const retouches = (retouchesQuery.data ?? []).map((row: any) => ({
+    id: String(row.id),
+    type: "retouch",
+    date: row.time,
+    client: {
+      name: row.appointment?.client?.name ?? "Sin cliente",
+      phone: row.appointment?.client?.phone_number ?? "",
+    },
+    service: `Repaso: ${pickItemsLabel(row.appointment?.items ?? [])}`,
+    address:
+      row.address ?? row.appointment?.address ?? "Sin dirección",
+    reason: row.reason,
+    status: getAppointmentStatusKey(row.status),
+  }));
+
+  return [...appointments, ...retouches].sort(
+    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+  );
+}
+
+
 // ============================================================================
 // PERFIL
 // ============================================================================

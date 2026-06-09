@@ -6,10 +6,12 @@ import {
   TouchableOpacity,
   TextInput,
   RefreshControl,
+  Alert,
 } from "react-native";
 import { router } from "expo-router";
 import { useState, useEffect } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
+import * as Clipboard from "expo-clipboard";
 import { AppointmentPreviewCard } from "../../../components/admin/dashboard";
 import { getAppointmentsFeed } from "../../../utils/adminData";
 
@@ -23,6 +25,8 @@ export default function AppointmentsScreen() {
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     loadItems();
@@ -47,9 +51,50 @@ export default function AppointmentsScreen() {
     loadItems();
   };
 
+  const cancelSelection = () => {
+    setSelectionMode(false);
+    setSelectedItems(new Set());
+  };
+
+  const enterSelectionMode = (key: string) => {
+    setSelectionMode(true);
+    setSelectedItems(new Set([key]));
+  };
+
+  const toggleItem = (key: string) => {
+    setSelectedItems((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  };
+
+  const copySelected = () => {
+    const selected = items.filter((item) =>
+      selectedItems.has(`${item.type}-${item.id}`),
+    );
+    const text = selected
+      .map(
+        (item) =>
+          `🕐 ${item.time} | ${item.customer}${item.customerPhone ? ` (${item.customerPhone})` : ""}\n🧼 ${item.service}\n📍 ${item.address || "Sin dirección"}\n💰 $${item.amount ? item.amount.toLocaleString("es-AR") : "0"}`,
+      )
+      .join("\n\n---\n\n");
+
+    Clipboard.setStringAsync(text);
+    Alert.alert("Copiado", `${selected.length} turno(s) copiado(s) al portapapeles`);
+    cancelSelection();
+  };
+
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
-      <AppointmentsHeader />
+      <AppointmentsHeader
+        selectionMode={selectionMode}
+        onCancel={cancelSelection}
+      />
 
       <ScrollView
         style={styles.content}
@@ -81,24 +126,59 @@ export default function AppointmentsScreen() {
           searchType={searchType}
           items={items}
           loading={loading}
+          selectionMode={selectionMode}
+          selectedItems={selectedItems}
+          onToggleItem={toggleItem}
+          onEnterSelectionMode={enterSelectionMode}
         />
       </ScrollView>
 
-      <FloatingAddButton />
+      {selectionMode && selectedItems.size > 0 ? (
+        <SelectionCopyButton count={selectedItems.size} onCopy={copySelected} />
+      ) : (
+        <FloatingAddButton />
+      )}
     </SafeAreaView>
+  );
+}
+
+function SelectionCopyButton({ count, onCopy }: { count: number; onCopy: () => void }) {
+  return (
+    <TouchableOpacity
+      style={styles.copyFab}
+      onPress={onCopy}
+      activeOpacity={0.8}
+    >
+      <Text style={styles.copyFabText}>📋 Copiar ({count})</Text>
+    </TouchableOpacity>
   );
 }
 
 // ============================================================================
 // SECCIÓN:  HEADER
 // ============================================================================
-function AppointmentsHeader() {
+function AppointmentsHeader({
+  selectionMode,
+  onCancel,
+}: {
+  selectionMode: boolean;
+  onCancel: () => void;
+}) {
   return (
     <View style={styles.header}>
-      <View>
+      <View style={{ flex: 1 }}>
         <Text style={styles.headerTitle}>Citas y Repasos</Text>
         <Text style={styles.headerSubtitle}>Gestiona tus servicios</Text>
       </View>
+      {selectionMode && (
+        <TouchableOpacity
+          style={[styles.selectToggle, styles.selectToggleActive]}
+          onPress={onCancel}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.selectToggleTextActive}>Cancelar</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
@@ -290,6 +370,10 @@ function ItemsList({
   searchType,
   items,
   loading,
+  selectionMode,
+  selectedItems,
+  onToggleItem,
+  onEnterSelectionMode,
 }: any) {
   if (loading) {
     return (
@@ -378,27 +462,69 @@ function ItemsList({
         sortedDates.map((date) => (
           <View key={date}>
             <Text style={styles.dateHeader}>{date}</Text>
-            {groupedItems[date].map((item: any) => (
-              <TouchableOpacity
-                key={`${item.type}-${item.id}`}
-                onPress={() => {
-                  if (item.type === "appointment") {
-                    router.push(`/admin/appointments/${item.id}`);
-                  } else if (item.type === "retouch") {
-                    router.push(`/admin/appointments/retouches/${item.id}`);
-                  }
-                }}
-                activeOpacity={0.7}
-              >
-                <AppointmentPreviewCard
-                  time={item.time}
-                  customer={item.customer}
-                  service={item.service}
-                  worker={item.worker}
-                  status={item.status}
-                />
-              </TouchableOpacity>
-            ))}
+            {groupedItems[date].map((item: any) => {
+              const key = `${item.type}-${item.id}`;
+              const isSelected = selectedItems.has(key);
+              return (
+                <View key={key} style={styles.appointmentRow}>
+                  {selectionMode && (
+                    <TouchableOpacity
+                      style={styles.checkboxContainer}
+                      onPress={() => onToggleItem(key)}
+                      activeOpacity={0.6}
+                    >
+                      <View
+                        style={[
+                          styles.checkbox,
+                          isSelected && styles.checkboxSelected,
+                        ]}
+                      >
+                        {isSelected && (
+                          <Text style={styles.checkmark}>✓</Text>
+                        )}
+                      </View>
+                    </TouchableOpacity>
+                  )}
+                  <TouchableOpacity
+                    style={{ flex: 1 }}
+                    onPress={() => {
+                      if (selectionMode) {
+                        onToggleItem(key);
+                      } else if (item.type === "appointment") {
+                        router.push(`/admin/appointments/${item.id}`);
+                      } else if (item.type === "retouch") {
+                        router.push(`/admin/appointments/retouches/${item.id}`);
+                      }
+                    }}
+                    onLongPress={() => {
+                      if (!selectionMode) {
+                        onEnterSelectionMode(key);
+                      } else {
+                        onToggleItem(key);
+                      }
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <AppointmentPreviewCard
+                      time={item.time}
+                      customer={item.customer}
+                      service={item.service}
+                      worker={item.worker}
+                      status={item.status}
+                    />
+                  </TouchableOpacity>
+                  {!selectionMode && (
+                    <TouchableOpacity
+                      style={styles.copyButton}
+                      onPress={() => copyAppointment(item)}
+                      activeOpacity={0.6}
+                    >
+                      <Text style={styles.copyIcon}>📋</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              );
+            })}
           </View>
         ))
       ) : (
@@ -406,6 +532,19 @@ function ItemsList({
       )}
     </View>
   );
+}
+
+function copyAppointment(item: any) {
+  const text = [
+    `🕐 Hora: ${item.time}`,
+    `🧼 Servicio: ${item.service}`,
+    `👤 Cliente: ${item.customer}${item.customerPhone ? ` - ${item.customerPhone}` : ""}`,
+    `📍 Dirección: ${item.address || "Sin dirección"}`,
+    `💰 Monto: $${item.amount ? item.amount.toLocaleString("es-AR") : "0"}`,
+  ].join("\n");
+
+  Clipboard.setStringAsync(text);
+  Alert.alert("Copiado", "Turno copiado al portapapeles");
 }
 
 function EmptyState({ searchQuery, searchType }: any) {
@@ -455,7 +594,7 @@ const styles = StyleSheet.create({
 
   header: {
     padding: 24,
-    paddingTop: 60,
+    paddingTop: 16,
     backgroundColor: "#FFFFFF",
     borderBottomWidth: 1,
     borderBottomColor: "#E5E7EB",
@@ -610,5 +749,80 @@ const styles = StyleSheet.create({
     fontSize: 32,
     color: "#FFFFFF",
     fontWeight: "300",
+  },
+
+  appointmentRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  copyButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#F3F4F6",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  copyIcon: {
+    fontSize: 16,
+  },
+  selectToggle: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: "#F3F4F6",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+  selectToggleActive: {
+    backgroundColor: "#DBEAFE",
+    borderColor: "#3B82F6",
+  },
+  selectToggleTextActive: {
+    color: "#3B82F6",
+  },
+  checkboxContainer: {
+    paddingRight: 8,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: "#D1D5DB",
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+  },
+  checkboxSelected: {
+    backgroundColor: "#3B82F6",
+    borderColor: "#3B82F6",
+  },
+  checkmark: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: "#FFFFFF",
+  },
+  copyFab: {
+    position: "absolute",
+    right: 24,
+    bottom: 24,
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    borderRadius: 30,
+    backgroundColor: "#3B82F6",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  copyFabText: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#FFFFFF",
   },
 });

@@ -112,6 +112,7 @@ export function ServiceInfoSection({
           {appointmentItems.map((item, index) => {
             const comboId = item.service_combo_id ?? item.service_combo?.id;
             const objectName = item.service_combo?.service_object?.name
+              ?? item.service_combo?.object_combos?.[0]?.service_object?.name
               ?? getItemObjectName(comboId);
             const comboName = item.service_combo?.name
               ?? getItemComboName(comboId);

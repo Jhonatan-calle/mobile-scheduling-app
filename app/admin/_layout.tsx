@@ -39,7 +39,7 @@ export default function AdminLayout() {
         <Tabs.Screen
           name="availability"
           options={{
-            title: "Disponibilidad",
+            title: "Trabajadores",
             tabBarIcon: ({ color }) => <TabIcon emoji="👥" color={color} />,
           }}
         />

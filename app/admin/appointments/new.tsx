@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   Alert,
   Platform,
-  FlatList,
   TextInput,
 } from "react-native";
 import { router } from "expo-router";
@@ -369,11 +368,10 @@ function ClientSuggestionsList({
       <Text style={styles.suggestionsTitle}>
         Clientes encontrados:
       </Text>
-      <FlatList
-        data={suggestions}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => (
+      <ScrollView nestedScrollEnabled style={styles.suggestionScroll}>
+        {suggestions.map((item: any) => (
           <TouchableOpacity
+            key={item.id}
             style={styles.suggestionItem}
             onPress={() => onSelect(item)}
             activeOpacity={0.7}
@@ -394,9 +392,8 @@ function ClientSuggestionsList({
             </View>
             <Text style={styles.suggestionArrow}>→</Text>
           </TouchableOpacity>
-        )}
-        scrollEnabled={false}
-      />
+        ))}
+      </ScrollView>
       <TouchableOpacity style={styles.closeButton} onPress={onClose}>
         <Text style={styles.closeButtonText}>Cerrar</Text>
       </TouchableOpacity>
@@ -943,6 +940,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 5,
+  },
+  suggestionScroll: {
+    maxHeight: 250,
   },
   suggestionsTitle: {
     fontSize: 13,

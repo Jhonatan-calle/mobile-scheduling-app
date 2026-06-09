@@ -30,14 +30,20 @@ erDiagram
         boolean is_active
     }
 
-    SERVICE_COMBOS {
+    COMBOS {
         bigint id PK
         timestamp created_at
-        int object_id FK
         string name
         string description
         int precio
         boolean is_active
+    }
+
+    OBJECT_COMBOS {
+        bigint id PK
+        timestamp created_at
+        bigint combo_id FK
+        bigint object_id FK
     }
 
     APPOINTMENT_ITEMS{
@@ -134,8 +140,9 @@ erDiagram
     CLIENTS ||--o{ APPOINTMENTS : books
     APPOINTMENT_STATUSES ||--o{ APPOINTMENTS : status
     APPOINTMENTS ||--o{ RETOUCHES : has
-    SERVICE_OBJECTS ||--o{ SERVICE_COMBOS : object_id
-    SERVICE_COMBOS ||--o{ APPOINTMENT_ITEMS : service_combo_id
+    SERVICE_OBJECTS ||--o{ OBJECT_COMBOS : object_id
+    COMBOS ||--o{ OBJECT_COMBOS : combo_id
+    COMBOS ||--o{ APPOINTMENT_ITEMS : service_combo_id
     PROFILES ||--o{ SALARIES : profile_id
     APPOINTMENTS ||--o{ APPOINTMENT_ITEMS : contains
     PROFILES ||--o{ APPOINTMENTS : admin_id

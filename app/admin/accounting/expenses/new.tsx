@@ -6,9 +6,11 @@ import {
   TouchableOpacity,
   TextInput,
   Alert,
+  Platform,
 } from "react-native";
 import { router } from "expo-router";
 import { useState } from "react";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { createExpense } from "../../../../utils/adminData";
 import { EXPENSE_CATEGORIES } from "../../../../utils/lookups";
 
@@ -21,17 +23,13 @@ export default function NewExpenseScreen() {
   const [category, setCategory] = useState("");
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
+  const [date, setDate] = useState(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
-    // Validaciones
     if (!category) {
       Alert.alert("Error", "Selecciona una categoría");
-      return;
-    }
-
-    if (!description. trim()) {
-      Alert.alert("Error", "Ingresa una descripción");
       return;
     }
 
@@ -46,7 +44,7 @@ export default function NewExpenseScreen() {
         category,
         description: description.trim(),
         amount: parseFloat(amount),
-        date: new Date().toISOString(),
+        date: date.toISOString(),
       });
 
       Alert.alert("Éxito", "Gasto registrado correctamente", [
@@ -63,43 +61,69 @@ export default function NewExpenseScreen() {
     }
   };
 
+  const formatDate = (d: Date) =>
+    d.toLocaleDateString("es-AR", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+
+  const onDateChange = (_event: any, selectedDate?: Date) => {
+    setShowDatePicker(Platform.OS === "ios");
+    if (selectedDate) setDate(selectedDate);
+  };
+
   return (
     <View style={styles.container}>
       <NewExpenseHeader />
 
-      <ScrollView style={styles. content} showsVerticalScrollIndicator={false}>
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Categoría */}
         <View style={styles.section}>
           <Text style={styles.label}>Categoría *</Text>
           <View style={styles.categoriesGrid}>
-            {CATEGORIES.map((cat) => (
-              <TouchableOpacity
-                key={cat. id}
-                style={[
-                  styles.categoryButton,
-                  category === cat.id && styles.categoryButtonActive,
-                  { borderColor: cat.color },
-                ]}
-                onPress={() => setCategory(cat.id)}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.categoryIcon}>{cat.icon}</Text>
-                <Text
+            {CATEGORIES.map((cat) => {
+              const isActive = category === cat.id;
+              return (
+                <TouchableOpacity
+                  key={cat.id}
                   style={[
-                    styles.categoryLabel,
-                    category === cat.id && { color: cat.color },
+                    styles.categoryButton,
+                    isActive && {
+                      backgroundColor: cat.color + "20",
+                      borderColor: cat.color,
+                      borderWidth: 2.5,
+                    },
                   ]}
+                  onPress={() => setCategory(cat.id)}
+                  activeOpacity={0.7}
                 >
-                  {cat.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
+                  <Text
+                    style={[
+                      styles.categoryIcon,
+                      isActive && { transform: [{ scale: 1.15 }] },
+                    ]}
+                  >
+                    {cat.icon}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.categoryLabel,
+                      isActive && { color: cat.color, fontWeight: "800" },
+                    ]}
+                  >
+                    {cat.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
         </View>
 
         {/* Descripción */}
         <View style={styles.section}>
-          <Text style={styles.label}>Descripción *</Text>
+          <Text style={styles.label}>Descripción</Text>
           <TextInput
             style={styles.input}
             placeholder="Ej: Nafta para camioneta"
@@ -112,7 +136,7 @@ export default function NewExpenseScreen() {
         </View>
 
         {/* Monto */}
-        <View style={styles. section}>
+        <View style={styles.section}>
           <Text style={styles.label}>Monto *</Text>
           <View style={styles.amountContainer}>
             <Text style={styles.currencySymbol}>$</Text>
@@ -126,9 +150,30 @@ export default function NewExpenseScreen() {
           </View>
         </View>
 
+        {/* Fecha */}
+        <View style={styles.section}>
+          <Text style={styles.label}>Fecha</Text>
+          <TouchableOpacity
+            style={styles.dateButton}
+            onPress={() => setShowDatePicker(true)}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.dateButtonText}>{formatDate(date)}</Text>
+            <Text style={styles.dateButtonIcon}>📅</Text>
+          </TouchableOpacity>
+          {showDatePicker && (
+            <DateTimePicker
+              value={date}
+              mode="date"
+              display={Platform.OS === "ios" ? "spinner" : "default"}
+              onChange={onDateChange}
+            />
+          )}
+        </View>
+
         {/* Botón Guardar */}
         <TouchableOpacity
-          style={[styles.saveButton, saving && styles. saveButtonDisabled]}
+          style={[styles.saveButton, saving && styles.saveButtonDisabled]}
           onPress={handleSave}
           disabled={saving}
           activeOpacity={0.8}
@@ -243,10 +288,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
   },
-  categoryButtonActive: {
-    backgroundColor: "#F9FAFB",
-    borderWidth: 2,
-  },
+  categoryButtonActive: {},
   categoryIcon: {
     fontSize: 32,
   },
@@ -290,6 +332,26 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#111827",
     paddingVertical: 16,
+  },
+
+  // Date Button
+  dateButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderWidth: 1,
+    borderColor: "#D1D5DB",
+    borderRadius: 12,
+    padding: 16,
+    backgroundColor: "#FFFFFF",
+  },
+  dateButtonText: {
+    fontSize: 15,
+    color: "#111827",
+    textTransform: "capitalize",
+  },
+  dateButtonIcon: {
+    fontSize: 20,
   },
 
   // Save Button
