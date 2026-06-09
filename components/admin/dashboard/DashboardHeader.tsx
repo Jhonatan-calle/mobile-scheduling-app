@@ -1,21 +1,26 @@
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+} from "react-native";
 import { router } from "expo-router";
 
 export default function DashboardHeader() {
-  const today = new Date().toLocaleDateString('es-AR', { 
-    weekday: 'long', 
-    year:  'numeric', 
-    month: 'long', 
-    day: 'numeric' 
+  const today = new Date().toLocaleDateString("es-AR", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
   });
 
   return (
     <View style={styles.header}>
       <View>
-        <Text style={styles. greeting}>¡Hola, Admin!</Text>
+        <Text style={styles.greeting}>¡Hola, Admin!</Text>
         <Text style={styles.date}>{today}</Text>
       </View>
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.profileButton}
         onPress={() => router.push("/admin/dashboard/profile")}
       >
@@ -44,7 +49,7 @@ const styles = StyleSheet.create({
   date: {
     fontSize: 14,
     color: "#6B7280",
-    marginTop:  4,
+    marginTop: 4,
     textTransform: "capitalize",
   },
   profileButton: {

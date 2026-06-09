@@ -166,7 +166,7 @@ function AppointmentsHeader({
 }) {
   return (
     <View style={styles.header}>
-      <View style={{ flex: 1 }}>
+      <View >
         <Text style={styles.headerTitle}>Citas y Repasos</Text>
         <Text style={styles.headerSubtitle}>Gestiona tus servicios</Text>
       </View>
@@ -594,7 +594,7 @@ const styles = StyleSheet.create({
 
   header: {
     padding: 24,
-    paddingTop: 16,
+    paddingTop: 40,
     backgroundColor: "#FFFFFF",
     borderBottomWidth: 1,
     borderBottomColor: "#E5E7EB",
