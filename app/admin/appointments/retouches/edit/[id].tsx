@@ -12,6 +12,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useState, useEffect } from "react";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { getRetouchById, getWorkers, updateRetouch } from "../../../../../utils/adminData";
+import { formatTime } from "../../../../../utils/helpers";
 
 export default function EditRetouchScreen() {
   const { id } = useLocalSearchParams();
@@ -267,13 +268,6 @@ function DateTimeSection({
       day: "numeric",
       month:  "long",
       year: "numeric",
-    });
-  };
-
-  const formatTime = (date: Date) => {
-    return date.toLocaleTimeString("es-AR", {
-      hour: "2-digit",
-      minute: "2-digit",
     });
   };
 

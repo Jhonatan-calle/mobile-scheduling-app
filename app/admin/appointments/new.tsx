@@ -22,6 +22,7 @@ import {
   getWorkers,
 } from "../../../utils/adminData";
 import type { ServiceObjectWithCombos } from "../../../utils/types.ts";
+import { formatTime } from "../../../utils/helpers";
 import { ServiceInfoSection } from "@/components/serviceSection";
 import { SectionHeader } from "@/components/SectionHeader";
 
@@ -419,13 +420,6 @@ function DateTimeSection({
       year: "numeric",
       month: "long",
       day: "numeric",
-    });
-  };
-
-  const formatTime = (date: Date) => {
-    return date.toLocaleTimeString("es-AR", {
-      hour: "2-digit",
-      minute: "2-digit",
     });
   };
 

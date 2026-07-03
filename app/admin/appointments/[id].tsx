@@ -23,6 +23,7 @@ import {
   getPaymentMethodConfig,
 } from "../../../utils/lookups";
 import { globalStyles } from "@/utils/styles";
+import { formatTime } from "../../../utils/helpers";
 
 export default function AppointmentDetailScreen() {
   const { id } = useLocalSearchParams();
@@ -254,14 +255,6 @@ function ServiceInfoSection({ appointment }: any) {
     });
   };
 
-  const formatTime = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleTimeString("es-AR", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
   const items = appointment.items ?? [];
 
   return (
@@ -299,7 +292,7 @@ function ServiceInfoSection({ appointment }: any) {
         value={appointment.service_details || appointment.notes || "Sin detalles"}
       />
       <InfoRow label="Fecha programada" value={formatDate(appointment.date)} />
-      <InfoRow label="Hora" value={formatTime(appointment.date)} />
+      <InfoRow label="Hora" value={formatTime(new Date(appointment.date))} />
       <InfoRow
         label="Duración estimada"
         value={`${appointment.estimate_time} minutos`}

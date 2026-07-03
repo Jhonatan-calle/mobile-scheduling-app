@@ -9,6 +9,7 @@ import {
 import { router, useLocalSearchParams } from "expo-router";
 import { useState, useEffect } from "react";
 import { deleteRetouch, getRetouchById, updateRetouch } from "../../../../utils/adminData";
+import { formatTime } from "../../../../utils/helpers";
 
 export default function RetouchDetailScreen() {
   const { id } = useLocalSearchParams();
@@ -218,21 +219,13 @@ function RetouchDetailsSection({ retouch }: any) {
     });
   };
 
-  const formatTime = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleTimeString("es-AR", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
   return (
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>Detalles</Text>
 
       <View style={styles.detailsCard}>
         <InfoRow label="Fecha" value={formatDate(retouch.time)} icon="📅" />
-        <InfoRow label="Hora" value={formatTime(retouch.time)} icon="🕐" />
+        <InfoRow label="Hora" value={formatTime(new Date(retouch.time))} icon="🕐" />
         <InfoRow
           label="Duración estimada"
           value={`${retouch.estimate_time} min`}

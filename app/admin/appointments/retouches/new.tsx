@@ -13,6 +13,7 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import Input from "../../../../components/Input";
 import Button from "../../../../components/Button";
 import { createRetouch, getAppointmentById, getWorkers } from "../../../../utils/adminData";
+import { formatTime } from "../../../../utils/helpers";
 import { SectionHeader } from "@/components/SectionHeader";
 
 export default function NewRetouchScreen() {
@@ -246,13 +247,6 @@ function DateTimeSection({
       year: "numeric",
       month:  "long",
       day: "numeric",
-    });
-  };
-
-  const formatTime = (date: Date) => {
-    return date.toLocaleTimeString("es-AR", {
-      hour: "2-digit",
-      minute: "2-digit",
     });
   };
 

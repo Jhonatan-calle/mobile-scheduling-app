@@ -1,5 +1,5 @@
 import { supabase } from "../supabase/supabase";
-import { addDays, startOfLocalDay } from "./helpers";
+import { addDays, formatTime, startOfLocalDay } from "./helpers";
 import { getAppointmentStatusKey } from "./lookups";
 import {
   AppointmentStatus,
@@ -11,7 +11,6 @@ export async function getAdminDashboardData(): Promise<{
   stats: DashboardStats;
   todayAppointments: DashboardTodayAppointment[];
 }> {
-  const locale: string = "es-AR";
 
   // rango "hoy" en hora local
   const todayStart: Date = startOfLocalDay(new Date());
@@ -64,10 +63,7 @@ export async function getAdminDashboardData(): Promise<{
   const todayAppointments: DashboardTodayAppointment[] =
     todayAppointmentsRaw.map((apt: any) => ({
       id: String(apt.id),
-      time: new Date(apt.date).toLocaleTimeString(locale, {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
+      time: formatTime(new Date(apt.date)),
       customer: apt.client?.name ?? "Sin cliente",
       worker: apt.worker?.profile?.name ?? "Sin asignar",
       status: getAppointmentStatusKey(apt.status), // o mapea a "pending/in-progress/completed" si tu card lo necesita

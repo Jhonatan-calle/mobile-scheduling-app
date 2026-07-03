@@ -18,6 +18,7 @@ import {
   updateAppointment,
   updateClient,
 } from "../../../../utils/adminData";
+import { formatTime } from "../../../../utils/helpers";
 import { SectionHeader } from "@/components/SectionHeader";
 import { globalStyles } from "@/utils/styles";
 import { ServiceInfoSection } from "@/components/serviceSection";
@@ -296,13 +297,6 @@ function DateTimeSection({
       day: "numeric",
       month:  "long",
       year: "numeric",
-    });
-  };
-
-  const formatTime = (date: Date) => {
-    return date.toLocaleTimeString("es-AR", {
-      hour: "2-digit",
-      minute: "2-digit",
     });
   };
 
