@@ -47,17 +47,8 @@ export default function WorkersListScreen() {
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       <View style={styles.header}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.headerTitle}>Trabajadores</Text>
-          <Text style={styles.headerSubtitle}>Estadísticas e historial</Text>
-        </View>
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={() => router.push("/admin/availability/new")}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.addButtonText}>+</Text>
-        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Trabajadores</Text>
+        <Text style={styles.headerSubtitle}>Estadísticas e historial</Text>
       </View>
 
       <ScrollView
@@ -121,6 +112,14 @@ export default function WorkersListScreen() {
           </View>
         )}
       </ScrollView>
+
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => router.push("/admin/availability/new")}
+        activeOpacity={0.8}
+      >
+        <Text style={styles.fabIcon}>+</Text>
+      </TouchableOpacity>
     </SafeAreaView>
   );
 }
@@ -188,19 +187,26 @@ const styles = StyleSheet.create({
     color: "#D1D5DB",
     marginLeft: 4,
   },
-  addButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+  fab: {
+    position: "absolute",
+    right: 24,
+    bottom: 24,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     backgroundColor: "#3B82F6",
     justifyContent: "center",
     alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
-  addButtonText: {
-    fontSize: 22,
-    fontWeight: "bold",
+  fabIcon: {
+    fontSize: 32,
     color: "#FFFFFF",
-    lineHeight: 24,
+    fontWeight: "300",
   },
   editIconButton: {
     width: 32,
