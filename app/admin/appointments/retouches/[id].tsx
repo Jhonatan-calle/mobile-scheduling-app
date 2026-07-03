@@ -46,8 +46,9 @@ export default function RetouchDetailScreen() {
         {
           text: "Confirmar",
           onPress: async () => {
-            await updateRetouch(retouch.id, { status: newStatus === "completed" ? 3 : newStatus === "in_progress" ? 2 : 1 } as any);
-            setRetouch({ ...retouch, status: newStatus });
+            const statusId = newStatus === "completed" ? 3 : newStatus === "in_progress" ? 2 : newStatus === "cancelled" ? 0 : 1;
+            await updateRetouch(retouch.id, { status: statusId } as any);
+            setRetouch({ ...retouch, status: statusId });
             Alert.alert("¡Listo!", "Estado actualizado correctamente");
           },
         },
@@ -108,6 +109,7 @@ function RetouchHeader({ retouchId }: { retouchId: string }) {
 // ============================================================================
 function StatusSection({ retouch, onStatusChange }: any) {
   const retouchStatusMap: Record<number, string> = {
+    0: "cancelled",
     1: "pending",
     2: "in_progress",
     3: "completed",

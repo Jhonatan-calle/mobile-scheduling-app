@@ -93,6 +93,7 @@ export interface ServiceCombo {
  * appointment_statuses table
  */
 export const AppointmentStatus = {
+  CANCELADO: 0,
   PENDIENTE: 1,
   EN_PROCESO: 2,
   COMPLETO: 3,

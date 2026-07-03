@@ -1,4 +1,5 @@
 export const APPOINTMENT_STATUS_CONFIG = {
+  0: { key: "cancelled", label: "Cancelado", color: "#EF4444", icon: "❌" },
   1: { key: "pending", label: "Pendiente", color: "#F59E0B", icon: "⏳" },
   2: { key: "in_progress", label: "En proceso", color: "#3B82F6", icon: "🔄" },
   3: { key: "completed", label: "Completo", color: "#10B981", icon: "✅" },

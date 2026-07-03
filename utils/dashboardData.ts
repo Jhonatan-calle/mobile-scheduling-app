@@ -1,5 +1,6 @@
 import { supabase } from "../supabase/supabase";
 import { addDays, startOfLocalDay } from "./helpers";
+import { getAppointmentStatusKey } from "./lookups";
 import {
   AppointmentStatus,
   DashboardStats,
@@ -69,7 +70,7 @@ export async function getAdminDashboardData(): Promise<{
       }),
       customer: apt.client?.name ?? "Sin cliente",
       worker: apt.worker?.profile?.name ?? "Sin asignar",
-      status: String(apt.status), // o mapea a "pending/in-progress/completed" si tu card lo necesita
+      status: getAppointmentStatusKey(apt.status), // o mapea a "pending/in-progress/completed" si tu card lo necesita
       paymentMethod: apt.payment_method ?? null,
     }));
 
