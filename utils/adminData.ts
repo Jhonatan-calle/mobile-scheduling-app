@@ -3,6 +3,7 @@ import {
   addDays,
   endOfLocalMonth,
   formatDateNumeric,
+  formatTime,
   locale,
   startOfLocalDay,
   startOfLocalMonth,
@@ -79,7 +80,9 @@ export async function getServiceCombos(): Promise<ServiceCombo[]> {
     description: combo.description,
     is_active: combo.is_active,
     precio: combo.precio,
-    service_object: combo.object_combos?.[0]?.service_object ?? null,
+    object_ids: (combo.object_combos ?? [])
+      .map((oc: any) => oc.service_object?.id)
+      .filter((id: any) => id != null),
   }));
 }
 
@@ -93,7 +96,7 @@ export async function getServiceObjectsWithCombos(): Promise<
 
   return objects.map((obj) => ({
     ...obj,
-    combos: combos.filter((c) => c.service_object.id === obj.id),
+    combos: combos.filter((c) => c.object_ids.includes(obj.id)),
   }));
 }
 
@@ -418,7 +421,7 @@ export async function getAppointmentsFeed(): Promise<
     supabase
       .from("appointments")
       .select(
-        `id, date, cost, status, notes, address, payment_method,
+        `id, date, cost, status, notes, address, payment_method, estimate_time,
          client:clients(id, name, phone_number),
          worker:workers(id, commission_rate, profile:profiles(id, name)),
           items:appointment_items(
@@ -451,52 +454,54 @@ export async function getAppointmentsFeed(): Promise<
   if (retouchesError) throw retouchesError;
 
   const transformedAppointments = (appointments ?? []).map(
-    (apt: any) => ({
-      id: String(apt.id),
-      type: "appointment" as const,
-      time: new Date(apt.date).toLocaleTimeString(locale, {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-      date: new Date(apt.date).toLocaleDateString(locale, {
-        day: "numeric",
-        month: "short",
-      }),
-      dateForSearch: formatDateNumeric(new Date(apt.date)),
-      customer: apt.client?.name ?? "Sin cliente",
-      customerPhone: apt.client?.phone_number ?? "",
-      address: apt.address ?? "",
-      service: pickItemsLabel(apt.items ?? []),
-      worker: apt.worker?.profile?.name ?? "Sin asignar",
-      status: getAppointmentStatusKey(apt.status),
-      amount: Number(apt.cost),
-      rawDate: new Date(apt.date),
-    }),
+    (apt: any) => {
+      const startTime = new Date(apt.date);
+      const endTime = new Date(startTime.getTime() + (apt.estimate_time ?? 120) * 60000);
+      return {
+        id: String(apt.id),
+        type: "appointment" as const,
+        time: `${formatTime(startTime)} - ${formatTime(endTime)}`,
+        date: new Date(apt.date).toLocaleDateString(locale, {
+          day: "numeric",
+          month: "short",
+        }),
+        dateForSearch: formatDateNumeric(new Date(apt.date)),
+        customer: apt.client?.name ?? "Sin cliente",
+        customerPhone: apt.client?.phone_number ?? "",
+        address: apt.address ?? "",
+        service: pickItemsLabel(apt.items ?? []),
+        worker: apt.worker?.profile?.name ?? "Sin asignar",
+        status: getAppointmentStatusKey(apt.status),
+        amount: Number(apt.cost),
+        rawDate: new Date(apt.date),
+      };
+    },
   );
 
   const transformedRetouches = (retouches ?? []).map(
-    (retouch: any) => ({
-      id: String(retouch.id),
-      type: "retouch" as const,
-      time: new Date(retouch.time).toLocaleTimeString(locale, {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-      date: new Date(retouch.time).toLocaleDateString(locale, {
-        day: "numeric",
-        month: "short",
-      }),
-      dateForSearch: formatDateNumeric(new Date(retouch.time)),
-      customer: retouch.appointment?.client?.name ?? "Sin cliente",
-      customerPhone: retouch.appointment?.client?.phone_number ?? "",
-      service: `🔄 Repaso: ${pickItemsLabel(retouch.appointment?.items ?? [])}`,
-      address: retouch.address ?? retouch.appointment?.address ?? "",
-      worker: retouch.worker?.profile?.name ?? "Sin asignar",
-      status: getAppointmentStatusKey(retouch.status),
-      amount: 0,
-      rawDate: new Date(retouch.time),
-      reason: retouch.reason,
-    }),
+    (retouch: any) => {
+      const startTime = new Date(retouch.time);
+      const endTime = new Date(startTime.getTime() + (retouch.estimate_time ?? 120) * 60000);
+      return {
+        id: String(retouch.id),
+        type: "retouch" as const,
+        time: `${formatTime(startTime)} - ${formatTime(endTime)}`,
+        date: new Date(retouch.time).toLocaleDateString(locale, {
+          day: "numeric",
+          month: "short",
+        }),
+        dateForSearch: formatDateNumeric(new Date(retouch.time)),
+        customer: retouch.appointment?.client?.name ?? "Sin cliente",
+        customerPhone: retouch.appointment?.client?.phone_number ?? "",
+        service: `🔄 Repaso: ${pickItemsLabel(retouch.appointment?.items ?? [])}`,
+        address: retouch.address ?? retouch.appointment?.address ?? "",
+        worker: retouch.worker?.profile?.name ?? "Sin asignar",
+        status: getAppointmentStatusKey(retouch.status),
+        amount: 0,
+        rawDate: new Date(retouch.time),
+        reason: retouch.reason,
+      };
+    },
   );
 
   return [...transformedAppointments, ...transformedRetouches].sort(
@@ -719,7 +724,7 @@ export async function getDashboardData(): Promise<{
   const { data: todayRows, error: todayErr } = await supabase
     .from("appointments")
     .select(
-      `id, date, cost, payment_method, status,
+      `id, date, cost, payment_method, status, estimate_time,
        client:clients(id, name, phone_number),
        worker:workers(id, profile:profiles(id, name)),
         items:appointment_items(
@@ -754,18 +759,19 @@ export async function getDashboardData(): Promise<{
 
   if (msErr) throw msErr;
 
-  const todayAppointments = (todayRows ?? []).map((apt: any) => ({
-    id: String(apt.id),
-    time: new Date(apt.date).toLocaleTimeString(locale, {
-      hour: "2-digit",
-      minute: "2-digit",
-    }),
-    customer: apt.client?.name ?? "Sin cliente",
-    service: pickItemsLabel(apt.items ?? []),
-    worker: apt.worker?.profile?.name ?? "Sin asignar",
-    status: Number(apt.status),
-    paymentMethod: apt.payment_method ?? null,
-  }));
+  const todayAppointments = (todayRows ?? []).map((apt: any) => {
+    const startTime = new Date(apt.date);
+    const endTime = new Date(startTime.getTime() + (apt.estimate_time ?? 120) * 60000);
+    return {
+      id: String(apt.id),
+      time: `${formatTime(startTime)} - ${formatTime(endTime)}`,
+      customer: apt.client?.name ?? "Sin cliente",
+      service: pickItemsLabel(apt.items ?? []),
+      worker: apt.worker?.profile?.name ?? "Sin asignar",
+      status: Number(apt.status),
+      paymentMethod: apt.payment_method ?? null,
+    };
+  });
 
   return {
     stats: {

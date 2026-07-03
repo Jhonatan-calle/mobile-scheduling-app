@@ -19,6 +19,12 @@ export function addDays(date: Date, days: number) {
   return d;
 }
 
+export function formatTime(date: Date): string {
+  const hours = date.getHours().toString().padStart(2, "0");
+  const minutes = date.getMinutes().toString().padStart(2, "0");
+  return `${hours}:${minutes}`;
+}
+
 export function formatDateNumeric(date: Date): string {
   const d = date.getDate();
   const m = date.getMonth() + 1;

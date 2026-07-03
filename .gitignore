@@ -16,3 +16,4 @@ client_secret_*.json
 docs/.obsidian/
 .obsidian/
 opencode.sh
+data/

@@ -100,7 +100,7 @@ function AppointmentDetailHeader({ appointmentId }: { appointmentId: string }) {
       <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
         <Text style={styles.backButtonText}>← Volver</Text>
       </TouchableOpacity>
-      <Text style={styles.headerTitle}>Cita #{appointmentId}</Text>
+        <Text style={styles.headerTitle}>Detalle del Turno</Text>
       <TouchableOpacity
         style={styles.editButton}
         onPress={() => router.push(`/admin/appointments/edit/${appointmentId}`)}
