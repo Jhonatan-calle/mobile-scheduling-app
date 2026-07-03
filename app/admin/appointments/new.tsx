@@ -463,11 +463,10 @@ function DateTimeSection({
           display={Platform.OS === "ios" ? "spinner" : "default"}
           onChange={(_event, selectedDate) => {
             setShowDatePicker(Platform.OS === "ios");
-            if (selectedDate) {
+            if (_event.type === "set" && selectedDate) {
               setFormData({ ...formData, date: selectedDate });
             }
           }}
-          minimumDate={new Date()}
         />
       )}
 
@@ -489,7 +488,7 @@ function DateTimeSection({
           display={Platform.OS === "ios" ? "spinner" : "default"}
           onChange={(_event, selectedTime) => {
             setShowTimePicker(Platform.OS === "ios");
-            if (selectedTime) {
+            if (_event.type === "set" && selectedTime) {
               setFormData({ ...formData, time: selectedTime });
             }
           }}
@@ -802,10 +801,14 @@ function ActionButtons({
       const clientId = await resolveClientId();
       const profile = await getCurrentProfile();
 
-      const combinedDate = new Date(formData.date);
-      combinedDate.setHours(formData.time.getHours());
-      combinedDate.setMinutes(formData.time.getMinutes());
-      combinedDate.setSeconds(0);
+      const combinedDate = new Date(
+        formData.date.getFullYear(),
+        formData.date.getMonth(),
+        formData.date.getDate(),
+        formData.time.getHours(),
+        formData.time.getMinutes(),
+        0, 0
+      );
 
       await createAppointment({
         admin_id: profile?.id,

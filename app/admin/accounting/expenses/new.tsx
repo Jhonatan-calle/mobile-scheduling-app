@@ -71,7 +71,7 @@ export default function NewExpenseScreen() {
 
   const onDateChange = (_event: any, selectedDate?: Date) => {
     setShowDatePicker(Platform.OS === "ios");
-    if (selectedDate) setDate(selectedDate);
+    if (_event.type === "set" && selectedDate) setDate(selectedDate);
   };
 
   return (

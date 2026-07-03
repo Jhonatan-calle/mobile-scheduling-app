@@ -96,9 +96,14 @@ export default function EditRetouchScreen() {
 
     try {
       // Combinar fecha y hora
-      const combinedDateTime = new Date(formData.date);
-      combinedDateTime.setHours(formData.time.getHours());
-      combinedDateTime.setMinutes(formData.time.getMinutes());
+      const combinedDateTime = new Date(
+        formData.date.getFullYear(),
+        formData.date.getMonth(),
+        formData.date.getDate(),
+        formData.time.getHours(),
+        formData.time.getMinutes(),
+        0, 0
+      );
 
       const updateData = {
         worker_id: formData.workerId,
@@ -274,14 +279,14 @@ function DateTimeSection({
 
   const onDateChange = (event: any, selectedDate?: Date) => {
     setShowDatePicker(Platform.OS === "ios");
-    if (selectedDate) {
+    if (event.type === "set" && selectedDate) {
       setFormData({ ...formData, date: selectedDate });
     }
   };
 
   const onTimeChange = (event: any, selectedTime?: Date) => {
     setShowTimePicker(Platform.OS === "ios");
-    if (selectedTime) {
+    if (event.type === "set" && selectedTime) {
       setFormData({ ...formData, time: selectedTime });
     }
   };
@@ -326,7 +331,6 @@ function DateTimeSection({
           mode="date"
           display={Platform.OS === "ios" ?  "spinner" : "default"}
           onChange={onDateChange}
-          minimumDate={new Date()}
         />
       )}
 
