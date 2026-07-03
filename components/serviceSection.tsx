@@ -53,11 +53,6 @@ export function ServiceInfoSection({
     });
 
   const addItem = (comboId: number) => {
-    const exists = appointmentItems.some(
-      (i) => i.service_combo_id === comboId,
-    );
-    if (exists) return;
-
     setAppointmentItems([
       ...appointmentItems,
       {

@@ -77,8 +77,8 @@ export interface ServiceObject {
 export interface ServiceCombo {
   /** Primary key (bigint), not nullable. */
   id: number;
-  /** Referenced ServiceObject (flattened from junction), not nullable. */
-  service_object: ServiceObject;
+  /** IDs of all service_objects this combo belongs to (from object_combos junction). */
+  object_ids: number[];
   /** Name, not nullable. */
   name: string;
   /** May be null. */
