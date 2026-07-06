@@ -171,7 +171,7 @@ function StatusSection({ appointment, onUpdate }: any) {
         </Text>
       </View>
 
-      {currentStatusKey !== "completed" && currentStatusKey !== "cancelled" && (
+      {currentStatusKey !== "completed" && (
           <View style={styles.statusActions}>
             {currentStatusKey === "pending" && (
               <TouchableOpacity
@@ -202,6 +202,16 @@ function StatusSection({ appointment, onUpdate }: any) {
               >
                 <Text style={[styles.statusButtonText, { color: "#EF4444" }]}>
                   Cancelar turno
+                </Text>
+              </TouchableOpacity>
+            )}
+            {currentStatusKey === "cancelled" && (
+              <TouchableOpacity
+                style={[styles.statusButton, { backgroundColor: "#FEF3C7" }]}
+                onPress={() => handleStatusChange("pending")}
+              >
+                <Text style={[styles.statusButtonText, { color: "#D97706" }]}>
+                  Reabrir turno
                 </Text>
               </TouchableOpacity>
             )}

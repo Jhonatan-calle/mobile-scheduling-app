@@ -162,6 +162,14 @@ function StatusSection({ retouch, onStatusChange }: any) {
             <Text style={styles.statusButtonText}>Cancelar</Text>
           </TouchableOpacity>
         )}
+        {retouch.status === "cancelled" && (
+          <TouchableOpacity
+            style={[styles.statusButton, { backgroundColor: "#F59E0B" }]}
+            onPress={() => onStatusChange("pending")}
+          >
+            <Text style={styles.statusButtonText}>Reabrir</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );
