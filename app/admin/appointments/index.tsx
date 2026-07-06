@@ -725,8 +725,8 @@ const styles = StyleSheet.create({
     borderColor: "#3B82F6",
   },
   selectToggleTextActive: {
-    color: "#FFFFFF",
-    fontWeight: "600",
+    color: "#1D4ED8",
+    fontWeight: "700",
   },
   selectionBar: {
     paddingHorizontal: 16,
