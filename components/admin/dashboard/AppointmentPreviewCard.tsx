@@ -106,10 +106,10 @@ const styles = StyleSheet.create({
     color: "#9CA3AF",
   },
   rightColumn: {
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
     marginLeft: 12,
-    gap: 4,
+    gap: 8,
   },
   appointmentAmount: {
     fontSize: 13,

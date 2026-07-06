@@ -449,28 +449,6 @@ function PaymentStatusSection({ appointment, onUpdate }: any) {
     ]);
   };
 
-  const toggleWorkerPayment = async () => {
-    Alert.alert(
-      appointment.paid_to_worker
-        ? "Marcar como no pagado"
-        : "Marcar como pagado",
-      `¿${appointment.paid_to_worker ? "No" : ""} se ha pagado al trabajador? `,
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "Confirmar",
-          onPress: async () => {
-            await updateAppointment(appointment.id, {
-              paid_to_worker: !appointment.paid_to_worker,
-            } as any);
-            Alert.alert("Éxito", "Estado de pago actualizado");
-            onUpdate();
-          },
-        },
-      ],
-    );
-  };
-
   return (
     <View style={globalStyles.section}>
       <SectionTitle icon="���" title="Estado de Pagos" />
@@ -507,12 +485,6 @@ function PaymentStatusSection({ appointment, onUpdate }: any) {
         )}
       </View>
 
-      {/* Pago al trabajador */}
-      <PaymentStatusCard
-        label="Pago al trabajador"
-        paid={appointment.paid_to_worker}
-        onToggle={toggleWorkerPayment}
-      />
     </View>
   );
 }

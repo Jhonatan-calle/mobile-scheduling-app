@@ -6,7 +6,6 @@ export default function AccountingLayout() {
       <Stack.Screen name="index" />
       <Stack.Screen name="expenses" />
       <Stack.Screen name="summary" />
-      <Stack.Screen name="payments" />
     </Stack>
   );
 }

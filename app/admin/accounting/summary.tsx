@@ -142,9 +142,6 @@ export default function SummaryScreen() {
         {/* Income Detail */}
         <IncomeSection income={summary.income} details={summary.appointmentDetails} retouches={summary.retouchDetails} />
 
-        {/* Salaries Detail */}
-        <SalariesSection salaries={summary.salaries} />
-
         {/* Expenses Detail */}
         <ExpensesSection expenses={summary.expenses} />
 
@@ -264,54 +261,6 @@ function IncomeSection({ income, details, retouches }: any) {
 
 // ============================================================================
 // SALARIES SECTION
-// ============================================================================
-function SalariesSection({ salaries }:  any) {
-  return (
-    <View style={styles.section}>
-      <Text style={styles.sectionTitle}>👥 Salarios</Text>
-
-      <View style={styles. amountCard}>
-        <Text style={styles.amountLabel}>Total Pagado</Text>
-        <Text style={[styles.amountValue, { color: "#EF4444" }]}>
-          -${salaries.totalPaid.toLocaleString()}
-        </Text>
-      </View>
-
-      <View style={styles. detailsList}>
-        {salaries.workers.map((worker: any, index: number) => (
-          <View key={index} style={styles. workerRow}>
-            <View style={styles.workerRowLeft}>
-              <Text style={styles.workerRowName}>{worker.name}</Text>
-              <Text style={styles. workerRowAmount}>
-                Ganado: ${worker.earned.toLocaleString()}
-              </Text>
-            </View>
-            <View style={styles.workerRowRight}>
-              <Text style={styles.workerRowPaid}>
-                Pagado: ${worker.paid.toLocaleString()}
-              </Text>
-              {worker.pending > 0 && (
-                <Text style={styles.workerRowPending}>
-                  Debe:  ${worker.pending.toLocaleString()}
-                </Text>
-              )}
-            </View>
-          </View>
-        ))}
-      </View>
-
-      {salaries.totalPending > 0 && (
-        <View style={styles.warningBox}>
-          <Text style={styles.warningIcon}>⚠️</Text>
-          <Text style={styles. warningText}>
-            Hay ${salaries.totalPending. toLocaleString()} pendiente de pago
-          </Text>
-        </View>
-      )}
-    </View>
-  );
-}
-
 // ============================================================================
 // EXPENSES SECTION
 // ============================================================================

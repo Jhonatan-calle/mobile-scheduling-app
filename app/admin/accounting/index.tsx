@@ -239,13 +239,6 @@ function QuickAccessSection() {
           onPress={() => router.push("/admin/accounting/expenses")}
         />
         <QuickAccessCard
-          icon="💵"
-          title="Pagos"
-          subtitle="Estado de pagos"
-          color="#10B981"
-          onPress={() => router.push("/admin/accounting/payments")}
-        />
-        <QuickAccessCard
           icon="📊"
           title="Desglose"
           subtitle="Ver detalle"
