@@ -31,7 +31,8 @@ function pickItemsLabel(items: any[]): string {
     .map((item: any) => {
       const objeto =
         item.service_combo?.service_object?.name ??
-        item.service_combo?.object_combos?.[0]?.service_object?.name ??
+        item.service_combo?.object_combos?.[0]?.service_object
+          ?.name ??
         "Objeto";
       const combo = item.service_combo?.name;
       return combo ? `${objeto} (${combo})` : objeto;
@@ -298,7 +299,7 @@ export async function createWorker(input: {
 }) {
   const { data: profile, error: profileError } = await supabase
     .from("profiles")
-    .insert({ name: input.name, user_role: "worker" })
+    .insert({ name: input.name, user_role: "worker", auth_user_id: null })
     .select("id")
     .single();
 
@@ -328,12 +329,21 @@ export async function createWorker(input: {
 
 export async function updateWorker(
   id: number,
-  input: { name?: string; commission_rate?: number; is_active?: boolean },
+  input: {
+    name?: string;
+    commission_rate?: number;
+    is_active?: boolean;
+  },
 ) {
-  if (input.commission_rate !== undefined || input.is_active !== undefined) {
+  if (
+    input.commission_rate !== undefined ||
+    input.is_active !== undefined
+  ) {
     const updateData: Record<string, any> = {};
-    if (input.commission_rate !== undefined) updateData.commission_rate = input.commission_rate;
-    if (input.is_active !== undefined) updateData.is_active = input.is_active;
+    if (input.commission_rate !== undefined)
+      updateData.commission_rate = input.commission_rate;
+    if (input.is_active !== undefined)
+      updateData.is_active = input.is_active;
 
     const { error: workerError } = await supabase
       .from("workers")
@@ -390,7 +400,10 @@ export async function deleteWorker(id: number) {
   const total = (apptCount ?? 0) + (retouchCount ?? 0);
 
   if (total > 0) {
-    return { deleted: false, reason: `Tiene ${total} turno(s) asignado(s), solo puede archivarse` };
+    return {
+      deleted: false,
+      reason: `Tiene ${total} turno(s) asignado(s), solo puede archivarse`,
+    };
   }
 
   const { error: deleteError } = await supabase
@@ -428,14 +441,14 @@ export async function getAppointmentsFeed(): Promise<
             description,
             service_combo:combos(id, name, object_combos(service_object:service_objects(id, name)))
           )`,
-        )
-        .gte("date", pastRange.toISOString())
-        .lte("date", futureRange.toISOString())
-        .order("date", { ascending: true }),
-      supabase
-        .from("retouches")
-        .select(
-          `id, time, reason, estimate_time, status, appointment_id, address,
+      )
+      .gte("date", pastRange.toISOString())
+      .lte("date", futureRange.toISOString())
+      .order("date", { ascending: true }),
+    supabase
+      .from("retouches")
+      .select(
+        `id, time, reason, estimate_time, status, appointment_id, address,
            appointment:appointments(
              id, date, notes,
              client:clients(id, name, phone_number),
@@ -456,7 +469,9 @@ export async function getAppointmentsFeed(): Promise<
   const transformedAppointments = (appointments ?? []).map(
     (apt: any) => {
       const startTime = new Date(apt.date);
-      const endTime = new Date(startTime.getTime() + (apt.estimate_time ?? 120) * 60000);
+      const endTime = new Date(
+        startTime.getTime() + (apt.estimate_time ?? 120) * 60000,
+      );
       return {
         id: String(apt.id),
         type: "appointment" as const,
@@ -481,7 +496,9 @@ export async function getAppointmentsFeed(): Promise<
   const transformedRetouches = (retouches ?? []).map(
     (retouch: any) => {
       const startTime = new Date(retouch.time);
-      const endTime = new Date(startTime.getTime() + (retouch.estimate_time ?? 120) * 60000);
+      const endTime = new Date(
+        startTime.getTime() + (retouch.estimate_time ?? 120) * 60000,
+      );
       return {
         id: String(retouch.id),
         type: "retouch" as const,
@@ -492,9 +509,11 @@ export async function getAppointmentsFeed(): Promise<
         }),
         dateForSearch: formatDateNumeric(new Date(retouch.time)),
         customer: retouch.appointment?.client?.name ?? "Sin cliente",
-        customerPhone: retouch.appointment?.client?.phone_number ?? "",
+        customerPhone:
+          retouch.appointment?.client?.phone_number ?? "",
         service: `🔄 Repaso: ${pickItemsLabel(retouch.appointment?.items ?? [])}`,
-        address: retouch.address ?? retouch.appointment?.address ?? "",
+        address:
+          retouch.address ?? retouch.appointment?.address ?? "",
         worker: retouch.worker?.profile?.name ?? "Sin asignar",
         status: getAppointmentStatusKey(retouch.status),
         amount: 0,
@@ -731,12 +750,12 @@ export async function getDashboardData(): Promise<{
           service_combo:combos(id, name,
             object_combos(service_object:service_objects(id, name)))
         )`,
-      )
-      .gte("date", todayStart.toISOString())
-      .lt("date", tomorrowStart.toISOString())
-      .order("date", { ascending: true });
+    )
+    .gte("date", todayStart.toISOString())
+    .lt("date", tomorrowStart.toISOString())
+    .order("date", { ascending: true });
 
-    if (todayErr) throw todayErr;
+  if (todayErr) throw todayErr;
 
   const { count: pendingCount, error: pendingErr } = await supabase
     .from("appointments")
@@ -761,7 +780,9 @@ export async function getDashboardData(): Promise<{
 
   const todayAppointments = (todayRows ?? []).map((apt: any) => {
     const startTime = new Date(apt.date);
-    const endTime = new Date(startTime.getTime() + (apt.estimate_time ?? 120) * 60000);
+    const endTime = new Date(
+      startTime.getTime() + (apt.estimate_time ?? 120) * 60000,
+    );
     return {
       id: String(apt.id),
       time: `${formatTime(startTime)} - ${formatTime(endTime)}`,
@@ -853,7 +874,7 @@ export async function getMonthlySummary(month = new Date()) {
     .from("expenses")
     .select("amount")
     .gte("date", startOfLocalMonth(month).toISOString().slice(0, 10))
-    .lt("date", endOfLocalMonth(month).toISOString().slice(0, 10))
+    .lt("date", endOfLocalMonth(month).toISOString().slice(0, 10));
   if (expensesErr) throw expensesErr;
 
   const totalExpenses = (expenses ?? []).reduce(
@@ -1115,10 +1136,10 @@ export async function getWorkerMonthlyStats(
           service_combo:combos(id, name,
             object_combos(service_object:service_objects(id, name)))
         )`,
-      )
-      .eq("worker_id", workerId)
-      .gte("date", startOfLocalMonth(month).toISOString())
-      .lt("date", endOfLocalMonth(month).toISOString());
+    )
+    .eq("worker_id", workerId)
+    .gte("date", startOfLocalMonth(month).toISOString())
+    .lt("date", endOfLocalMonth(month).toISOString());
 
   if (error) throw error;
 
@@ -1252,13 +1273,13 @@ export async function getWorkerHistory(workerId: number) {
              object_combos(service_object:service_objects(id, name)))
          ),
          worker:workers(id, profile:profiles(id, name))`,
-       )
-       .eq("worker_id", workerId)
-       .order("date", { ascending: false }),
-     supabase
-       .from("retouches")
-       .select(
-         `id, time, reason, estimate_time, status, address,
+      )
+      .eq("worker_id", workerId)
+      .order("date", { ascending: false }),
+    supabase
+      .from("retouches")
+      .select(
+        `id, time, reason, estimate_time, status, address,
           appointment:appointments(
             id, address, notes,
             client:clients(id, name, phone_number),
@@ -1313,7 +1334,6 @@ export async function getWorkerHistory(workerId: number) {
     (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
   );
 }
-
 
 // ============================================================================
 // PERFIL
