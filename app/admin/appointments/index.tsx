@@ -164,21 +164,16 @@ function AppointmentsHeader({
   selectionMode: boolean;
   onCancel: () => void;
 }) {
+  if (!selectionMode) return null;
   return (
-    <View style={styles.header}>
-      <View >
-        <Text style={styles.headerTitle}>Citas y Repasos</Text>
-        <Text style={styles.headerSubtitle}>Gestiona tus servicios</Text>
-      </View>
-      {selectionMode && (
-        <TouchableOpacity
-          style={[styles.selectToggle, styles.selectToggleActive]}
-          onPress={onCancel}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.selectToggleTextActive}>Cancelar</Text>
-        </TouchableOpacity>
-      )}
+    <View style={styles.selectionBar}>
+      <TouchableOpacity
+        style={[styles.selectToggle, styles.selectToggleActive]}
+        onPress={onCancel}
+        activeOpacity={0.7}
+      >
+        <Text style={styles.selectToggleTextActive}>Cancelar</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -571,24 +566,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
-  header: {
-    padding: 24,
-    paddingTop: 40,
-    backgroundColor: "#FFFFFF",
-    borderBottomWidth: 1,
-    borderBottomColor: "#E5E7EB",
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: "#111827",
-  },
-  headerSubtitle: {
-    fontSize: 14,
-    color: "#6B7280",
-    marginTop: 4,
-  },
-
   searchSection: {
     padding: 16,
     backgroundColor: "#FFFFFF",
@@ -748,7 +725,15 @@ const styles = StyleSheet.create({
     borderColor: "#3B82F6",
   },
   selectToggleTextActive: {
-    color: "#3B82F6",
+    color: "#FFFFFF",
+    fontWeight: "600",
+  },
+  selectionBar: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: "#FFFFFF",
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E7EB",
   },
   checkboxContainer: {
     paddingRight: 8,
