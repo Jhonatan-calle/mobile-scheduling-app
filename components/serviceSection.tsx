@@ -81,10 +81,11 @@ export function ServiceInfoSection({
   };
 
   const updateCantidad = (index: number, value: string) => {
+    if (value === "") return;
     const num = parseInt(value, 10);
-    if (value === "" || num < 0) return;
+    if (isNaN(num) || num < 0) return;
     const updated = [...appointmentItems];
-    updated[index] = { ...updated[index], cantidad: num || 0 };
+    updated[index] = { ...updated[index], cantidad: num };
     setAppointmentItems(updated);
   };
 
@@ -136,7 +137,7 @@ export function ServiceInfoSection({
                       <Text style={styles.cantidadLabel}>Cant:</Text>
                       <TextInput
                         style={styles.cantidadInput}
-                        value={String(cantidad)}
+                        defaultValue={String(cantidad)}
                         onChangeText={(text) => updateCantidad(index, text)}
                         keyboardType="numeric"
                       />
