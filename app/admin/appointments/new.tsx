@@ -42,6 +42,7 @@ export default function NewAppointmentScreen() {
     commissionRate: "",
   });
 
+  const [customTime, setCustomTime] = useState("");
   const [appointmentItems, setAppointmentItems] = useState<any[]>([]);
   const [serviceObjects, setServiceObjects] = useState<
     ServiceObjectWithCombos[]
@@ -204,6 +205,8 @@ export default function NewAppointmentScreen() {
           setShowDatePicker={setShowDatePicker}
           showTimePicker={showTimePicker}
           setShowTimePicker={setShowTimePicker}
+          customTime={customTime}
+          setCustomTime={setCustomTime}
         />
         <WorkerAssignmentSection
           formData={formData}
@@ -221,6 +224,7 @@ export default function NewAppointmentScreen() {
           setLoading={setLoading}
           selectedClientId={selectedClientId}
           appointmentItems={appointmentItems}
+          customTime={customTime}
         />
       </ScrollView>
     </View>
@@ -413,6 +417,8 @@ function DateTimeSection({
   setShowDatePicker,
   showTimePicker,
   setShowTimePicker,
+  customTime,
+  setCustomTime,
 }: any) {
   const formatDate = (date: Date) => {
     return date.toLocaleDateString("es-AR", {
@@ -429,6 +435,7 @@ function DateTimeSection({
     { value: "90", label: "1.5 horas" },
     { value: "120", label: "2 horas" },
     { value: "180", label: "3 horas" },
+    { value: "240", label: "4 horas" },
   ];
 
   return (
@@ -518,7 +525,41 @@ function DateTimeSection({
             </Text>
           </TouchableOpacity>
         ))}
+        <TouchableOpacity
+          style={[
+            styles.durationChip,
+            formData.estimateTime === "otro" && styles.durationChipSelected,
+          ]}
+          onPress={() =>
+            setFormData({
+              ...formData,
+              estimateTime: "otro",
+            })
+          }
+          activeOpacity={0.7}
+        >
+          <Text
+            style={[
+              styles.durationChipText,
+              formData.estimateTime === "otro" && styles.durationChipTextSelected,
+            ]}
+          >
+            Otro
+          </Text>
+        </TouchableOpacity>
       </View>
+      {formData.estimateTime === "otro" && (
+        <View style={styles.customTimeContainer}>
+          <TextInput
+            style={styles.customTimeInput}
+            placeholder="Minutos"
+            value={customTime}
+            onChangeText={setCustomTime}
+            keyboardType="numeric"
+          />
+          <Text style={styles.customTimeSuffix}>min</Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -744,6 +785,7 @@ function ActionButtons({
   setLoading,
   selectedClientId,
   appointmentItems,
+  customTime,
 }: any) {
   const validateForm = () => {
     if (!formData.customerName.trim()) {
@@ -761,6 +803,10 @@ function ActionButtons({
     // Opcional: se puede asignar un trabajador más tarde
     if (appointmentItems.length === 0) {
       Alert.alert("Error", "Debes agregar al menos un servicio");
+      return false;
+    }
+    if (formData.estimateTime === "otro" && (!customTime.trim() || parseInt(customTime, 10) <= 0)) {
+      Alert.alert("Error", "Debes ingresar los minutos para la duración personalizada");
       return false;
     }
 
@@ -810,7 +856,9 @@ function ActionButtons({
         client_id: clientId,
         address: formData.customerAddress || null,
         date: combinedDate.toISOString(),
-        estimate_time: parseInt(formData.estimateTime, 10),
+        estimate_time: formData.estimateTime === "otro"
+          ? parseInt(customTime, 10) || 0
+          : parseInt(formData.estimateTime, 10),
         cost: parseFloat(formData.cost),
         commission_rate: parseFloat(formData.commissionRate) || 0,
         notes: formData.observaciones || null,
@@ -1083,6 +1131,25 @@ const styles = StyleSheet.create({
   },
   durationChipTextSelected: {
     color: "#FFFFFF",
+  },
+  customTimeContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 8,
+  },
+  customTimeInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: "#D1D5DB",
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+  },
+  customTimeSuffix: {
+    marginLeft: 8,
+    fontSize: 16,
+    color: "#6B7280",
+    fontWeight: "600",
   },
 
   // Workers Grid

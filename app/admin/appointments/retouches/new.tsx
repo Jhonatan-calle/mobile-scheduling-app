@@ -1,6 +1,7 @@
 import {
   View,
   Text,
+  TextInput,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
@@ -31,6 +32,7 @@ export default function NewRetouchScreen() {
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [loading, setLoading] = useState(false);
   const [workers, setWorkers] = useState<any[]>([]);
+  const [customTime, setCustomTime] = useState("");
 
   useEffect(() => {
     loadAppointment();
@@ -63,8 +65,12 @@ export default function NewRetouchScreen() {
   };
 
   const validateForm = () => {
-    if (!formData.reason. trim()) {
+    if (!formData.reason.trim()) {
       Alert.alert("Error", "Debes especificar el motivo del repaso");
+      return false;
+    }
+    if (formData.estimateTime === "otro" && (!customTime.trim() || parseInt(customTime, 10) <= 0)) {
+      Alert.alert("Error", "Debes ingresar los minutos para la duración personalizada");
       return false;
     }
     return true;
@@ -92,7 +98,9 @@ export default function NewRetouchScreen() {
         time: combinedDate. toISOString(),
         address: formData.address,
         reason: formData.reason,
-        estimate_time: parseInt(formData.estimateTime),
+        estimate_time: formData.estimateTime === "otro"
+          ? parseInt(customTime, 10) || 0
+          : parseInt(formData.estimateTime, 10),
         status: "pending",
         created_at: new Date().toISOString(),
       };
@@ -104,7 +112,9 @@ export default function NewRetouchScreen() {
         time: combinedDate.toISOString(),
         address: formData.address,
         reason: formData.reason,
-        estimate_time: parseInt(formData.estimateTime),
+        estimate_time: formData.estimateTime === "otro"
+          ? parseInt(customTime, 10) || 0
+          : parseInt(formData.estimateTime, 10),
       });
 
       Alert.alert("¡Éxito!", "El repaso ha sido creado correctamente", [
@@ -146,6 +156,8 @@ export default function NewRetouchScreen() {
           setShowDatePicker={setShowDatePicker}
           showTimePicker={showTimePicker}
           setShowTimePicker={setShowTimePicker}
+          customTime={customTime}
+          setCustomTime={setCustomTime}
         />
         <WorkerSection
           formData={formData}
@@ -240,6 +252,8 @@ function DateTimeSection({
   setShowDatePicker,
   showTimePicker,
   setShowTimePicker,
+  customTime,
+  setCustomTime,
 }:  any) {
   const formatDate = (date: Date) => {
     return date.toLocaleDateString("es-AR", {
@@ -253,8 +267,9 @@ function DateTimeSection({
   const durations = [
     { value: "30", label: "30 min" },
     { value: "60", label: "1 hora" },
-    { value: "90", label: "1. 5 horas" },
-    { value: "120", label:  "2 horas" },
+    { value: "90", label: "1.5 horas" },
+    { value: "120", label: "2 horas" },
+    { value: "240", label: "4 horas" },
   ];
 
   return (
@@ -322,14 +337,14 @@ function DateTimeSection({
                 styles.durationChipSelected,
             ]}
             onPress={() =>
-              setFormData({ ...formData, estimateTime: duration. value })
+              setFormData({ ...formData, estimateTime: duration.value })
             }
             activeOpacity={0.7}
           >
             <Text
               style={[
-                styles. durationChipText,
-                formData. estimateTime === duration.value &&
+                styles.durationChipText,
+                formData.estimateTime === duration.value &&
                   styles.durationChipTextSelected,
               ]}
             >
@@ -337,7 +352,38 @@ function DateTimeSection({
             </Text>
           </TouchableOpacity>
         ))}
+        <TouchableOpacity
+          style={[
+            styles.durationChip,
+            formData.estimateTime === "otro" && styles.durationChipSelected,
+          ]}
+          onPress={() =>
+            setFormData({ ...formData, estimateTime: "otro" })
+          }
+          activeOpacity={0.7}
+        >
+          <Text
+            style={[
+              styles.durationChipText,
+              formData.estimateTime === "otro" && styles.durationChipTextSelected,
+            ]}
+          >
+            Otro
+          </Text>
+        </TouchableOpacity>
       </View>
+      {formData.estimateTime === "otro" && (
+        <View style={styles.customTimeContainer}>
+          <TextInput
+            style={styles.customTimeInput}
+            placeholder="Minutos"
+            value={customTime}
+            onChangeText={setCustomTime}
+            keyboardType="numeric"
+          />
+          <Text style={styles.customTimeSuffix}>min</Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -587,6 +633,25 @@ const styles = StyleSheet.create({
   },
   durationChipTextSelected: {
     color: "#FFFFFF",
+  },
+  customTimeContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 8,
+  },
+  customTimeInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: "#D1D5DB",
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+  },
+  customTimeSuffix: {
+    marginLeft: 8,
+    fontSize: 16,
+    color: "#6B7280",
+    fontWeight: "600",
   },
 
   // Workers
