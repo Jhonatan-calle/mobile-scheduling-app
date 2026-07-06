@@ -80,6 +80,14 @@ export function ServiceInfoSection({
     setAppointmentItems(updated);
   };
 
+  const updateCantidad = (index: number, value: string) => {
+    const num = parseInt(value, 10);
+    if (value === "" || num < 0) return;
+    const updated = [...appointmentItems];
+    updated[index] = { ...updated[index], cantidad: num || 0 };
+    setAppointmentItems(updated);
+  };
+
   const getItemObjectName = (comboId: number) =>
     serviceObjects
       .find((o) => o.combos.some((c) => c.id === comboId))
@@ -121,9 +129,18 @@ export function ServiceInfoSection({
                     </Text>
                     {comboName && (
                       <Text style={styles.itemCardCombo}>
-                        {comboName}{cantidad > 1 ? ` x${cantidad}` : ""}
+                        {comboName}
                       </Text>
                     )}
+                    <View style={styles.cantidadRow}>
+                      <Text style={styles.cantidadLabel}>Cant:</Text>
+                      <TextInput
+                        style={styles.cantidadInput}
+                        value={String(cantidad)}
+                        onChangeText={(text) => updateCantidad(index, text)}
+                        keyboardType="numeric"
+                      />
+                    </View>
                   </View>
                   <TouchableOpacity
                     onPress={() => removeItem(index)}
@@ -302,6 +319,29 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     fontSize: 13,
     color: "#111827",
+  },
+  cantidadRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 4,
+  },
+  cantidadLabel: {
+    fontSize: 13,
+    color: "#6B7280",
+    marginRight: 6,
+    fontWeight: "500",
+  },
+  cantidadInput: {
+    borderWidth: 1,
+    borderColor: "#BFDBFE",
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    fontSize: 13,
+    color: "#111827",
+    backgroundColor: "#FFFFFF",
+    width: 50,
+    textAlign: "center",
   },
   objectGrid: {
     flexDirection: "row",
