@@ -192,6 +192,7 @@ function TodayAppointmentsSection({ appointments, loading }: any) {
               worker={appointment.worker}
               status={appointment.status}
               paymentMethod={appointment.paymentMethod}
+              amount={appointment.amount}
             />
           </TouchableOpacity>
         ))

@@ -902,7 +902,7 @@ export async function getMonthlySummary(month = new Date()) {
 
   const { data: expenses, error: expensesErr } = await supabase
     .from("expenses")
-    .select("amount")
+    .select("amount, category")
     .gte("date", startOfLocalMonth(month).toISOString().slice(0, 10))
     .lt("date", endOfLocalMonth(month).toISOString().slice(0, 10));
   if (expensesErr) throw expensesErr;
@@ -911,6 +911,20 @@ export async function getMonthlySummary(month = new Date()) {
     (sum, row) => sum + Number(row.amount),
     0,
   );
+
+  const byCategory: Record<string, number> = {};
+  for (const row of expenses ?? []) {
+    const cat = row.category ?? "other";
+    byCategory[cat] = (byCategory[cat] ?? 0) + Number(row.amount);
+  }
+  const normalizedByCategory = {
+    fuel: 0,
+    advertising: 0,
+    supplies: 0,
+    maintenance: 0,
+    other: 0,
+    ...byCategory,
+  };
   const totalIncome = Number(summaryRow?.total_income ?? 0);
   const totalSalaries = Number(summaryRow?.total_salaries ?? 0);
   const grossProfit = Number(summaryRow?.total_profit ?? 0);
@@ -922,13 +936,7 @@ export async function getMonthlySummary(month = new Date()) {
     totalAppointments: Number(summaryRow?.total_appointments ?? 0),
     totalRetouches: Number(summaryRow?.total_retouches ?? 0),
     totalExpenses,
-    expenses: {
-      fuel: 0,
-      advertising: 0,
-      supplies: 0,
-      maintenance: 0,
-      other: totalExpenses,
-    },
+    expenses: normalizedByCategory,
     totalSalaries,
     workerPayments: [],
     grossProfit,
@@ -950,7 +958,7 @@ export async function getDetailedAccountingSummary(
         .eq("year", month.getFullYear()),
       supabase
         .from("expenses")
-        .select("description, amount")
+        .select("description, amount, category")
         .gte(
           "date",
           startOfLocalMonth(month).toISOString().slice(0, 10),
@@ -1422,5 +1430,6 @@ export {
   getPaymentMethodConfig,
   getExpenseCategoryConfig,
   getServiceIcon,
+  pickItemsLabel,
   DAY_NAMES,
 };

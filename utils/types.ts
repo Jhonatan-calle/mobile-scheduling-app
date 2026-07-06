@@ -271,8 +271,10 @@ export type DashboardTodayAppointment = {
   id: string;
   time: string;
   customer: string;
+  service: string;
   worker: string;
-  status: string; 
+  amount: number;
+  status: string;
   paymentMethod: string | null;
 };
 

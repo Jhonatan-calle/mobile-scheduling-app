@@ -1,6 +1,7 @@
 import { supabase } from "../supabase/supabase";
 import { addDays, formatTime, startOfLocalDay } from "./helpers";
 import { getAppointmentStatusKey } from "./lookups";
+import { pickItemsLabel } from "./adminData";
 import {
   AppointmentStatus,
   DashboardStats,
@@ -18,7 +19,16 @@ export async function getAdminDashboardData(): Promise<{
 
   const { data: todayRows, error: todayErr } = await supabase
     .from("appointments")
-    .select("id,status")
+    .select(
+      `id, date, cost, estimate_time, status, payment_method,
+       client:clients(name),
+       worker:workers(id, profile:profiles(name)),
+       items:appointment_items(
+         description, cantidad,
+         service_combo:combos(id, name,
+           object_combos(service_object:service_objects(id, name)))
+       )`,
+    )
     .gte("date", todayStart.toISOString())
     .lt("date", tomorrowStart.toISOString())
     .order("date", { ascending: true });
@@ -28,13 +38,13 @@ export async function getAdminDashboardData(): Promise<{
   const todayAppointmentsRaw = todayRows ?? [];
 
   // 2) Pendientes (global, del admin) => status 1 o 4 (pendiente - repaso)
-
   const pendingToday = todayAppointmentsRaw.filter((apt: any) =>
     [
       AppointmentStatus.PENDIENTE,
       AppointmentStatus.PENDIENTE_REPASO,
     ].includes(apt.status),
   ).length;
+
   // 3) Completadas hoy => status 3 o 5
   const completedToday = todayAppointmentsRaw.filter((apt: any) =>
     [
@@ -43,7 +53,7 @@ export async function getAdminDashboardData(): Promise<{
     ].includes(apt.status),
   ).length;
 
-  // 4) Ingresos del mes: desde month_summaries (si querés, esto luego lo filtramos por admin si tu tabla lo soporta)
+  // 4) Ingresos del mes: desde month_summaries
   const now = new Date();
   const month = now.getMonth() + 1;
   const year = now.getFullYear();
@@ -61,14 +71,22 @@ export async function getAdminDashboardData(): Promise<{
 
   // 5) Transformación para UI
   const todayAppointments: DashboardTodayAppointment[] =
-    todayAppointmentsRaw.map((apt: any) => ({
-      id: String(apt.id),
-      time: formatTime(new Date(apt.date)),
-      customer: apt.client?.name ?? "Sin cliente",
-      worker: apt.worker?.profile?.name ?? "Sin asignar",
-      status: getAppointmentStatusKey(apt.status), // o mapea a "pending/in-progress/completed" si tu card lo necesita
-      paymentMethod: apt.payment_method ?? null,
-    }));
+    todayAppointmentsRaw.map((apt: any) => {
+      const startTime = new Date(apt.date);
+      const endTime = new Date(
+        startTime.getTime() + (apt.estimate_time ?? 120) * 60000,
+      );
+      return {
+        id: String(apt.id),
+        time: `${formatTime(startTime)} - ${formatTime(endTime)}`,
+        customer: apt.client?.name ?? "Sin cliente",
+        service: pickItemsLabel(apt.items ?? []),
+        worker: apt.worker?.profile?.name ?? "Sin asignar",
+        amount: Number(apt.cost),
+        status: getAppointmentStatusKey(apt.status),
+        paymentMethod: apt.payment_method ?? null,
+      };
+    });
 
   const stats: DashboardStats = {
     todayAppointments: todayAppointmentsRaw.length,
