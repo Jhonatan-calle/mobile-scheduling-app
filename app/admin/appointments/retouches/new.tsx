@@ -316,13 +316,14 @@ function DateTimeSection({
         <DateTimePicker
           value={formData.time}
           mode="time"
-          display={Platform.OS === "ios" ?  "spinner" : "default"}
+          display={Platform.OS === "ios" ? "spinner" : "default"}
           onChange={(event, selectedTime) => {
             setShowTimePicker(Platform.OS === "ios");
             if (event.type === "set" && selectedTime) {
               setFormData({ ...formData, time: selectedTime });
             }
           }}
+          is24Hour={true}
         />
       )}
 

@@ -493,6 +493,7 @@ function DateTimeSection({
               setFormData({ ...formData, time: selectedTime });
             }
           }}
+          is24Hour={true}
         />
       )}
 
