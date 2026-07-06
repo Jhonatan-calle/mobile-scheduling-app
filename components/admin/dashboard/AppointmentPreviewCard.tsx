@@ -13,6 +13,7 @@ interface AppointmentPreviewCardProps {
   worker: string;
   status: number | string;
   paymentMethod?: string;
+  amount?: number;
 }
 
 export default function AppointmentPreviewCard({
@@ -23,6 +24,7 @@ export default function AppointmentPreviewCard({
   worker,
   status,
   paymentMethod,
+  amount,
 }: AppointmentPreviewCardProps) {
   const config =
     typeof status === "string"
@@ -41,13 +43,18 @@ export default function AppointmentPreviewCard({
         <Text style={styles.appointmentService}>{service}</Text>
         <Text style={styles.appointmentWorker}>👤 {worker}</Text>
       </View>
-      <View
-        style={[
-          styles.appointmentStatus,
-          { backgroundColor: config.color + "20" }, // me esta arrojando error config.color dice no definiido
-        ]}
-      >
-        <Text style={styles.appointmentStatusIcon}>{config.icon}</Text>
+      <View style={styles.rightColumn}>
+        <Text style={styles.appointmentAmount}>
+          ${amount ? amount.toLocaleString("es-AR") : "0"}
+        </Text>
+        <View
+          style={[
+            styles.appointmentStatus,
+            { backgroundColor: config.color + "20" },
+          ]}
+        >
+          <Text style={styles.appointmentStatusIcon}>{config.icon}</Text>
+        </View>
       </View>
     </View>
   );
@@ -98,15 +105,25 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#9CA3AF",
   },
+  rightColumn: {
+    alignItems: "center",
+    justifyContent: "center",
+    marginLeft: 12,
+    gap: 4,
+  },
+  appointmentAmount: {
+    fontSize: 13,
+    fontWeight: "bold",
+    color: "#10B981",
+  },
   appointmentStatus: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     justifyContent: "center",
     alignItems: "center",
-    marginLeft: 12,
   },
   appointmentStatusIcon: {
-    fontSize: 20,
+    fontSize: 14,
   },
 });

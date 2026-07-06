@@ -511,17 +511,9 @@ function ItemsList({
                       service={item.service}
                       worker={item.worker}
                       status={item.status}
+                      amount={item.amount}
                     />
                   </TouchableOpacity>
-                  {!selectionMode && (
-                    <TouchableOpacity
-                      style={styles.copyButton}
-                      onPress={() => copyAppointment(item)}
-                      activeOpacity={0.6}
-                    >
-                      <Text style={styles.copyIcon}>📋</Text>
-                    </TouchableOpacity>
-                  )}
                 </View>
               );
             })}
@@ -532,19 +524,6 @@ function ItemsList({
       )}
     </View>
   );
-}
-
-function copyAppointment(item: any) {
-  const text = [
-    `🕐 Hora: ${item.time}`,
-    `🧼 Servicio: ${item.service}`,
-    `👤 Cliente: ${item.customer}${item.customerPhone ? ` - ${item.customerPhone}` : ""}`,
-    `📍 Dirección: ${item.address || "Sin dirección"}`,
-    `💰 Monto: $${item.amount ? item.amount.toLocaleString("es-AR") : "0"}`,
-  ].join("\n");
-
-  Clipboard.setStringAsync(text);
-  Alert.alert("Copiado", "Turno copiado al portapapeles");
 }
 
 function EmptyState({ searchQuery, searchType }: any) {
@@ -755,17 +734,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-  },
-  copyButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "#F3F4F6",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  copyIcon: {
-    fontSize: 16,
   },
   selectToggle: {
     paddingHorizontal: 14,
