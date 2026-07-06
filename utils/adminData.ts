@@ -296,34 +296,23 @@ export async function getAllWorkers(): Promise<WorkerOption[]> {
 export async function createWorker(input: {
   name: string;
   commission_rate: number;
+  email: string;
+  password: string;
 }) {
-  const { data: profile, error: profileError } = await supabase
-    .from("profiles")
-    .insert({ name: input.name, user_role: "worker", auth_user_id: null })
-    .select("id")
-    .single();
+  const { data, error } = await supabase.functions.invoke("create-worker", {
+    body: input,
+  });
 
-  if (profileError) throw profileError;
-
-  const { data: worker, error: workerError } = await supabase
-    .from("workers")
-    .insert({
-      profile_id: profile.id,
-      commission_rate: input.commission_rate,
-    })
-    .select("id, profile_id, commission_rate, is_active")
-    .single();
-
-  if (workerError) {
-    await supabase.from("profiles").delete().eq("id", profile.id);
-    throw workerError;
+  if (error) {
+    console.error("[createWorker] edge function error:", error);
+    throw new Error(error.message || "Error al crear el trabajador");
   }
 
   return {
-    id: Number(worker.id),
-    commission_rate: Number(worker.commission_rate ?? 0),
-    is_active: worker.is_active ?? true,
-    profile: { id: profile.id, name: input.name },
+    id: Number(data.worker.id),
+    commission_rate: Number(data.worker.commission_rate ?? 0),
+    is_active: data.worker.is_active ?? true,
+    profile: { id: data.profile.id, name: input.name },
   };
 }
 
