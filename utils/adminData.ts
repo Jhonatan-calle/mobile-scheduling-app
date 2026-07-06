@@ -477,6 +477,7 @@ export async function getAppointmentsFeed(): Promise<
         type: "appointment" as const,
         time: `${formatTime(startTime)} - ${formatTime(endTime)}`,
         date: new Date(apt.date).toLocaleDateString(locale, {
+          weekday: "long",
           day: "numeric",
           month: "short",
         }),
@@ -504,6 +505,7 @@ export async function getAppointmentsFeed(): Promise<
         type: "retouch" as const,
         time: `${formatTime(startTime)} - ${formatTime(endTime)}`,
         date: new Date(retouch.time).toLocaleDateString(locale, {
+          weekday: "long",
           day: "numeric",
           month: "short",
         }),
