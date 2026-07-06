@@ -555,6 +555,7 @@ export async function updateAppointment(
   input: Partial<AppointmentDetail>,
 ) {
   const payload: any = { ...input };
+  const items = payload.items;
   delete payload.items;
   delete payload.client;
   delete payload.worker;
@@ -566,6 +567,29 @@ export async function updateAppointment(
     .eq("id", Number(id));
 
   if (error) throw error;
+
+  if (items) {
+    const { error: delError } = await supabase
+      .from("appointment_items")
+      .delete()
+      .eq("appointment_id", Number(id));
+    if (delError) throw delError;
+
+    if (items.length > 0) {
+      const { error: insError } = await supabase
+        .from("appointment_items")
+        .insert(
+          items.map((item: any) => ({
+            appointment_id: Number(id),
+            service_combo_id: item.service_combo_id,
+            description: item.description ?? null,
+            cantidad: item.cantidad ?? null,
+            cost: item.cost ?? null,
+          })),
+        );
+      if (insError) throw insError;
+    }
+  }
 }
 
 export async function createAppointment(input: {
