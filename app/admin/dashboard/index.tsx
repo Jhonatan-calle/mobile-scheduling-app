@@ -186,7 +186,7 @@ function TodayAppointmentsSection({ appointments, loading }: any) {
             activeOpacity={0.7}
           >
             <AppointmentPreviewCard
-              date={appointment.date}
+              time={appointment.time}
               customer={appointment.customer}
               service={appointment.service}
               worker={appointment.worker}

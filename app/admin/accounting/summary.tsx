@@ -9,6 +9,7 @@ import {
 import { router } from "expo-router";
 import { useState, useEffect } from "react";
 import { getDetailedAccountingSummary } from "../../../utils/adminData";
+import { getExpenseCategoryConfig } from "../../../utils/lookups";
 
 export default function SummaryScreen() {
   const [summary, setSummary] = useState<any>(null);
@@ -265,14 +266,6 @@ function IncomeSection({ income, details, retouches }: any) {
 // EXPENSES SECTION
 // ============================================================================
 function ExpensesSection({ expenses }: any) {
-  const categoryLabels:  any = {
-    fuel: { icon: "⛽", label: "Nafta" },
-    advertising: { icon:  "📢", label: "Publicidad" },
-    supplies: { icon: "🧴", label: "Insumos" },
-    maintenance:  { icon: "🔧", label: "Mantenimiento" },
-    other: { icon:  "📦", label: "Otros" },
-  };
-
   return (
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>💰 Gastos</Text>
@@ -286,7 +279,7 @@ function ExpensesSection({ expenses }: any) {
 
       <View style={styles.detailsList}>
         {Object.entries(expenses.byCategory).map(([category, amount]:  any) => {
-          const config = categoryLabels[category];
+          const config = getExpenseCategoryConfig(category);
           return (
             <DetailRow
               key={category}
