@@ -14,8 +14,6 @@ import Button from "../../../components/Button";
 
 export default function NewWorkerScreen() {
   const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [commissionRate, setCommissionRate] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -24,21 +22,11 @@ export default function NewWorkerScreen() {
       Alert.alert("Error", "El nombre del trabajador es requerido");
       return;
     }
-    if (!email.trim()) {
-      Alert.alert("Error", "El email del trabajador es requerido");
-      return;
-    }
-    if (!password.trim() || password.trim().length < 6) {
-      Alert.alert("Error", "La contraseña debe tener al menos 6 caracteres");
-      return;
-    }
 
     try {
       setSaving(true);
       await createWorker({
         name: name.trim(),
-        email: email.trim(),
-        password: password.trim(),
         commission_rate: parseFloat(commissionRate) || 0,
       });
 
@@ -77,29 +65,6 @@ export default function NewWorkerScreen() {
             placeholder="Ej: Juan Pérez"
             value={name}
             onChangeText={setName}
-          />
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.label}>Email *</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="correo@ejemplo.com"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.label}>Contraseña *</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Mínimo 6 caracteres"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
           />
         </View>
 

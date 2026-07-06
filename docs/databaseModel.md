@@ -9,7 +9,7 @@ erDiagram
 
     PROFILES {
         int id PK
-        uuid auth_user_id FK
+        uuid auth_user_id FK "nullable"
         string name
         string user_role
         date updated_at
