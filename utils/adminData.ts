@@ -35,7 +35,9 @@ function pickItemsLabel(items: any[]): string {
           ?.name ??
         "Objeto";
       const combo = item.service_combo?.name;
-      return combo ? `${objeto} (${combo})` : objeto;
+      const cantidad = item.cantidad ?? 1;
+      const suffix = cantidad > 1 ? ` x${cantidad}` : "";
+      return combo ? `${objeto} (${combo}${suffix})` : `${objeto}${suffix}`;
     })
     .join(", ");
 }
@@ -437,23 +439,24 @@ export async function getAppointmentsFeed(): Promise<
         `id, date, cost, status, notes, address, payment_method, estimate_time,
          client:clients(id, name, phone_number),
          worker:workers(id, commission_rate, profile:profiles(id, name)),
-          items:appointment_items(
-            description,
-            service_combo:combos(id, name, object_combos(service_object:service_objects(id, name)))
-          )`,
-      )
-      .gte("date", pastRange.toISOString())
-      .lte("date", futureRange.toISOString())
-      .order("date", { ascending: true }),
-    supabase
-      .from("retouches")
-      .select(
-        `id, time, reason, estimate_time, status, appointment_id, address,
-           appointment:appointments(
-             id, date, notes,
-             client:clients(id, name, phone_number),
-             items:appointment_items(
-               service_combo:combos(id, name, object_combos(service_object:service_objects(id, name)))
+           items:appointment_items(
+             description, cantidad,
+             service_combo:combos(id, name, object_combos(service_object:service_objects(id, name)))
+           )`,
+       )
+       .gte("date", pastRange.toISOString())
+       .lte("date", futureRange.toISOString())
+       .order("date", { ascending: true }),
+     supabase
+       .from("retouches")
+       .select(
+         `id, time, reason, estimate_time, status, appointment_id, address,
+            appointment:appointments(
+              id, date, notes,
+              client:clients(id, name, phone_number),
+              items:appointment_items(
+                description, cantidad,
+                service_combo:combos(id, name, object_combos(service_object:service_objects(id, name)))
            )
          ),
          worker:workers(id, commission_rate, profile:profiles(id, name))`,
@@ -545,11 +548,11 @@ export async function getAppointmentById(
        paid_to_worker, payment_method,
        client:clients(id, name, phone_number, last_appointment_at),
        worker:workers(id, commission_rate, profile:profiles(id, name, auth_user_id, user_role)),
-       items:appointment_items(
-          service_combo_id, description,
-          service_combo:combos(id, name, description, precio,
-            object_combos(service_object:service_objects(id, name)))
-        ),
+        items:appointment_items(
+           service_combo_id, description, cantidad,
+           service_combo:combos(id, name, description, precio,
+             object_combos(service_object:service_objects(id, name)))
+         ),
        retouches:retouches(
          id, appointment_id, worker_id, time, address, reason,
          estimate_time, status,
@@ -772,12 +775,13 @@ export async function getDashboardData(): Promise<{
       `id, date, cost, payment_method, status, estimate_time,
        client:clients(id, name, phone_number),
        worker:workers(id, profile:profiles(id, name)),
-        items:appointment_items(
-          service_combo:combos(id, name,
-            object_combos(service_object:service_objects(id, name)))
-        )`,
-    )
-    .gte("date", todayStart.toISOString())
+         items:appointment_items(
+           description, cantidad,
+           service_combo:combos(id, name,
+             object_combos(service_object:service_objects(id, name)))
+         )`,
+     )
+     .gte("date", todayStart.toISOString())
     .lt("date", tomorrowStart.toISOString())
     .order("date", { ascending: true });
 
@@ -1159,6 +1163,7 @@ export async function getWorkerMonthlyStats(
     .select(
       `id, date, status, cost, commission_rate,
         items:appointment_items(
+          description, cantidad,
           service_combo:combos(id, name,
             object_combos(service_object:service_objects(id, name)))
         )`,
@@ -1223,18 +1228,19 @@ export async function getWorkersOverview() {
       .select(
         `id, date, status, cost, commission_rate, worker_id,
           client:clients(name),
-          items:appointment_items(
-            service_combo:combos(id, name,
-              object_combos(service_object:service_objects(id, name)))
-          ),
-          worker:workers(id, profile:profiles(id, name))`,
-      )
-      .gte("date", todayStart.toISOString())
-      .lt("date", tomorrowStart.toISOString())
-      .order("date", { ascending: true }),
-  ]);
+           items:appointment_items(
+             description, cantidad,
+             service_combo:combos(id, name,
+               object_combos(service_object:service_objects(id, name)))
+           ),
+           worker:workers(id, profile:profiles(id, name))`,
+       )
+       .gte("date", todayStart.toISOString())
+       .lt("date", tomorrowStart.toISOString())
+       .order("date", { ascending: true }),
+   ]);
 
-  if (todayAppointments.error) throw todayAppointments.error;
+   if (todayAppointments.error) throw todayAppointments.error;
 
   const rows = (todayAppointments.data ?? []) as any[];
 
@@ -1289,36 +1295,38 @@ export async function getWorkerDetailData(
 
 export async function getWorkerHistory(workerId: number) {
   const [appointmentsQuery, retouchesQuery] = await Promise.all([
-    supabase
-      .from("appointments")
-      .select(
-        `id, date, cost, commission_rate, status, notes, address,
-         client:clients(id, name, phone_number),
-         items:appointment_items(
-           service_combo:combos(id, name,
-             object_combos(service_object:service_objects(id, name)))
-         ),
-         worker:workers(id, profile:profiles(id, name))`,
-      )
-      .eq("worker_id", workerId)
-      .order("date", { ascending: false }),
-    supabase
-      .from("retouches")
-      .select(
-        `id, time, reason, estimate_time, status, address,
-          appointment:appointments(
-            id, address, notes,
-            client:clients(id, name, phone_number),
-            items:appointment_items(
-              service_combo:combos(id, name,
-                object_combos(service_object:service_objects(id, name)))
-            )
-         ),
-         worker:workers(id, profile:profiles(id, name))`,
-      )
-      .eq("worker_id", workerId)
-      .order("time", { ascending: false }),
-  ]);
+     supabase
+       .from("appointments")
+       .select(
+         `id, date, cost, commission_rate, status, notes, address,
+          client:clients(id, name, phone_number),
+          items:appointment_items(
+            description, cantidad,
+            service_combo:combos(id, name,
+              object_combos(service_object:service_objects(id, name)))
+          ),
+          worker:workers(id, profile:profiles(id, name))`,
+       )
+       .eq("worker_id", workerId)
+       .order("date", { ascending: false }),
+     supabase
+       .from("retouches")
+       .select(
+         `id, time, reason, estimate_time, status, address,
+           appointment:appointments(
+             id, address, notes,
+             client:clients(id, name, phone_number),
+             items:appointment_items(
+               description, cantidad,
+               service_combo:combos(id, name,
+                 object_combos(service_object:service_objects(id, name)))
+             )
+          ),
+          worker:workers(id, profile:profiles(id, name))`,
+       )
+       .eq("worker_id", workerId)
+       .order("time", { ascending: false }),
+   ]);
 
   if (appointmentsQuery.error) throw appointmentsQuery.error;
   if (retouchesQuery.error) throw retouchesQuery.error;
