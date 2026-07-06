@@ -10,6 +10,7 @@ import {
 import { router } from "expo-router";
 import { useState, useEffect } from "react";
 import { deleteExpense, getExpenses } from "../../../../utils/adminData";
+import { getExpenseCategoryConfig } from "../../../../utils/lookups";
 
 export default function ExpensesScreen() {
   const [expenses, setExpenses] = useState<any[]>([]);
@@ -200,15 +201,7 @@ function ExpensesHeader({ totalExpenses }: any) {
 // EXPENSE CARD
 // ============================================================================
 function ExpenseCard({ expense, onDelete }: any) {
-  const categoryConfig:  any = {
-    fuel: { icon: "⛽", label: "Nafta", color: "#EF4444" },
-    advertising: { icon: "📢", label: "Publicidad", color: "#8B5CF6" },
-    supplies: { icon: "🧴", label: "Insumos", color: "#3B82F6" },
-    maintenance: { icon: "🔧", label: "Mantenimiento", color: "#F59E0B" },
-    other:  { icon: "📦", label: "Otros", color: "#6B7280" },
-  };
-
-  const config = categoryConfig[expense.category] || categoryConfig.other;
+  const config = getExpenseCategoryConfig(expense.category);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);

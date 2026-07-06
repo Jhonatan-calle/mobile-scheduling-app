@@ -250,6 +250,8 @@ export interface Expense {
   amount: number;
   /** ISO date (YYYY-MM-DD), not nullable. */
   date: string;
+  /** Category key (fuel, advertising, supplies, maintenance, other). */
+  category?: string;
 }
 
 

@@ -844,7 +844,7 @@ export async function getExpenses(month = new Date()) {
   const end = endOfLocalMonth(month);
   const { data, error } = await supabase
     .from("expenses")
-    .select("id, description, amount, date")
+    .select("id, description, amount, date, category")
     .gte("date", start.toISOString().slice(0, 10))
     .lt("date", end.toISOString().slice(0, 10))
     .order("date", { ascending: false });
@@ -852,7 +852,6 @@ export async function getExpenses(month = new Date()) {
   if (error) throw error;
   return (data ?? []).map((row: any) => ({
     ...row,
-    category: row.category ?? "other",
     createdBy: row.createdBy ?? "Admin",
   }));
 }
@@ -866,6 +865,7 @@ export async function createExpense(input: {
   const payload = {
     description: input.description,
     amount: input.amount,
+    category: input.category ?? "other",
     date: input.date
       ? input.date.slice(0, 10)
       : new Date().toISOString().slice(0, 10),
