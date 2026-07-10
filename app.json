@@ -8,6 +8,12 @@
     "scheme": "tapizadosrc",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "updates": {
+      "url": "https://u.expo.dev/8a634f02-f7ef-4d36-9dff-f2b3d1153d4e"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "ios": {
       "supportsTablet": true
     },
