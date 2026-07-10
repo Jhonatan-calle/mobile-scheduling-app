@@ -6,7 +6,8 @@ import {
   TouchableOpacity,
   Alert,
 } from "react-native";
-import { handleCall } from "@/utils/contact";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { handleCall, handleWhatsApp } from "@/utils/contact";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState, useEffect } from "react";
 import Button from "../../../components/Button";
@@ -14,6 +15,7 @@ import {
   deleteAppointment,
   getAppointmentById,
   updateAppointment,
+  updateClient,
 } from "../../../utils/adminData";
 import {
   getAppointmentStatusConfig,
@@ -154,6 +156,13 @@ function StatusSection({ appointment, onUpdate }: any) {
             await updateAppointment(appointment.id, {
               status: getAppointmentStatusIdByKey(newStatus),
             } as any);
+
+            if (newStatus === "completed" && appointment.client?.id) {
+              await updateClient(appointment.client.id, {
+                last_appointment_at: appointment.date,
+              });
+            }
+
             Alert.alert("Éxito", "Estado actualizado");
             onUpdate();
           },
@@ -244,9 +253,17 @@ function CustomerInfoSection({ appointment }: any) {
         icon="📍"
       />
 
-      <TouchableOpacity style={styles.actionLink} onPress={() => handleCall(appointment.client.phone_number)}>
-        <Text style={styles.actionLinkText}>📞 Llamar al cliente</Text>
-      </TouchableOpacity>
+      <View style={{ flexDirection: "row", gap: 12 }}>
+        <TouchableOpacity style={[styles.actionLink, { flex: 1 }]} onPress={() => handleCall(appointment.client.phone_number)}>
+          <Text style={styles.actionLinkText}>📞 Llamar</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={[styles.actionLink, { flex: 1 }]} onPress={() => handleWhatsApp(appointment.client.phone_number)}>
+          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center" }}>
+            <MaterialCommunityIcons name="whatsapp" size={16} color="#25D366" />
+            <Text style={styles.actionLinkText}> WhatsApp</Text>
+          </View>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }

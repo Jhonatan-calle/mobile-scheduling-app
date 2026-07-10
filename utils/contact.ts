@@ -83,19 +83,16 @@ export const handleCall = async (dirtyPhoneNumber: string) => {
 };
 
 export const handleWhatsApp = async (phoneNumber: string) => {
-  const whatsappNumber = "+54" + phoneNumber;
-
-  const whatsappUrl = `https://wa.me/${whatsappNumber.replace(/\D/g, "")}`;
+  const cleanNumber = phoneNumber.replace(/\D/g, "");
+  const url = `https://wa.me/${cleanNumber}`;
 
   try {
-    const canOpen = await Linking.canOpenURL(whatsappUrl);
-    if (canOpen) {
-      await Linking.openURL(whatsappUrl);
-    } else {
-      Alert.alert("Error", "WhatsApp no está instalado");
+    await Linking.openURL(url);
+  } catch {
+    try {
+      await Linking.openURL(`whatsapp://send?phone=${cleanNumber}`);
+    } catch {
+      Alert.alert("Error", "WhatsApp no está disponible");
     }
-  } catch (error) {
-    console.error("Error abriendo WhatsApp:", error);
-    Alert.alert("Error", "No se pudo abrir WhatsApp");
   }
 };
