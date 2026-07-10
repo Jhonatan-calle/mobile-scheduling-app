@@ -7,11 +7,14 @@ import {
   TextInput,
   RefreshControl,
   Alert,
+  Animated,
+  Modal,
 } from "react-native";
 import { router } from "expo-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as Clipboard from "expo-clipboard";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { AppointmentPreviewCard } from "../../../components/admin/dashboard";
 import { getAppointmentsFeed } from "../../../utils/adminData";
 
@@ -136,7 +139,7 @@ export default function AppointmentsScreen() {
       {selectionMode && selectedItems.size > 0 ? (
         <SelectionCopyButton count={selectedItems.size} onCopy={copySelected} />
       ) : (
-        <FloatingAddButton />
+        <FloatingSpeedDial />
       )}
     </SafeAreaView>
   );
@@ -540,17 +543,133 @@ function EmptyState({ searchQuery, searchType }: any) {
 }
 
 // ============================================================================
-// BOTÓN FLOTANTE
+// SPEED DIAL FLOTANTE
 // ============================================================================
-function FloatingAddButton() {
+function FloatingSpeedDial() {
+  const [expanded, setExpanded] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [messageText, setMessageText] = useState("");
+  const scaleAnim = useRef(new Animated.Value(0)).current;
+  const rotateAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    loadMessage();
+  }, []);
+
+  const loadMessage = async () => {
+    try {
+      const saved = await AsyncStorage.getItem("@turnos_disponibles");
+      if (saved) setMessageText(saved);
+    } catch {}
+  };
+
+  const toggleExpand = () => {
+    const toValue = expanded ? 0 : 1;
+    Animated.parallel([
+      Animated.spring(scaleAnim, {
+        toValue,
+        useNativeDriver: true,
+        friction: 6,
+      }),
+      Animated.timing(rotateAnim, {
+        toValue,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start();
+    setExpanded(!expanded);
+  };
+
+  const handleCopyMessage = async () => {
+    if (!messageText.trim()) {
+      Alert.alert("Sin mensaje", "Primero editá el mensaje de turnos disponibles");
+      return;
+    }
+    await Clipboard.setStringAsync(messageText);
+    Alert.alert("Copiado", "Mensaje de turnos disponibles copiado al portapapeles");
+    toggleExpand();
+  };
+
+  const handleEditMessage = () => {
+    setShowEditModal(true);
+    toggleExpand();
+  };
+
+  const rotation = rotateAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["0deg", "45deg"],
+  });
+
   return (
-    <TouchableOpacity
-      style={styles.fab}
-      onPress={() => router.push("/admin/appointments/new")}
-      activeOpacity={0.8}
-    >
-      <Text style={styles.fabIcon}>+</Text>
-    </TouchableOpacity>
+    <>
+      {expanded && (
+        <TouchableOpacity
+          style={StyleSheet.absoluteFill}
+          activeOpacity={1}
+          onPress={toggleExpand}
+        />
+      )}
+
+      <View style={styles.optionColumn} pointerEvents="box-none">
+        <Animated.View style={[styles.optionRow, { opacity: scaleAnim, transform: [{ translateY: scaleAnim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }] }]}>
+          <Text style={styles.optionLabel}>Editar mensaje</Text>
+          <TouchableOpacity style={styles.optionButton} onPress={handleEditMessage}>
+            <Text style={styles.optionIcon}>✏️</Text>
+          </TouchableOpacity>
+        </Animated.View>
+
+        <Animated.View style={[styles.optionRow, { opacity: scaleAnim, transform: [{ translateY: scaleAnim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }] }]}>
+          <Text style={styles.optionLabel}>Turnos disponibles</Text>
+          <TouchableOpacity style={styles.optionButton} onPress={handleCopyMessage}>
+            <Text style={styles.optionIcon}>📋</Text>
+          </TouchableOpacity>
+        </Animated.View>
+
+        <Animated.View style={[styles.optionRow, { opacity: scaleAnim, transform: [{ translateY: scaleAnim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }] }]}>
+          <Text style={styles.optionLabel}>Nuevo turno</Text>
+          <TouchableOpacity style={styles.optionButton} onPress={() => { router.push("/admin/appointments/new"); toggleExpand(); }}>
+            <Text style={styles.optionIcon}>📅</Text>
+          </TouchableOpacity>
+        </Animated.View>
+      </View>
+
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={toggleExpand}
+        activeOpacity={0.8}
+      >
+        <Animated.Text style={[styles.fabIcon, { transform: [{ rotate: rotation }] }]}>+</Animated.Text>
+      </TouchableOpacity>
+
+      <Modal visible={showEditModal} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Editar mensaje de turnos disponibles</Text>
+            <TextInput
+              style={styles.modalInput}
+              value={messageText}
+              onChangeText={setMessageText}
+              multiline
+              placeholder="Escribí el mensaje de turnos disponibles..."
+              placeholderTextColor="#9CA3AF"
+              textAlignVertical="top"
+            />
+            <View style={styles.modalButtons}>
+              <TouchableOpacity style={styles.modalCancelButton} onPress={() => setShowEditModal(false)}>
+                <Text style={styles.modalCancelText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.modalSaveButton} onPress={async () => {
+                await AsyncStorage.setItem("@turnos_disponibles", messageText);
+                setShowEditModal(false);
+                Alert.alert("Guardado", "Mensaje de turnos disponibles actualizado");
+              }}>
+                <Text style={styles.modalSaveText}>Guardar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </>
   );
 }
 
@@ -685,6 +804,106 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
   },
 
+  optionColumn: {
+    position: "absolute",
+    right: 24,
+    bottom: 96,
+    alignItems: "flex-end",
+    gap: 16,
+  },
+  optionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  optionButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#3B82F6",
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 6,
+  },
+  optionIcon: {
+    fontSize: 20,
+  },
+  optionLabel: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#1F2937",
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
+    overflow: "hidden",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 24,
+  },
+  modalContent: {
+    width: "100%",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 24,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#111827",
+    marginBottom: 16,
+  },
+  modalInput: {
+    borderWidth: 1,
+    borderColor: "#D1D5DB",
+    borderRadius: 12,
+    padding: 12,
+    fontSize: 15,
+    color: "#111827",
+    minHeight: 160,
+    maxHeight: 300,
+  },
+  modalButtons: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    gap: 12,
+    marginTop: 16,
+  },
+  modalCancelButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    backgroundColor: "#F3F4F6",
+  },
+  modalCancelText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#6B7280",
+  },
+  modalSaveButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    backgroundColor: "#3B82F6",
+  },
+  modalSaveText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#FFFFFF",
+  },
   fab: {
     position: "absolute",
     right: 24,
