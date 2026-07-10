@@ -741,7 +741,7 @@ function InfoRow({ label, value, icon }: any) {
       <Text style={styles.infoLabel}>{label}:</Text>
       <View style={styles.infoValueContainer}>
         {icon && <Text style={styles.infoIcon}>{icon}</Text>}
-        <Text style={styles.infoValue}>{value}</Text>
+        <Text style={styles.infoValue} selectable>{value}</Text>
       </View>
     </View>
   );
