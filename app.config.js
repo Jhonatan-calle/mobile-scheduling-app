@@ -3,7 +3,7 @@ const IS_PREVIEW = process.env.APP_ENV === "preview";
 
 export default ({ config }) => ({
   ...config,
-  name: IS_DEV ? "Tapizados RC Dev" : IS_PREVIEW ? "Tapizados RC Preview" : "Tapizados RC",
+  name: IS_DEV ? "Tapizados RC Dev" : IS_PREVIEW ? "Tapizados RC" : "Tapizados RC",
   android: {
     ...config.android,
     package: IS_DEV
