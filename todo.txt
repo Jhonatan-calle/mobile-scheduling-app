@@ -1,0 +1,21 @@
+- necesito la opcion de asignarle dos o mas trabajadores a un turno 
+- visualizacion lista de clientes y poder filtar
+-actualizacion tabla clientes:
+    "relacionados":[
+      {
+        "id": "el id de la mama",
+        "relacion": "madre"
+      }
+    ]
+    "occurrences": 1,
+    "first_appointment_at": "2025-01-07",
+ "phone": "3584326486",
+  "negocio":"Forrajeria"
+  "occurrences": 4,
+
+- ver cuanto se le cobro anteriormente a un cliente para nunca cobrarle menos de lo que ya pago antes 
+
+
+
+
+

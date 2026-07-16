@@ -4,7 +4,7 @@ export const handleCall = async (dirtyPhoneNumber: string) => {
   const phoneNumber = dirtyPhoneNumber.replace(/\s/g, ""); // Eliminar espacios
 
   // Limpiar el número (eliminar guiones, paréntesis, etc.)
-  const cleanNumber = phoneNumber.replace(/[^\d+]/g, "");
+  const cleanNumber = "54" + phoneNumber.replace(/\D/g, "");
 
   // Formatear según la plataforma
   let phoneUrl = "";
@@ -66,7 +66,10 @@ export const handleCall = async (dirtyPhoneNumber: string) => {
           try {
             await Linking.openURL(phoneUrl);
           } catch (err) {
-            Alert.alert("Error", "No se pudo abrir el marcador telefónico");
+            Alert.alert(
+              "Error",
+              "No se pudo abrir el marcador telefónico",
+            );
           }
         },
       },
@@ -83,7 +86,7 @@ export const handleCall = async (dirtyPhoneNumber: string) => {
 };
 
 export const handleWhatsApp = async (phoneNumber: string) => {
-  const cleanNumber = phoneNumber.replace(/\D/g, "");
+  const cleanNumber = "54" + phoneNumber.replace(/\D/g, "");
   const url = `https://wa.me/${cleanNumber}`;
 
   try {
