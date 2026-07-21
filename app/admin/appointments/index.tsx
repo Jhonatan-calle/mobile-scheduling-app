@@ -19,7 +19,7 @@ import { AppointmentPreviewCard } from "../../../components/admin/dashboard";
 import { getAppointmentsFeed } from "../../../utils/adminData";
 
 export default function AppointmentsScreen() {
-  const [filter, setFilter] = useState<"all" | "pending" | "completed">("all");
+  const [filter, setFilter] = useState<"all" | "pending" | "in_progress" | "completed">("all");
   const [timeFilter, setTimeFilter] = useState<"upcoming" | "past" | "all">(
     "upcoming",
   );
@@ -204,6 +204,7 @@ function SearchAndFilterSection({
   const countByStatus = {
     all: items.length,
     pending: items.filter((a: any) => a.status === "pending").length,
+    in_progress: items.filter((a: any) => a.status === "in_progress").length,
     completed: items.filter((a: any) => a.status === "completed").length,
   };
 
@@ -330,6 +331,13 @@ function SearchAndFilterSection({
           color="#F59E0B"
         />
         <FilterChip
+          label="En curso"
+          active={filter === "in_progress"}
+          onPress={() => setFilter("in_progress")}
+          count={countByStatus.in_progress}
+          color="#3B82F6"
+        />
+        <FilterChip
           label="Completadas"
           active={filter === "completed"}
           onPress={() => setFilter("completed")}
@@ -388,8 +396,9 @@ function ItemsList({
     // Filtro de estado
     const matchesFilter =
       filter === "all" ||
-      (filter === "pending" && item.status === "pending") ||
-      (filter === "completed" && item.status === "completed");
+    (filter === "pending" && item.status === "pending") ||
+    (filter === "in_progress" && item.status === "in_progress") ||
+    (filter === "completed" && item.status === "completed");
 
     // Filtro de tiempo (próximas/pasadas)
     const matchesTimeFilter =

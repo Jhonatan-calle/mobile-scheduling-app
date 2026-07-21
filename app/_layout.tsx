@@ -2,12 +2,12 @@ import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import { Alert } from "react-native";
-import * as Updates from "expo-updates";
 
 export default function RootLayout() {
   useEffect(() => {
     async function checkForUpdates() {
       try {
+        const Updates = require("expo-updates");
         const update = await Updates.checkForUpdateAsync();
         if (update.isAvailable) {
           Alert.alert("Actualización", "Descargando nueva versión...");
@@ -22,7 +22,7 @@ export default function RootLayout() {
           );
         }
       } catch (error) {
-        console.log("Error checking updates:", error);
+        console.log("Update check skipped:", error);
       }
     }
 
