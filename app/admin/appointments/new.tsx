@@ -106,7 +106,7 @@ export default function NewAppointmentScreen() {
     }
 
     try {
-      const clients = await getClients(searchText);
+      const clients = await getClients({ searchText });
       const filtered = clients.filter((client) =>
         client.name.toLowerCase().includes(searchText.toLowerCase()),
       );
@@ -127,7 +127,7 @@ export default function NewAppointmentScreen() {
     }
 
     try {
-      const clients = await getClients(searchText);
+      const clients = await getClients({ searchText });
       const cleanSearch = searchText.replace(/\s/g, "");
       const filtered = clients.filter((client) =>
         client.phone_number.replace(/\s/g, "").includes(cleanSearch),

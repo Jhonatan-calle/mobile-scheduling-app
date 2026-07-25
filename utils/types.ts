@@ -131,6 +131,10 @@ export interface Client {
   phone_number: string;
   /** May be null. ISO timestamp (no timezone) represented as string. */
   last_appointment_at: string | null;
+  /** Cantidad de turnos completados. */
+  occurrences: number | null;
+  /** May be null. ISO timestamp (no timezone) represented as string. */
+  last_contacted_at: string | null;
 }
 
 /**

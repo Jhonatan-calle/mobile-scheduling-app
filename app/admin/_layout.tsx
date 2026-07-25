@@ -44,6 +44,13 @@ export default function AdminLayout() {
           }}
         />
         <Tabs.Screen
+          name="clients"
+          options={{
+            title: "Clientes",
+            tabBarIcon: ({ color }) => <TabIcon emoji="📋" color={color} />,
+          }}
+        />
+        <Tabs.Screen
           name="accounting"
           options={{
             title: "Contabilidad",

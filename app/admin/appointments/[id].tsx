@@ -160,6 +160,7 @@ function StatusSection({ appointment, onUpdate }: any) {
             if (newStatus === "completed" && appointment.client?.id) {
               await updateClient(appointment.client.id, {
                 last_appointment_at: appointment.date,
+                occurrences: (appointment.client.occurrences ?? 0) + 1,
               });
             }
 
@@ -551,6 +552,14 @@ function ActionButtonsSection({ appointment, onUpdate }: any) {
           text: "Eliminar",
           style: "destructive",
           onPress: async () => {
+            if (appointment.status === 3 && appointment.client?.id) {
+              const current = appointment.client.occurrences ?? 0;
+              if (current > 0) {
+                await updateClient(appointment.client.id, {
+                  occurrences: current - 1,
+                });
+              }
+            }
             await deleteAppointment(appointment.id);
             Alert.alert("Eliminada", "La repaso ha sido eliminada", [
               {

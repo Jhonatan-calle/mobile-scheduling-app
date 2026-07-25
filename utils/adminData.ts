@@ -140,22 +140,56 @@ export async function getServices(): Promise<
 // CLIENTES
 // ============================================================================
 
+export interface ClientFilters {
+  searchText?: string;
+  lastAppointmentFrom?: string;
+  lastAppointmentTo?: string;
+  lastContactedFrom?: string;
+  lastContactedTo?: string;
+  orderBy?: "name" | "occurrences";
+  orderDir?: "asc" | "desc";
+  page?: number;
+  pageSize?: number;
+}
+
 export async function getClients(
-  searchText?: string,
+  filters?: ClientFilters,
 ): Promise<Client[]> {
   let query = supabase
     .from("clients")
-    .select("id, name, phone_number, last_appointment_at")
-    .order("name", { ascending: true });
+    .select("id, name, phone_number, last_appointment_at, occurrences, last_contacted_at");
 
-  if (searchText) {
-    const clean = searchText.trim();
+  if (filters?.searchText) {
+    const clean = filters.searchText.trim();
     if (clean) {
       query = query.or(
         `name.ilike.%${clean}%,phone_number.ilike.%${clean}%`,
       );
     }
   }
+
+  if (filters?.lastAppointmentFrom) {
+    query = query.gte("last_appointment_at", filters.lastAppointmentFrom);
+  }
+  if (filters?.lastAppointmentTo) {
+    query = query.lte("last_appointment_at", filters.lastAppointmentTo);
+  }
+  if (filters?.lastContactedFrom) {
+    query = query.gte("last_contacted_at", filters.lastContactedFrom);
+  }
+  if (filters?.lastContactedTo) {
+    query = query.lte("last_contacted_at", filters.lastContactedTo);
+  }
+
+  const orderBy = filters?.orderBy ?? "name";
+  const orderDir = filters?.orderDir ?? "asc";
+  query = query.order(orderBy, { ascending: orderDir === "asc" });
+
+  const page = filters?.page ?? 0;
+  const pageSize = filters?.pageSize ?? 50;
+  const from = page * pageSize;
+  const to = from + pageSize - 1;
+  query = query.range(from, to);
 
   const { data, error } = await query;
   if (error) throw error;
@@ -168,7 +202,7 @@ export async function findOrCreateClient(input: {
 }): Promise<ClientOption> {
   const { data: existing, error: findError } = await supabase
     .from("clients")
-    .select("id, name, phone_number, last_appointment_at")
+    .select("id, name, phone_number, last_appointment_at, occurrences")
     .eq("phone_number", input.phone_number)
     .maybeSingle();
 
@@ -178,7 +212,7 @@ export async function findOrCreateClient(input: {
   const { data, error } = await supabase
     .from("clients")
     .insert({ name: input.name, phone_number: input.phone_number })
-    .select("id, name, phone_number, last_appointment_at")
+    .select("id, name, phone_number, last_appointment_at, occurrences")
     .single();
 
   if (error) throw error;
@@ -195,10 +229,29 @@ export async function updateClient(
       name: input.name,
       phone_number: input.phone_number,
       last_appointment_at: input.last_appointment_at,
+      occurrences: input.occurrences,
     })
     .eq("id", Number(id));
 
   if (error) throw error;
+}
+
+export async function getClientAppointments(clientId: number) {
+  const { data, error } = await supabase
+    .from("appointments")
+    .select(
+      `id, date, cost, status, estimate_time, address, notes, payment_method,
+       worker:workers(id, commission_rate, profile:profiles(id, name)),
+       items:appointment_items(
+         description, cantidad,
+         service_combo:combos(id, name, object_combos(service_object:service_objects(id, name)))
+       )`,
+    )
+    .eq("client_id", clientId)
+    .order("date", { ascending: true });
+
+  if (error) throw error;
+  return data ?? [];
 }
 
 // ============================================================================
@@ -546,7 +599,7 @@ export async function getAppointmentById(
       `id, admin_id, worker_id, client_id, notes, address, date,
        estimate_time, cost, commission_rate, status, has_retouches,
        paid_to_worker, payment_method,
-       client:clients(id, name, phone_number, last_appointment_at),
+        client:clients(id, name, phone_number, last_appointment_at, occurrences),
        worker:workers(id, commission_rate, profile:profiles(id, name, auth_user_id, user_role)),
         items:appointment_items(
            service_combo_id, description, cantidad,

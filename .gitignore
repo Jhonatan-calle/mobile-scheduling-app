@@ -17,3 +17,6 @@ docs/.obsidian/
 .obsidian/
 opencode.sh
 data/
+dist/
+todo.txt
+scripts/
