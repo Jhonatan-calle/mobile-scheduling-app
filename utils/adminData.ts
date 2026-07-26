@@ -146,7 +146,7 @@ export interface ClientFilters {
   lastAppointmentTo?: string;
   lastContactedFrom?: string;
   lastContactedTo?: string;
-  orderBy?: "name" | "occurrences";
+  orderBy?: "name" | "occurrences" | "last_contacted_at" | "last_appointment_at";
   orderDir?: "asc" | "desc";
   page?: number;
   pageSize?: number;

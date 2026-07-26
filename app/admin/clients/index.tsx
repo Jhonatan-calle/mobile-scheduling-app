@@ -20,12 +20,26 @@ import { Client } from "../../../utils/types";
 
 const PAGE_SIZE = 50;
 
-const ORDER_OPTIONS: { label: string; value: ClientFilters["orderBy"]; dir: ClientFilters["orderDir"] }[] = [
-  { label: "Nombre A-Z", value: "name", dir: "asc" },
-  { label: "Nombre Z-A", value: "name", dir: "desc" },
-  { label: "Ocurrencias ↑", value: "occurrences", dir: "asc" },
-  { label: "Ocurrencias ↓", value: "occurrences", dir: "desc" },
+type OrderField = "name" | "occurrences" | "last_contacted_at" | "last_appointment_at";
+
+const ORDER_CHIPS: { label: string; field: OrderField }[] = [
+  { label: "Nombre", field: "name" },
+  { label: "Ocurrencias", field: "occurrences" },
+  { label: "Últ. turno", field: "last_appointment_at" },
+  { label: "Últ. contacto", field: "last_contacted_at" },
 ];
+
+const DATE_FIELD_OPTIONS: { label: string; value: DateFilter["field"] }[] = [
+  { label: "Último turno", value: "last_appointment_at" },
+  { label: "Último contacto", value: "last_contacted_at" },
+];
+
+interface DateFilter {
+  id: string;
+  field: "last_appointment_at" | "last_contacted_at";
+  from: Date | null;
+  to: Date | null;
+}
 
 export default function ClientsScreen() {
   const [clients, setClients] = useState<Client[]>([]);
@@ -37,30 +51,43 @@ export default function ClientsScreen() {
   const [searchText, setSearchText] = useState("");
   const [showFilters, setShowFilters] = useState(false);
 
-  const [lastApptFrom, setLastApptFrom] = useState<Date | null>(null);
-  const [lastApptTo, setLastApptTo] = useState<Date | null>(null);
-  const [lastContFrom, setLastContFrom] = useState<Date | null>(null);
-  const [lastContTo, setLastContTo] = useState<Date | null>(null);
+  const [order, setOrder] = useState<{ field: OrderField; asc: boolean } | null>(null);
+  const [dateFilters, setDateFilters] = useState<DateFilter[]>([]);
 
-  const [orderIndex, setOrderIndex] = useState(0);
-  const [showPicker, setShowPicker] = useState<"apptFrom" | "apptTo" | "contFrom" | "contTo" | null>(null);
+  const [showPicker, setShowPicker] = useState<{ id: string; bound: "from" | "to" } | null>(null);
   const [pickerDate, setPickerDate] = useState(new Date());
 
   const mountedRef = useRef(true);
   const loadIdRef = useRef(0);
+  const dateIdCounter = useRef(0);
+
+  const usedDateFields = new Set(dateFilters.map((d) => d.field));
+  const availableDateFields = DATE_FIELD_OPTIONS.filter((o) => !usedDateFields.has(o.value));
 
   const buildFilters = useCallback((pageNum: number): ClientFilters => {
     const f: ClientFilters = { page: pageNum, pageSize: PAGE_SIZE };
     if (searchText.trim()) f.searchText = searchText.trim();
-    if (lastApptFrom) f.lastAppointmentFrom = lastApptFrom.toISOString();
-    if (lastApptTo) f.lastAppointmentTo = lastApptTo.toISOString();
-    if (lastContFrom) f.lastContactedFrom = lastContFrom.toISOString();
-    if (lastContTo) f.lastContactedTo = lastContTo.toISOString();
-    const opt = ORDER_OPTIONS[orderIndex];
-    f.orderBy = opt.value;
-    f.orderDir = opt.dir;
+
+    for (const df of dateFilters) {
+      if (df.field === "last_appointment_at") {
+        if (df.from) f.lastAppointmentFrom = df.from.toISOString();
+        if (df.to) f.lastAppointmentTo = df.to.toISOString();
+      } else {
+        if (df.from) f.lastContactedFrom = df.from.toISOString();
+        if (df.to) f.lastContactedTo = df.to.toISOString();
+      }
+    }
+
+    if (order) {
+      f.orderBy = order.field;
+      f.orderDir = order.asc ? "asc" : "desc";
+    } else {
+      f.orderBy = "name";
+      f.orderDir = "asc";
+    }
+
     return f;
-  }, [searchText, lastApptFrom, lastApptTo, lastContFrom, lastContTo, orderIndex]);
+  }, [searchText, dateFilters, order]);
 
   const loadClients = useCallback(async () => {
     const id = ++loadIdRef.current;
@@ -110,47 +137,70 @@ export default function ClientsScreen() {
     loadClients();
   };
 
-  const clearFilters = () => {
-    setLastApptFrom(null);
-    setLastApptTo(null);
-    setLastContFrom(null);
-    setLastContTo(null);
-    setOrderIndex(0);
+  const handleOrderPress = (field: OrderField) => {
+    if (!order || order.field !== field) {
+      setOrder({ field, asc: true });
+    } else if (order.asc) {
+      setOrder({ field, asc: false });
+    } else {
+      setOrder(null);
+    }
   };
 
-  const hasActiveFilters = lastApptFrom || lastApptTo || lastContFrom || lastContTo || orderIndex !== 0;
+  const addDateFilter = (field: DateFilter["field"]) => {
+    const id = String(++dateIdCounter.current);
+    setDateFilters((prev) => [...prev, { id, field, from: null, to: null }]);
+  };
 
-  const formatDate = (d: Date | null) =>
-    d ? d.toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric" }) : "";
+  const removeDateFilter = (id: string) => {
+    setDateFilters((prev) => prev.filter((d) => d.id !== id));
+  };
 
-  const openPicker = (target: "apptFrom" | "apptTo" | "contFrom" | "contTo") => {
-    const current =
-      target === "apptFrom" ? lastApptFrom :
-      target === "apptTo" ? lastApptTo :
-      target === "contFrom" ? lastContFrom :
-      lastContTo;
-    setPickerDate(current ?? new Date());
-    setShowPicker(target);
+  const updateDateFilter = (id: string, updates: Partial<DateFilter>) => {
+    setDateFilters((prev) =>
+      prev.map((d) => (d.id === id ? { ...d, ...updates } : d)),
+    );
+  };
+
+  const openDatePicker = (id: string, bound: "from" | "to") => {
+    const df = dateFilters.find((d) => d.id === id);
+    setPickerDate(df?.[bound] ?? new Date());
+    setShowPicker({ id, bound });
   };
 
   const onPickerChange = (_: any, selected?: Date) => {
-    if (!selected) { setShowPicker(null); return; }
+    if (!selected || !showPicker) { setShowPicker(null); return; }
     setPickerDate(selected);
     if (Platform.OS === "android") {
-      if (showPicker === "apptFrom") setLastApptFrom(selected);
-      if (showPicker === "apptTo") setLastApptTo(selected);
-      if (showPicker === "contFrom") setLastContFrom(selected);
-      if (showPicker === "contTo") setLastContTo(selected);
+      if (showPicker.bound === "from") {
+        updateDateFilter(showPicker.id, { from: selected });
+      } else {
+        updateDateFilter(showPicker.id, { to: selected });
+      }
       setShowPicker(null);
     }
   };
 
   const confirmIOSDate = () => {
-    if (showPicker === "apptFrom") setLastApptFrom(pickerDate);
-    if (showPicker === "apptTo") setLastApptTo(pickerDate);
-    if (showPicker === "contFrom") setLastContFrom(pickerDate);
-    if (showPicker === "contTo") setLastContTo(pickerDate);
+    if (!showPicker) return;
+    if (showPicker.bound === "from") {
+      updateDateFilter(showPicker.id, { from: pickerDate });
+    } else {
+      updateDateFilter(showPicker.id, { to: pickerDate });
+    }
     setShowPicker(null);
+  };
+
+  const hasActiveFilters = order !== null || dateFilters.length > 0;
+
+  const formatDateLabel = (d: Date | null) =>
+    d ? d.toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric" }) : "";
+
+  const activePicker = showPicker ? dateFilters.find((d) => d.id === showPicker.id) : null;
+
+  const getOrderDisplay = (field: OrderField) => {
+    if (!order || order.field !== field) return null;
+    return order.asc ? "↑" : "↓";
   };
 
   const renderItem = ({ item }: ListRenderItemInfo<Client>) => (
@@ -184,67 +234,102 @@ export default function ClientsScreen() {
     <View>
       {showFilters && (
         <View style={styles.filtersPanel}>
-          <Text style={styles.filterLabel}>Último turno</Text>
-          <View style={styles.dateRow}>
-            <TouchableOpacity style={styles.dateButton} onPress={() => openPicker("apptFrom")}>
-              <Text style={styles.dateButtonText}>{formatDate(lastApptFrom) || "Desde"}</Text>
-            </TouchableOpacity>
-            <Text style={styles.dateSep}>→</Text>
-            <TouchableOpacity style={styles.dateButton} onPress={() => openPicker("apptTo")}>
-              <Text style={styles.dateButtonText}>{formatDate(lastApptTo) || "Hasta"}</Text>
-            </TouchableOpacity>
-          </View>
-
-          <Text style={styles.filterLabel}>Último contacto</Text>
-          <View style={styles.dateRow}>
-            <TouchableOpacity style={styles.dateButton} onPress={() => openPicker("contFrom")}>
-              <Text style={styles.dateButtonText}>{formatDate(lastContFrom) || "Desde"}</Text>
-            </TouchableOpacity>
-            <Text style={styles.dateSep}>→</Text>
-            <TouchableOpacity style={styles.dateButton} onPress={() => openPicker("contTo")}>
-              <Text style={styles.dateButtonText}>{formatDate(lastContTo) || "Hasta"}</Text>
-            </TouchableOpacity>
-          </View>
-
-          <Text style={styles.filterLabel}>Ordenar</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.orderRow}>
-            {ORDER_OPTIONS.map((opt, i) => (
-              <TouchableOpacity
-                key={i}
-                style={[styles.orderChip, i === orderIndex && styles.orderChipActive]}
-                onPress={() => setOrderIndex(i)}
-              >
-                <Text style={[styles.orderChipText, i === orderIndex && styles.orderChipTextActive]}>
-                  {opt.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
+          <Text style={styles.filterSectionTitle}>Ordenar</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            {ORDER_CHIPS.map((chip) => {
+              const dir = getOrderDisplay(chip.field);
+              const active = order?.field === chip.field;
+              return (
+                <TouchableOpacity
+                  key={chip.field}
+                  style={[styles.chip, active && styles.chipActive]}
+                  onPress={() => handleOrderPress(chip.field)}
+                >
+                  <Text style={[styles.chipText, active && styles.chipTextActive]}>
+                    {chip.label} {dir ?? ""}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
           </ScrollView>
 
-          {hasActiveFilters && (
-            <TouchableOpacity style={styles.clearBtn} onPress={clearFilters}>
-              <Text style={styles.clearBtnText}>Limpiar filtros</Text>
+          {dateFilters.length > 0 && (
+            <View style={styles.dateFiltersSection}>
+              <Text style={styles.filterSectionTitle}>Rangos de fecha</Text>
+              {dateFilters.map((df) => {
+                const fieldLabel = DATE_FIELD_OPTIONS.find((o) => o.value === df.field)?.label ?? df.field;
+                return (
+                  <View key={df.id} style={styles.dateFilterRow}>
+                    <TouchableOpacity
+                      style={styles.dateFilterRemove}
+                      onPress={() => removeDateFilter(df.id)}
+                    >
+                      <Text style={styles.dateFilterRemoveText}>✕</Text>
+                    </TouchableOpacity>
+                    <Text style={styles.dateFilterFieldLabel}>{fieldLabel}</Text>
+                    <TouchableOpacity
+                      style={styles.datePill}
+                      onPress={() => openDatePicker(df.id, "from")}
+                    >
+                      <Text style={styles.datePillText}>
+                        {formatDateLabel(df.from) || "Desde"}
+                      </Text>
+                    </TouchableOpacity>
+                    <Text style={styles.dateSep}>→</Text>
+                    <TouchableOpacity
+                      style={styles.datePill}
+                      onPress={() => openDatePicker(df.id, "to")}
+                    >
+                      <Text style={styles.datePillText}>
+                        {formatDateLabel(df.to) || "Hasta"}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                );
+              })}
+            </View>
+          )}
+
+          {!usedDateFields.has("last_appointment_at") && (
+            <TouchableOpacity
+              style={styles.addRangeBtn}
+              onPress={() => addDateFilter("last_appointment_at")}
+            >
+              <Text style={styles.addRangeBtnText}>
+                + Agregar rango de último turno
+              </Text>
             </TouchableOpacity>
           )}
-        </View>
-      )}
+          {!usedDateFields.has("last_contacted_at") && (
+            <TouchableOpacity
+              style={styles.addRangeBtn}
+              onPress={() => addDateFilter("last_contacted_at")}
+            >
+              <Text style={styles.addRangeBtnText}>
+                + Agregar rango de último contacto
+              </Text>
+            </TouchableOpacity>
+          )}
 
-      {showPicker && Platform.OS === "ios" && (
-        <View style={styles.iosPickerContainer}>
-          <View style={styles.iosPickerHeader}>
-            <TouchableOpacity onPress={() => setShowPicker(null)}>
-              <Text style={styles.iosPickerCancel}>Cancelar</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={confirmIOSDate}>
-              <Text style={styles.iosPickerConfirm}>OK</Text>
-            </TouchableOpacity>
-          </View>
-          <DateTimePicker
-            value={pickerDate}
-            mode="date"
-            display="spinner"
-            onChange={onPickerChange}
-          />
+          {/* iOS picker inline */}
+          {showPicker && Platform.OS === "ios" && activePicker && (
+            <View style={styles.iosPickerContainer}>
+              <View style={styles.iosPickerHeader}>
+                <TouchableOpacity onPress={() => setShowPicker(null)}>
+                  <Text style={styles.iosPickerCancel}>Cancelar</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={confirmIOSDate}>
+                  <Text style={styles.iosPickerConfirm}>OK</Text>
+                </TouchableOpacity>
+              </View>
+              <DateTimePicker
+                value={pickerDate}
+                mode="date"
+                display="spinner"
+                onChange={onPickerChange}
+              />
+            </View>
+          )}
         </View>
       )}
     </View>
@@ -294,12 +379,16 @@ export default function ClientsScreen() {
         </View>
         <TouchableOpacity
           style={[styles.filterToggle, hasActiveFilters && styles.filterToggleActive]}
-          onPress={() => setShowFilters(!showFilters)}
+          onPress={() => {
+            setShowFilters(!showFilters);
+            setShowPicker(null);
+          }}
         >
           <Text style={{ fontSize: 20 }}>⚙️</Text>
         </TouchableOpacity>
       </View>
 
+      {/* Android picker */}
       {showPicker && Platform.OS === "android" && (
         <DateTimePicker
           value={pickerDate}
@@ -410,71 +499,98 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 16,
   },
-  filterLabel: {
+  filterSectionTitle: {
     fontSize: 13,
     fontWeight: "600",
     color: "#374151",
-    marginBottom: 6,
-    marginTop: 8,
+    marginBottom: 8,
+    marginTop: 4,
   },
-  dateRow: {
+  chip: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: "#F3F4F6",
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+  chipActive: {
+    backgroundColor: "#3B82F6",
+    borderColor: "#3B82F6",
+  },
+  chipText: {
+    fontSize: 13,
+    color: "#374151",
+    fontWeight: "500",
+  },
+  chipTextActive: {
+    color: "#FFFFFF",
+    fontWeight: "600",
+  },
+  dateFiltersSection: {
+    marginTop: 16,
+  },
+  dateFilterRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
+    marginBottom: 10,
   },
-  dateButton: {
+  dateFilterRemove: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "#FEE2E2",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  dateFilterRemoveText: {
+    fontSize: 12,
+    color: "#EF4444",
+    fontWeight: "bold",
+  },
+  dateFilterFieldLabel: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#6B7280",
+    minWidth: 80,
+  },
+  datePill: {
     flex: 1,
     backgroundColor: "#F3F4F6",
     borderRadius: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
     alignItems: "center",
   },
-  dateButtonText: {
-    fontSize: 14,
+  datePillText: {
+    fontSize: 13,
     color: "#374151",
   },
   dateSep: {
     fontSize: 14,
     color: "#9CA3AF",
   },
-  orderRow: {
-    flexDirection: "row",
-    marginBottom: 4,
-  },
-  orderChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: "#F3F4F6",
-    marginRight: 8,
-  },
-  orderChipActive: {
-    backgroundColor: "#3B82F6",
-  },
-  orderChipText: {
-    fontSize: 13,
-    color: "#374151",
-  },
-  orderChipTextActive: {
-    color: "#FFFFFF",
-    fontWeight: "600",
-  },
-  clearBtn: {
-    alignSelf: "center",
+  addRangeBtn: {
+    alignSelf: "flex-start",
     marginTop: 12,
     paddingVertical: 8,
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#3B82F6",
+    borderStyle: "dashed",
   },
-  clearBtnText: {
-    fontSize: 14,
-    color: "#EF4444",
+  addRangeBtnText: {
+    fontSize: 13,
+    color: "#3B82F6",
     fontWeight: "600",
   },
   iosPickerContainer: {
     backgroundColor: "#FFFFFF",
     borderRadius: 12,
-    marginBottom: 16,
+    marginTop: 12,
     overflow: "hidden",
   },
   iosPickerHeader: {
