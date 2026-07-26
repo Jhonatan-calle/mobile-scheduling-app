@@ -5,7 +5,8 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
-  Platform,
+  Modal,
+  TextInput,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState, useEffect } from "react";
@@ -28,6 +29,9 @@ export default function ClientDetailScreen() {
   const [client, setClient] = useState<any>(null);
   const [appointments, setAppointments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -42,6 +46,7 @@ export default function ClientDetailScreen() {
         .eq("id", Number(id))
         .single();
       setClient(clientData);
+      setEditName(clientData?.name ?? "");
 
       const appts = await getClientAppointments(Number(id));
       setAppointments(appts);
@@ -54,10 +59,32 @@ export default function ClientDetailScreen() {
 
   const markContacted = async () => {
     if (!client) return;
-    const now = new Date().toISOString();
-    await updateClient(client.id, { last_contacted_at: now } as any);
-    setClient({ ...client, last_contacted_at: now });
-    Alert.alert("Listo", "Contacto registrado");
+    try {
+      const now = new Date().toISOString();
+      await updateClient(client.id, { last_contacted_at: now } as any);
+      setClient({ ...client, last_contacted_at: now });
+      Alert.alert("Listo", "Contacto registrado");
+    } catch (e) {
+      Alert.alert("Error", "No se pudo guardar el contacto");
+    }
+  };
+
+  const saveName = async () => {
+    const trimmed = editName.trim();
+    if (!trimmed) {
+      Alert.alert("Error", "El nombre no puede estar vacío");
+      return;
+    }
+    try {
+      setSaving(true);
+      await updateClient(client.id, { name: trimmed });
+      setClient({ ...client, name: trimmed });
+      setEditModalVisible(false);
+    } catch (e) {
+      Alert.alert("Error", "No se pudo guardar el nombre");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const formatDate = (d: string | null) =>
@@ -75,12 +102,6 @@ export default function ClientDetailScreen() {
       day: "2-digit",
       month: "2-digit",
       year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-
-  const formatTimeShort = (d: string) =>
-    new Date(d).toLocaleTimeString("es-AR", {
       hour: "2-digit",
       minute: "2-digit",
     });
@@ -139,7 +160,17 @@ export default function ClientDetailScreen() {
               {client.name?.charAt(0)?.toUpperCase() ?? "?"}
             </Text>
           </View>
-          <Text style={styles.clientName}>{client.name}</Text>
+          <View style={styles.nameRow}>
+            <Text style={styles.clientName}>{client.name}</Text>
+            <TouchableOpacity
+              onPress={() => {
+                setEditName(client.name);
+                setEditModalVisible(true);
+              }}
+            >
+              <Text style={styles.editIcon}>✏️</Text>
+            </TouchableOpacity>
+          </View>
           <Text style={styles.clientPhone}>📱 {client.phone_number}</Text>
         </View>
 
@@ -221,6 +252,45 @@ export default function ClientDetailScreen() {
 
         <View style={{ height: 40 }} />
       </ScrollView>
+
+      {/* Edit name modal */}
+      <Modal
+        visible={editModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setEditModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Editar nombre</Text>
+            <TextInput
+              style={styles.modalInput}
+              value={editName}
+              onChangeText={setEditName}
+              placeholder="Nombre del cliente"
+              placeholderTextColor="#9CA3AF"
+              autoFocus
+            />
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.modalCancelBtn}
+                onPress={() => setEditModalVisible(false)}
+              >
+                <Text style={styles.modalCancelText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalSaveBtn, saving && styles.modalSaveBtnDisabled]}
+                onPress={saveName}
+                disabled={saving}
+              >
+                <Text style={styles.modalSaveText}>
+                  {saving ? "Guardando..." : "Guardar"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -281,11 +351,19 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#3B82F6",
   },
+  nameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
   clientName: {
     fontSize: 24,
     fontWeight: "bold",
     color: "#111827",
     textAlign: "center",
+  },
+  editIcon: {
+    fontSize: 20,
   },
   clientPhone: {
     fontSize: 16,
@@ -400,5 +478,67 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "bold",
     color: "#10B981",
+  },
+  // Modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContent: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 24,
+    width: "85%",
+    maxWidth: 400,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#111827",
+    marginBottom: 16,
+    textAlign: "center",
+  },
+  modalInput: {
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 16,
+    color: "#111827",
+    marginBottom: 20,
+  },
+  modalActions: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  modalCancelBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 10,
+    backgroundColor: "#F3F4F6",
+    alignItems: "center",
+  },
+  modalCancelText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#6B7280",
+  },
+  modalSaveBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 10,
+    backgroundColor: "#3B82F6",
+    alignItems: "center",
+  },
+  modalSaveBtnDisabled: {
+    opacity: 0.6,
+  },
+  modalSaveText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#FFFFFF",
   },
 });

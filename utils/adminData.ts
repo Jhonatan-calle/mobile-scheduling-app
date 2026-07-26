@@ -230,6 +230,7 @@ export async function updateClient(
       phone_number: input.phone_number,
       last_appointment_at: input.last_appointment_at,
       occurrences: input.occurrences,
+      last_contacted_at: input.last_contacted_at,
     })
     .eq("id", Number(id));
 
