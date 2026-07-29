@@ -276,6 +276,16 @@ function CustomerInfoSection({ formData, setFormData }: any) {
           keyboardType="phone-pad"
         />
       </View>
+
+      <View style={styles.inputGroup}>
+        <Text style={styles.inputLabel}>📍 Dirección</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Calle y número"
+          value={formData.address}
+          onChangeText={(text) => setFormData({ ...formData, address: text })}
+        />
+      </View>
     </View>
   );
 }
